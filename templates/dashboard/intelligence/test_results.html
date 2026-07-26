@@ -1,0 +1,102 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Données test — YAYEMATY MARKET{% endblock %}
+{% block body_class %}intel-layout intel-test-results-layout{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/intelligence-archives.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/intelligence-reading.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/collection-control.css' %}?v=8">
+<link rel="stylesheet" href="{% static 'css/intelligence-report.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/dashboard-home.css' %}?v=13">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="main-content intelligence-page intelligence-test-page">
+
+    <header class="intel-topbar">
+        <h1 class="intel-topbar-title">Données test</h1>
+        <div class="intel-search">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <circle cx="9" cy="9" r="5.5"/><path stroke-linecap="round" d="M13.5 13.5L17 17"/>
+            </svg>
+            <input type="search" placeholder="Rechercher requête, domaine, publication…" aria-label="Recherche">
+        </div>
+        <div class="intel-topbar-actions">
+            <a href="{% url 'intelligence:collecte_test' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M16 16v-5h-5M16 4l-4 4M4 16l4-4"/></svg>
+                Session test
+            </a>
+            <a href="{% url 'intelligence:index' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 15V5m4 10V9m4 6V7m4 8V4"/></svg>
+                Intelligence
+            </a>
+            <div class="intel-user-chip">
+                <span class="intel-user-avatar">{{ user.username|slice:":1"|upper }}</span>
+                <span class="intel-user-meta">
+                    <span class="intel-user-name">{{ user.username }}</span>
+                    <span class="intel-user-role">Analyste marché</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    {% if data_window %}
+    <section class="intel-live-banner intel-live-banner--test" aria-label="Fenêtre de test">
+        <div class="intel-live-banner-main">
+            <span class="intel-live-dot intel-live-dot--test" aria-hidden="true"></span>
+            <div>
+                <p class="intel-live-title">{{ data_window.label }}</p>
+                <p class="intel-live-meta">
+                    {{ data_window.total_posts }} publication(s) · {{ data_window.total_discovered }} requête(s)
+                    {% if data_window.total_jumia_products is not None %}
+                    · {{ data_window.total_jumia_products }} produit(s) Jumia · {{ data_window.total_jumia_reviews }} avis
+                    {% endif %}
+                    · {{ data_window.last_update_label }}
+                </p>
+            </div>
+        </div>
+        <a href="{% url 'intelligence:collecte_test' %}" class="intel-live-link">Nouvelle session test →</a>
+    </section>
+    {% endif %}
+
+    {% include "dashboard/intelligence/includes/intelligence_report_nav.html" %}
+
+    {% include "dashboard/intelligence/includes/intelligence_reading_layout.html" %}
+
+    {% include "dashboard/intelligence/includes/intelligence_top10_hub.html" %}
+
+    <section class="collecte-test-panel collecte-test-panel--embedded" aria-labelledby="collecte-test-data-title">
+        <header class="collecte-test-head">
+            <div>
+                <p class="collecte-test-kicker">Configuration active</p>
+                <h2 id="collecte-test-data-title" class="collecte-test-title">Sources et paramètres du test</h2>
+                <p class="collecte-test-desc">Mots-clés Paramètres (réseaux, Jumia, Jiji) et domaines Google Trends utilisés en mode test.</p>
+            </div>
+        </header>
+        {% include "dashboard/intelligence/includes/collection_test_data_grid.html" %}
+    </section>
+
+    <section class="intel-details-anchor" id="intel-expert" aria-label="Analyses détaillées">
+        <header class="intel-details-head">
+            <div>
+                <p class="yd-kicker">Mode analyste</p>
+                <h2 class="intel-section-title">Données brutes — session test</h2>
+                <p class="intel-section-sub">Trends, publications, Jumia et Jiji en détail.</p>
+            </div>
+        </header>
+
+        {% include "dashboard/intelligence/includes/intelligence_dashboard_body.html" %}
+        {% include "dashboard/intelligence/includes/jumia_test_section.html" %}
+        {% include "dashboard/intelligence/includes/jiji_test_section.html" %}
+    </section>
+
+    {% include "dashboard/intelligence/includes/marketplace_links_modal.html" %}
+</div>
+<script src="{% static 'js/intelligence.js' %}?v=4"></script>
+<script src="{% static 'js/intelligence-report.js' %}?v=1"></script>
+<script src="{% static 'js/intelligence-marketplace-modal.js' %}?v=1"></script>
+{% endblock %}
+
+{% block activity_panel %}{% endblock %}

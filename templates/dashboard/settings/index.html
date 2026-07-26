@@ -1,0 +1,783 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% load static %}
+
+
+
+{% block title %}Paramètres — YAYEMATY MARKET{% endblock %}
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="{% static 'css/settings.css' %}?v=3">
+
+{% endblock %}
+
+
+
+{% block dashboard_content %}
+
+<div class="main-content settings-page">
+
+    <section class="settings-hero">
+
+        <div>
+
+            <span class="settings-badge">Configuration</span>
+
+            <h1>Paramètres</h1>
+
+            <p>Gérez le dictionnaire Wolof, les mots-clés TikTok Top-Down et les sources de données. Les domaines Google Trends sont dans Intelligence → Domaines.</p>
+
+        </div>
+
+        <div class="settings-hero-stats">
+
+            <div class="settings-stat-pill settings-stat-pill--orange">
+
+                <span class="settings-stat-value">{{ market_domains|length }}</span>
+
+                <span class="settings-stat-label">Domaines</span>
+
+            </div>
+
+            <div class="settings-stat-pill settings-stat-pill--bleu">
+
+                <span class="settings-stat-value">{{ discovered_count }}</span>
+
+                <span class="settings-stat-label">Requêtes</span>
+
+            </div>
+
+            <div class="settings-stat-pill settings-stat-pill--jaune">
+
+                <span class="settings-stat-value">{{ wolof_stats.active|default:0 }}</span>
+
+                <span class="settings-stat-label">Mots Wolof</span>
+
+            </div>
+
+            <div class="settings-stat-pill settings-stat-pill--gris">
+
+                <span class="settings-stat-value">{{ search_stats.active|default:0 }}</span>
+
+                <span class="settings-stat-label">Recherches TikTok</span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    {% if messages %}
+
+    <div class="settings-messages">
+
+        {% for message in messages %}
+
+        <div class="settings-alert settings-alert--{{ message.tags }}">{{ message }}</div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+
+    <div class="settings-layout">
+
+        <nav class="settings-nav" aria-label="Sections des paramètres">
+
+            {% for section in sections %}
+
+            <a href="?section={{ section.id }}"
+
+               class="settings-nav-item{% if active_section == section.id %} is-active{% endif %}"
+
+               data-section="{{ section.id }}">
+
+                {{ section.label }}
+
+            </a>
+
+            {% endfor %}
+
+        </nav>
+
+
+
+        <div class="settings-panels">
+
+            <section id="wolof" class="settings-panel{% if active_section == 'wolof' %} is-visible{% endif %}" data-panel="wolof">
+
+                <div class="settings-panel-header">
+
+                    <h2>Dictionnaire Wolof</h2>
+
+                    <p>
+
+                        Expressions Wolof détectées <strong>avant CamemBERT</strong> pour l'intention d'achat,
+
+                        les questions et les plaintes sur TikTok/Facebook (marché sénégalais).
+
+                    </p>
+
+                </div>
+
+
+
+                <div class="settings-wolof-toolbar">
+
+                    <div class="settings-wolof-summary">
+
+                        <span class="settings-wolof-count">{{ wolof_stats.active|default:0 }} actif(s)</span>
+
+                        <span class="settings-wolof-count">· {{ wolof_stats.purchase|default:0 }} achat</span>
+
+                    </div>
+
+                    <button type="button"
+                            class="settings-btn settings-btn--primary js-open-wolof-modal"
+                            aria-haspopup="dialog">
+
+                        Ajouter une expression
+
+                    </button>
+
+                </div>
+
+
+
+                <div class="settings-domain-modal js-wolof-modal{% if not show_wolof_form %} is-hidden{% endif %}"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="add-wolof-title">
+
+                    <button type="button"
+                            class="settings-domain-modal-backdrop js-close-wolof-modal"
+                            aria-label="Fermer"></button>
+
+                    <div class="settings-domain-modal-panel">
+
+                        <div class="settings-domain-modal-header">
+
+                            <h3 id="add-wolof-title">Ajouter une expression Wolof</h3>
+
+                            <button type="button"
+                                    class="settings-btn settings-btn--ghost js-close-wolof-modal">
+
+                                Annuler
+
+                            </button>
+
+                        </div>
+
+
+
+                        <form method="post" class="settings-form js-wolof-form">
+
+                            {% csrf_token %}
+
+                            <input type="hidden" name="action" value="add_wolof_keyword">
+
+
+
+                            <div class="settings-form-group">
+
+                                <label for="id_wolof_expression">{{ wolof_form.expression.label }}</label>
+
+                                {{ wolof_form.expression }}
+
+                                {% if wolof_form.expression.errors %}
+
+                                <span class="settings-field-error">{{ wolof_form.expression.errors.0 }}</span>
+
+                                {% endif %}
+
+                            </div>
+
+
+
+                            <div class="settings-form-group">
+
+                                <label for="id_wolof_intent">{{ wolof_form.intent.label }}</label>
+
+                                {{ wolof_form.intent }}
+
+                            </div>
+
+
+
+                            <div class="settings-form-group">
+
+                                <label for="id_wolof_note">{{ wolof_form.note.label }}</label>
+
+                                {{ wolof_form.note }}
+
+                                <span class="settings-field-help">Traduction ou contexte pour votre équipe (optionnel).</span>
+
+                            </div>
+
+
+
+                            <div class="settings-domain-modal-actions">
+
+                                <button type="button" class="settings-btn settings-btn--outline js-close-wolof-modal">
+
+                                    Annuler
+
+                                </button>
+
+                                <button type="submit" class="settings-btn settings-btn--primary">
+
+                                    Enregistrer
+
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+
+
+                {% if wolof_stats.total %}
+
+                <div class="settings-wolof-groups">
+
+                    {% for section in wolof_sections %}
+
+                    {% if section.keywords %}
+
+                    <div class="settings-wolof-group">
+
+                        <h3 class="settings-subtitle settings-wolof-group-title">
+
+                            {{ section.label }}
+
+                            <span class="settings-wolof-group-count">{{ section.keywords|length }}</span>
+
+                        </h3>
+
+                        <div class="settings-wolof-list">
+
+                            {% for keyword in section.keywords %}
+
+                            <div class="settings-wolof-item{% if not keyword.is_active %} is-inactive{% endif %}">
+
+                                <div class="settings-wolof-item-main">
+
+                                    <strong>{{ keyword.expression }}</strong>
+
+                                    {% if keyword.note %}
+
+                                    <span class="settings-wolof-note">{{ keyword.note }}</span>
+
+                                    {% endif %}
+
+                                </div>
+
+                                <div class="settings-wolof-item-actions">
+
+                                    <form method="post" class="settings-inline-form">
+
+                                        {% csrf_token %}
+
+                                        <input type="hidden" name="action" value="toggle_wolof_keyword">
+
+                                        <input type="hidden" name="keyword_id" value="{{ keyword.pk }}">
+
+                                        <button type="submit"
+                                                class="settings-btn settings-btn--ghost settings-btn--sm">
+
+                                            {% if keyword.is_active %}Désactiver{% else %}Activer{% endif %}
+
+                                        </button>
+
+                                    </form>
+
+                                    <form method="post"
+                                          class="settings-inline-form"
+                                          onsubmit="return confirm('Supprimer « {{ keyword.expression }} » ?');">
+
+                                        {% csrf_token %}
+
+                                        <input type="hidden" name="action" value="delete_wolof_keyword">
+
+                                        <input type="hidden" name="keyword_id" value="{{ keyword.pk }}">
+
+                                        <button type="submit" class="settings-btn settings-btn--danger settings-btn--sm">
+
+                                            Supprimer
+
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
+
+                    {% endfor %}
+
+                </div>
+
+                {% else %}
+
+                <p class="settings-field-help settings-empty-hint">
+
+                    Aucune expression Wolof. Cliquez sur « Ajouter une expression » pour commencer.
+
+                </p>
+
+                {% endif %}
+
+            </section>
+
+
+
+            <section id="recherche" class="settings-panel{% if active_section == 'recherche' %} is-visible{% endif %}" data-panel="recherche">
+
+                <div class="settings-panel-header">
+
+                    <h2>Mots-clés réseaux sociaux</h2>
+
+                    <p>
+
+                        Recherche <strong>TikTok</strong> et <strong>Facebook</strong> uniquement.
+
+                        Chaque mot-clé lance une collecte : vidéos/posts puis commentaires pour le NLP.
+
+                        Pour Jumia et Jiji, voir la section <a href="?section=marche">Mots-clés marketplace</a>.
+
+                    </p>
+
+                </div>
+
+
+
+                <div class="settings-wolof-toolbar">
+
+                    <div class="settings-wolof-summary">
+
+                        <span class="settings-wolof-count">{{ search_stats.active|default:0 }} actif(s)</span>
+
+                        <span class="settings-wolof-count">· {{ search_stats.total|default:0 }} total</span>
+
+                    </div>
+
+                    <button type="button"
+                            class="settings-btn settings-btn--primary js-open-search-modal"
+                            aria-haspopup="dialog">
+
+                        Ajouter un mot-clé
+
+                    </button>
+
+                </div>
+
+
+
+                <div class="settings-domain-modal js-search-modal{% if not show_search_form %} is-hidden{% endif %}"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="add-search-title">
+
+                    <button type="button"
+                            class="settings-domain-modal-backdrop js-close-search-modal"
+                            aria-label="Fermer"></button>
+
+                    <div class="settings-domain-modal-panel">
+
+                        <div class="settings-domain-modal-header">
+
+                            <h3 id="add-search-title">Ajouter un mot-clé de recherche</h3>
+
+                            <button type="button"
+                                    class="settings-btn settings-btn--ghost js-close-search-modal">
+
+                                Annuler
+
+                            </button>
+
+                        </div>
+
+
+
+                        <form method="post" class="settings-form js-search-form">
+
+                            {% csrf_token %}
+
+                            <input type="hidden" name="action" value="add_search_keyword">
+
+
+
+                            <div class="settings-form-group">
+
+                                <label for="id_keyword">{{ search_form.keyword.label }}</label>
+
+                                {{ search_form.keyword }}
+
+                                {% if search_form.keyword.errors %}
+
+                                <span class="settings-field-error">{{ search_form.keyword.errors.0 }}</span>
+
+                                {% endif %}
+
+                                <span class="settings-field-help">Ex. : tracteur dakar, pompe solaire senegal</span>
+
+                            </div>
+
+
+
+                            <div class="settings-form-group">
+
+                                <label for="id_label">{{ search_form.label.label }}</label>
+
+                                {{ search_form.label }}
+
+                            </div>
+
+
+
+                            <div class="settings-form-group">
+
+                                <label for="id_platform">{{ search_form.platform.label }}</label>
+
+                                {{ search_form.platform }}
+
+                                <span class="settings-field-help">Utilisé par Celery / collecte manuelle TikTok ou Facebook.</span>
+
+                            </div>
+
+
+
+                            <div class="settings-form-group">
+
+                                <label for="id_product_category">{{ search_form.product_category.label }}</label>
+
+                                {{ search_form.product_category }}
+
+                            </div>
+
+
+
+                            <div class="settings-form-row">
+
+                                <div class="settings-form-group">
+
+                                    <label for="id_max_videos">{{ search_form.max_videos.label }}</label>
+
+                                    {{ search_form.max_videos }}
+
+                                    {% if search_form.max_videos.errors %}
+
+                                    <span class="settings-field-error">{{ search_form.max_videos.errors.0 }}</span>
+
+                                    {% endif %}
+
+                                    <span class="settings-field-help">TikTok : max vidéos · Jumia : max produits · Jiji : max annonces (5–50).</span>
+
+                                </div>
+
+                                <div class="settings-form-group">
+
+                                    <label for="id_max_comments">{{ search_form.max_comments.label }}</label>
+
+                                    {{ search_form.max_comments }}
+
+                                    {% if search_form.max_comments.errors %}
+
+                                    <span class="settings-field-error">{{ search_form.max_comments.errors.0 }}</span>
+
+                                    {% endif %}
+
+                                    <span class="settings-field-help">TikTok : commentaires par vidéo (10–20) pour le NLP.</span>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div class="settings-domain-modal-actions">
+
+                                <button type="button" class="settings-btn settings-btn--outline js-close-search-modal">
+
+                                    Annuler
+
+                                </button>
+
+                                <button type="submit" class="settings-btn settings-btn--primary">
+
+                                    Enregistrer
+
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+
+
+                {% if search_stats.total %}
+
+                <div class="settings-wolof-list">
+
+                    {% for keyword in search_keywords %}
+
+                    <div class="settings-wolof-item{% if not keyword.is_active %} is-inactive{% endif %}">
+
+                        <div class="settings-wolof-item-main">
+
+                            <strong>{{ keyword.keyword }}</strong>
+
+                            <span class="settings-wolof-note">{{ keyword.max_videos }} vidéo(s)/post(s) · {{ keyword.max_comments }} com. · {{ keyword.get_platform_display }}</span>
+
+                            {% if keyword.product_category %}
+
+                            <span class="settings-wolof-note">{{ keyword.product_category }}</span>
+
+                            {% endif %}
+
+                            {% if keyword.last_scraped_at %}
+
+                            <span class="settings-wolof-note">Dernier scrape : {{ keyword.last_scraped_at|date:"d/m/Y H:i" }}</span>
+
+                            {% endif %}
+
+                        </div>
+
+                        <div class="settings-wolof-item-actions">
+
+                            <a href="{{ keyword.build_search_url }}"
+                               class="settings-btn settings-btn--ghost settings-btn--sm"
+                               target="_blank"
+                               rel="noopener noreferrer">
+
+                                Voir {{ keyword.get_platform_display }}
+
+                            </a>
+
+                            <form method="post" class="settings-inline-form">
+
+                                {% csrf_token %}
+
+                                <input type="hidden" name="action" value="toggle_search_keyword">
+
+                                <input type="hidden" name="keyword_id" value="{{ keyword.pk }}">
+
+                                <button type="submit"
+                                        class="settings-btn settings-btn--ghost settings-btn--sm">
+
+                                    {% if keyword.is_active %}Désactiver{% else %}Activer{% endif %}
+
+                                </button>
+
+                            </form>
+
+                            <form method="post"
+                                  class="settings-inline-form"
+                                  onsubmit="return confirm('Supprimer « {{ keyword.keyword }} » ?');">
+
+                                {% csrf_token %}
+
+                                <input type="hidden" name="action" value="delete_search_keyword">
+
+                                <input type="hidden" name="keyword_id" value="{{ keyword.pk }}">
+
+                                <button type="submit" class="settings-btn settings-btn--danger settings-btn--sm">
+
+                                    Supprimer
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                <p class="settings-field-help settings-empty-hint" style="margin-top: 1rem;">
+
+                    Commande : <code>python manage.py scrape_search_keywords --all --analyze --async</code>
+
+                </p>
+
+                {% else %}
+
+                <p class="settings-field-help settings-empty-hint">
+
+                    Aucun mot-clé. Cliquez sur « Ajouter un mot-clé » ou lancez les migrations pour le seed Sénégal.
+
+                </p>
+
+                {% endif %}
+
+            </section>
+
+            {% include "dashboard/settings/includes/settings_market_section.html" %}
+
+            <section id="sources" class="settings-panel{% if active_section == 'sources' %} is-visible{% endif %}" data-panel="sources">
+
+                <div class="settings-panel-header">
+
+                    <h2>Sources de données</h2>
+
+                    <p>État des connecteurs d'intelligence de marché.</p>
+
+                </div>
+
+                <div class="settings-source-list">
+
+                    {% for source in data_sources %}
+
+                    <div class="settings-source-item settings-source-item--{{ source.status }}">
+
+                        <div class="settings-source-top">
+
+                            <strong>{{ source.name }}</strong>
+
+                            <span class="settings-status settings-status--{{ source.status }}">{{ source.status_label }}</span>
+
+                        </div>
+
+                        <span class="settings-source-tool">{{ source.tool }}</span>
+
+                        <p>{{ source.description }}</p>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+
+            <section id="compte" class="settings-panel{% if active_section == 'compte' %} is-visible{% endif %}" data-panel="compte">
+
+                <div class="settings-panel-header">
+
+                    <h2>Compte</h2>
+
+                    <p>Informations de votre session administrateur.</p>
+
+                </div>
+
+                <div class="settings-account-card">
+
+                    <div class="settings-account-avatar">{{ user.username|slice:":1"|upper }}</div>
+
+                    <div>
+
+                        <strong>{{ user.username }}</strong>
+
+                        <span>{{ user.email|default:"Aucun email configuré" }}</span>
+
+                    </div>
+
+                </div>
+
+                <div class="settings-account-links">
+
+                    <a href="{% url 'admin:index' %}" class="settings-btn settings-btn--outline">Administration Django</a>
+
+                    <a href="{% url 'intelligence:index' %}" class="settings-btn settings-btn--outline">Page Intelligence</a>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="{% static 'js/settings.js' %}"></script>
+
+{% endblock %}
+
+
+
+{% block activity_panel %}
+
+<div class="activity-content">
+
+    <h2 class="activity-title">Aide</h2>
+
+    <div class="activity-section">
+
+        <div class="activity-card">
+
+            <div class="activity-details">
+
+                <h4>Domaines Google Trends</h4>
+
+                <p>Ajoutez et configurez vos domaines de recherche dans <a href="{% url 'intelligence:domaines' %}">Intelligence → Domaines</a>.</p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="activity-section">
+
+        <div class="activity-card">
+
+            <div class="activity-details">
+
+                <h4>Dictionnaire Wolof</h4>
+
+                <p>Ajoutez des expressions en Wolof (ex. <em>ñaata la</em>, <em>begg jënd</em>) pour détecter les intentions d'achat avant CamemBERT.</p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="activity-section">
+
+        <div class="activity-card">
+
+            <div class="activity-details">
+
+                <h4>Lancer une découverte</h4>
+
+                <p>Configurez les domaines dans <a href="{% url 'intelligence:domaines' %}#decouverte">Intelligence → Domaines</a>, puis consultez les résultats dans <a href="{% url 'intelligence:index' %}">Intelligence</a>.</p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+

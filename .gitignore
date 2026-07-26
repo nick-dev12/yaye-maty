@@ -1,0 +1,54 @@
+# Environnement virtuel
+venv/
+.venv/
+
+# Variables d'environnement
+.env
+
+# Django
+*.pyc
+__pycache__/
+db.sqlite3
+*.log
+media/
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sessions scraping (cookies — ne jamais committer)
+data/scraper_sessions/*.json
+
+# PIDs Celery lancés depuis l'UI (dev local)
+.celery_ui/
+
+# Celery Beat (fichiers locaux)
+celerybeat-schedule*
+
+# NLP local (secrets)
+local_nlp/.env
+
+# Fichiers temporaires / assets locaux non versionnés
+*.bak
+*.dat
+*.dir
+
+# Boutique PHP / Flutter (dépôt Git séparé)
+yayeboutique/
+
+# Images locales à la racine du projet (pas static/)
+/080b6660b72b614681fccb8f7cb45927.jpg
+/112699140a42277b90c6828f9b68618d.jpg
+/1784352163.png
+/17843524051391.png
+/a1c6f95be12a658d132f5c0d66113211.jpg
+/b70d7509d3ab00d5b608a69e0fd3f471.jpg
+/cfbf11cbffd328487fd04bf01e28b9b7.jpg
+/d524a51428f186ada6d84ca36e7e2144.jpg
+/WhatsApp Image 2026-07-14 at 10.09.00.jpeg

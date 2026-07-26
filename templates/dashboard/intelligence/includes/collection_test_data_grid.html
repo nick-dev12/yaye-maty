@@ -1,0 +1,145 @@
+{% with tc=test_context %}
+
+<div class="collecte-test-data-grid collecte-test-data-grid--page">
+
+    <article class="collecte-test-data-card">
+
+        <h3 class="collecte-test-subtitle">Mots-clés réseaux actifs ({{ tc.social_keywords|length }})</h3>
+
+        <div class="collecte-test-scroll">
+
+            <table class="collecte-test-table collecte-test-table--compact">
+
+                <thead>
+
+                    <tr><th>Mot-clé</th><th>Vidéos</th><th>Com.</th><th>Plateforme</th></tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for kw in tc.social_keywords %}
+
+                    <tr>
+
+                        <td>{{ kw.keyword }}</td>
+
+                        <td>{{ kw.max_videos }}</td>
+
+                        <td>{{ kw.max_comments }}</td>
+
+                        <td>{{ kw.get_platform_display }}</td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr><td colspan="4">Aucun mot-clé réseau actif</td></tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </article>
+
+
+
+    <article class="collecte-test-data-card">
+
+        <h3 class="collecte-test-subtitle">Mots-clés marché (Jumia / Jiji) — {{ tc.keywords|length }}</h3>
+
+        <div class="collecte-test-scroll">
+
+            <table class="collecte-test-table collecte-test-table--compact">
+
+                <thead>
+
+                    <tr><th>Mot-clé</th><th>Catégorie</th><th>Volume max</th><th>Plateforme</th></tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for kw in tc.keywords %}
+
+                    <tr>
+
+                        <td>{{ kw.keyword }}</td>
+
+                        <td>{{ kw.get_product_category_display|default:"—" }}</td>
+
+                        <td>{{ kw.max_videos }}</td>
+
+                        <td>{{ kw.get_platform_display }}</td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr><td colspan="4">Aucun mot-clé actif</td></tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </article>
+
+
+
+    <article class="collecte-test-data-card collecte-test-data-card--wide">
+
+        <h3 class="collecte-test-subtitle">Google Trends — {{ tc.discovery.timeframe }} · {{ tc.discovery.region }}</h3>
+
+        <div class="collecte-test-scroll">
+
+            <table class="collecte-test-table collecte-test-table--compact">
+
+                <thead>
+
+                    <tr><th>Domaine</th><th>Cat. ID</th><th>Graines</th><th>Sélectionné</th></tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for d in tc.domains_all %}
+
+                    <tr>
+
+                        <td>{{ d.label }}</td>
+
+                        <td>{{ d.cat_id }}</td>
+
+                        <td>{{ d.seed_count }}</td>
+
+                        <td>{% if d.pk in tc.discovery.selected_domain_ids %}✓{% else %}—{% endif %}</td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr><td colspan="4">Aucun domaine configuré</td></tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </article>
+
+</div>
+
+{% endwith %}
+
+

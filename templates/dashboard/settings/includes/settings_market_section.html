@@ -1,0 +1,228 @@
+            <section id="marche" class="settings-panel{% if active_section == 'marche' %} is-visible{% endif %}" data-panel="marche">
+
+                <div class="settings-panel-header">
+
+                    <h2>Mots-clés marketplace (Jumia &amp; Jiji)</h2>
+
+                    <p>
+
+                        Un seul jeu de mots-clés pour <strong>Jumia.sn</strong> et <strong>Jiji.sn</strong>.
+
+                        Chaque mot-clé définit le volume de collecte sur les deux plateformes :
+
+                        <code>max_videos</code> = produits Jumia <em>et</em> annonces Jiji par mot-clé.
+
+                    </p>
+
+                </div>
+
+
+
+                <div class="settings-market-summary">
+
+                    <article class="settings-market-stat settings-market-stat--marketplace">
+
+                        <span class="settings-market-stat-label">Marketplace</span>
+
+                        <strong>{{ market_stats.marketplace_active|default:0 }}</strong>
+
+                        <span>actif(s) / {{ market_stats.marketplace_total|default:0 }} total</span>
+
+                    </article>
+
+                    <article class="settings-market-stat settings-market-stat--platforms">
+
+                        <span class="settings-market-stat-label">Plateformes</span>
+
+                        <strong>Jumia + Jiji</strong>
+
+                        <span>Même liste de mots-clés pour les deux collectes</span>
+
+                    </article>
+
+                </div>
+
+
+
+                <div class="settings-market-block">
+
+                    <header class="settings-market-block-head">
+
+                        <div>
+
+                            <h3>Mots-clés partagés</h3>
+
+                            <p>
+
+                                Collecte simultanée sur Jumia (prix, stock, avis) et Jiji (annonces locales).
+
+                                <code>max_comments</code> s’applique aux avis Jumia uniquement.
+
+                            </p>
+
+                        </div>
+
+                        <button type="button" class="settings-btn settings-btn--primary js-open-marketplace-modal" aria-haspopup="dialog">
+
+                            Ajouter un mot-clé
+
+                        </button>
+
+                    </header>
+
+
+
+                    {% if marketplace_keywords %}
+
+                    <div class="settings-wolof-list">
+
+                        {% for keyword in marketplace_keywords %}
+
+                        <div class="settings-wolof-item settings-wolof-item--marketplace{% if not keyword.is_active %} is-inactive{% endif %}">
+
+                            <div class="settings-wolof-item-main">
+
+                                <strong>{{ keyword.keyword }}</strong>
+
+                                <span class="settings-wolof-note">
+
+                                    {{ keyword.max_videos }} produit(s) Jumia ·
+
+                                    {{ keyword.max_videos }} annonce(s) Jiji ·
+
+                                    {{ keyword.max_comments }} avis/produit Jumia
+
+                                </span>
+
+                                {% if keyword.product_category %}
+
+                                <span class="settings-wolof-note">Catégorie : {{ keyword.product_category }}</span>
+
+                                {% endif %}
+
+                                {% if keyword.last_scraped_at %}
+
+                                <span class="settings-wolof-note">Dernier scrape : {{ keyword.last_scraped_at|date:"d/m/Y H:i" }}</span>
+
+                                {% endif %}
+
+                            </div>
+
+                            <div class="settings-wolof-item-actions">
+
+                                <a href="{{ keyword.build_jumia_url }}" class="settings-btn settings-btn--ghost settings-btn--sm" target="_blank" rel="noopener noreferrer">Voir Jumia</a>
+
+                                <a href="{{ keyword.build_jiji_url }}" class="settings-btn settings-btn--ghost settings-btn--sm" target="_blank" rel="noopener noreferrer">Voir Jiji</a>
+
+                                <form method="post" class="settings-inline-form">{% csrf_token %}<input type="hidden" name="action" value="toggle_search_keyword"><input type="hidden" name="keyword_id" value="{{ keyword.pk }}"><button type="submit" class="settings-btn settings-btn--ghost settings-btn--sm">{% if keyword.is_active %}Désactiver{% else %}Activer{% endif %}</button></form>
+
+                                <form method="post" class="settings-inline-form" onsubmit="return confirm('Supprimer ce mot-clé marketplace ?');">{% csrf_token %}<input type="hidden" name="action" value="delete_search_keyword"><input type="hidden" name="keyword_id" value="{{ keyword.pk }}"><button type="submit" class="settings-btn settings-btn--danger settings-btn--sm">Supprimer</button></form>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% else %}
+
+                    <p class="settings-field-help settings-empty-hint">Aucun mot-clé marketplace — ajoutez-en un pour lancer les collectes Jumia et Jiji.</p>
+
+                    {% endif %}
+
+                </div>
+
+
+
+                <p class="settings-field-help" style="margin-top: 1rem;">
+
+                    Collecte : <a href="{% url 'intelligence:collecte' %}">Intelligence → Collecte</a> — jobs « Jumia marché » et « Jiji marché local » utilisent cette même liste.
+
+                </p>
+
+
+
+                <div class="settings-domain-modal js-marketplace-modal{% if not show_marketplace_form %} is-hidden{% endif %}" role="dialog" aria-modal="true" aria-labelledby="add-marketplace-title">
+
+                    <button type="button" class="settings-domain-modal-backdrop js-close-marketplace-modal" aria-label="Fermer"></button>
+
+                    <div class="settings-domain-modal-panel">
+
+                        <div class="settings-domain-modal-header">
+
+                            <h3 id="add-marketplace-title">Ajouter un mot-clé marketplace</h3>
+
+                            <button type="button" class="settings-btn settings-btn--ghost js-close-marketplace-modal">Annuler</button>
+
+                        </div>
+
+                        <form method="post" class="settings-form js-marketplace-form">
+
+                            {% csrf_token %}
+
+                            <input type="hidden" name="action" value="add_marketplace_keyword">
+
+                            <div class="settings-form-group">
+
+                                <label for="id_marketplace_keyword">{{ marketplace_form.keyword.label }}</label>
+
+                                {{ marketplace_form.keyword }}
+
+                                {% if marketplace_form.keyword.errors %}<span class="settings-field-error">{{ marketplace_form.keyword.errors.0 }}</span>{% endif %}
+
+                            </div>
+
+                            <div class="settings-form-group">
+
+                                <label for="id_marketplace_product_category">{{ marketplace_form.product_category.label }}</label>
+
+                                {{ marketplace_form.product_category }}
+
+                                {% if marketplace_form.product_category.help_text %}
+
+                                <p class="settings-field-help">{{ marketplace_form.product_category.help_text }}</p>
+
+                                {% endif %}
+
+                            </div>
+
+                            <div class="settings-form-row">
+
+                                <div class="settings-form-group">
+
+                                    <label for="id_marketplace_max_videos">{{ marketplace_form.max_videos.label }}</label>
+
+                                    {{ marketplace_form.max_videos }}
+
+                                    {% if marketplace_form.max_videos.errors %}<span class="settings-field-error">{{ marketplace_form.max_videos.errors.0 }}</span>{% endif %}
+
+                                </div>
+
+                                <div class="settings-form-group">
+
+                                    <label for="id_marketplace_max_comments">{{ marketplace_form.max_comments.label }}</label>
+
+                                    {{ marketplace_form.max_comments }}
+
+                                </div>
+
+                            </div>
+
+                            <div class="settings-domain-modal-actions">
+
+                                <button type="button" class="settings-btn settings-btn--outline js-close-marketplace-modal">Annuler</button>
+
+                                <button type="submit" class="settings-btn settings-btn--primary">Enregistrer</button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </section>
+

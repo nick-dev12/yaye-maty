@@ -1,0 +1,40 @@
+<section class="collecte-zone-progress" data-zone="{{ zone }}" aria-live="polite">
+    <div class="collecte-progress-panel" id="collecte-progress-panel-{{ zone }}" hidden>
+        <div class="collecte-progress-head">
+            <div>
+                <p class="collecte-progress-label" id="collecte-progress-label-{{ zone }}">Collecte en cours</p>
+                <p class="collecte-progress-message" id="collecte-statut-texte-{{ zone }}">Démarrage…</p>
+            </div>
+            <div class="collecte-progress-actions">
+                <span class="collecte-progress-pct" id="collecte-progress-pct-{{ zone }}">0%</span>
+                <button type="button" class="collecte-stop-btn" id="collecte-stop-btn-{{ zone }}" hidden>
+                    Arrêter et analyser
+                </button>
+                <button type="button" class="collecte-reset-btn" id="collecte-reset-btn-{{ zone }}" hidden>
+                    Libérer la session
+                </button>
+            </div>
+        </div>
+        <div class="collecte-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="collecte-progress-track-{{ zone }}">
+            <div class="collecte-progress-bar" id="collecte-barre-progression-{{ zone }}"></div>
+        </div>
+        <p class="collecte-progress-hint" id="collecte-progress-hint-{{ zone }}">
+            {% if zone == 'test' %}
+            Si ça bloque : <strong>Arrêter</strong> (honoré en &lt;1 s hors appel réseau), sinon <strong>Libérer la session</strong>. Worker : <code>.\scripts\run_celery_worker.ps1</code>.
+            {% else %}
+            Collecte production — actualisez la page pour reprendre le suivi si besoin.
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="collecte-result-panel" id="collecte-result-panel-{{ zone }}" hidden>
+        <div class="collecte-result-icon" aria-hidden="true">✓</div>
+        <div>
+            <h3 class="collecte-result-title">Collecte terminée</h3>
+            <p class="collecte-result-text" id="collecte-result-text-{{ zone }}"></p>
+        </div>
+        <button type="button" class="collecte-result-reload collecte-result-reload-{{ zone }}">
+            {% if zone == 'test' %}Voir les données test{% else %}Actualiser Intelligence{% endif %}
+        </button>
+    </div>
+</section>

@@ -1,0 +1,28 @@
+{% comment %}
+Donut chart SVG — couleurs unies (sans conic-gradient).
+Variables : segments, wrapper_class, hole_class, total, label
+{% endcomment %}
+<div class="donut-svg-wrap {{ wrapper_class|default:'' }}">
+    <svg class="donut-svg" viewBox="0 0 42 42" aria-hidden="true">
+        {% for seg in segments %}
+        <circle
+            cx="21"
+            cy="21"
+            r="15.915"
+            fill="transparent"
+            stroke="{{ seg.stroke }}"
+            stroke-width="3.8"
+            stroke-dasharray="{{ seg.dash }} {{ seg.gap }}"
+            stroke-dashoffset="{{ seg.offset }}"
+        />
+        {% endfor %}
+    </svg>
+    <div class="donut-hole {{ hole_class|default:'' }}">
+        {% if total is not None %}
+        <span class="donut-total">{{ total }}</span>
+        {% endif %}
+        {% if label %}
+        <span class="donut-label">{{ label }}</span>
+        {% endif %}
+    </div>
+</div>

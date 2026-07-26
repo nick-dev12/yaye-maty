@@ -1,0 +1,231 @@
+    {# Publications + Trends — toujours visibles (hors panneau repliable) #}
+
+    <div class="intel-dashboard intel-dashboard--visible">
+
+        <section id="publications" class="intel-publications-section">
+            <div class="intel-publications-head">
+                <div>
+                    <h2 class="intel-section-title">Publications réseaux</h2>
+                    <p class="intel-section-sub">{{ publications_overview.summary }}</p>
+                </div>
+                <a href="{% url 'dashboard' %}" class="intel-btn intel-btn--ghost">Tableau de bord</a>
+            </div>
+
+            <div class="intel-pub-kpi-grid">
+                {% for kpi in publications_overview.kpis %}
+                <article class="intel-pub-kpi intel-pub-kpi--{{ kpi.tone }}">
+                    <span class="intel-pub-kpi-value">{{ kpi.value }}</span>
+                    <span class="intel-pub-kpi-label">{{ kpi.label }}</span>
+                    <span class="intel-pub-kpi-hint">{{ kpi.hint }}</span>
+                </article>
+                {% endfor %}
+            </div>
+
+            <div class="intel-intent-strip" aria-label="Répartition intentions commentaires">
+                <div class="intel-intent-item intel-intent-item--purchase">
+                    <span class="intel-intent-value">{{ publications_overview.intents.purchase }}</span>
+                    <span class="intel-intent-label">Intentions d'achat</span>
+                </div>
+                <div class="intel-intent-item intel-intent-item--info">
+                    <span class="intel-intent-value">{{ publications_overview.intents.info }}</span>
+                    <span class="intel-intent-label">Demandes d'info</span>
+                </div>
+                <div class="intel-intent-item intel-intent-item--off">
+                    <span class="intel-intent-value">{{ publications_overview.intents.off_topic }}</span>
+                    <span class="intel-intent-label">Hors sujet</span>
+                </div>
+            </div>
+
+            <article class="intel-widget intel-widget--wide intel-publications-table-wrap">
+                <div class="intel-social-filters">
+                    <div class="intel-social-filter-group">
+                        <span class="intel-social-filter-label">Filtrer par mot-clé (Paramètres)</span>
+                        <p class="intel-social-filter-hint">Nombre de publications collectées pour chaque mot-clé de veille TikTok / Facebook.</p>
+                        <div class="intel-social-filter-chips">
+                            <a href="?section=social#publications" class="intel-filter-chip{% if social_filters.keyword_id is None and not social_filters.keyword_other %} is-active{% endif %}">Tous les mots-clés</a>
+                            {% for kw in social_keyword_filters %}
+                            <a href="?section=social&amp;social_keyword={% if kw.id %}{{ kw.id }}{% else %}other{% endif %}#publications" class="intel-filter-chip{% if kw.id and social_filters.keyword_id == kw.id %} is-active{% elif not kw.id and social_filters.keyword_other %} is-active{% endif %}{% if not kw.is_active %} is-inactive{% endif %}">{{ kw.keyword|default:kw.label }} <span class="intel-filter-count">{{ kw.count }}</span></a>
+                            {% empty %}
+                            <span class="intel-empty-text">Aucun mot-clé configuré — ajoutez-en dans Paramètres.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="intel-social-filter-group intel-social-filter-group--inline">
+                        <span class="intel-social-filter-label">Sentiment</span>
+                        <div class="intel-social-filter-chips">
+                            <a href="?section=social#publications" class="intel-filter-chip{% if not social_filters.sentiment %} is-active{% endif %}">Tous</a>
+                            {% for slug, label in social_sentiment_choices.items %}
+                            <a href="?section=social&amp;social_sentiment={{ slug }}#publications" class="intel-filter-chip{% if social_filters.sentiment == slug %} is-active{% endif %}">{{ label }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="intel-table-legend">
+                    <span><strong>Sujet</strong> : produit ou thème principal extrait du contenu</span>
+                    <span><strong>Mot-clé</strong> : recherche Paramètres ayant trouvé cette publication</span>
+                    <span><strong>Score demande</strong> : 0–5 (vues, likes, favoris, intentions d'achat)</span>
+                </div>
+
+                {% if social_posts %}
+                <div class="intel-table-wrap">
+                    <table class="intel-table intel-table--publications js-load-more-table" data-batch-size="15">
+                        <thead>
+                            <tr>
+                                <th>Sujet &amp; contexte</th>
+                                <th>Mot-clé veille</th>
+                                <th>Réseau</th>
+                                <th>Portée</th>
+                                <th>Engagement</th>
+                                <th>Commentaires</th>
+                                <th>Intention d'achat</th>
+                                <th>Analyse NLP</th>
+                                <th>Demande</th>
+                                <th>Date</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in social_posts %}
+                            <tr class="js-load-more-item">
+                                <td class="intel-pub-cell">
+                                    <strong class="intel-pub-subject" title="{{ post.subject_line }}">{{ post.subject_line }}</strong>
+                                    <span class="intel-pub-caption" title="{{ post.content }}">{{ post.content_short }}</span>
+                                    <span class="intel-pub-context">{{ post.topic_summary }}</span>
+                                    <span class="intel-social-author">{{ post.author_display }}</span>
+                                </td>
+                                <td>
+                                    <span class="intel-keyword-tag" title="{{ post.search_keyword_label }}">{{ post.search_keyword|default:post.search_keyword_label|truncatechars:24 }}</span>
+                                </td>
+                                <td><span class="intel-platform-tag intel-platform-tag--{{ post.platform }}">{{ post.platform_label }}</span></td>
+                                <td class="intel-num">{{ post.view_count_fmt }}</td>
+                                <td class="intel-engagement-cell">
+                                    <span class="intel-engagement-summary">{{ post.engagement_summary }}</span>
+                                </td>
+                                <td>
+                                    <div class="intel-comment-progress">
+                                        <div class="intel-comment-track">
+                                            <span class="intel-comment-fill intel-comment-fill--{{ post.comments_tone }}" style="width: {{ post.comments_pct }}%"></span>
+                                        </div>
+                                        <span class="intel-comment-label">{{ post.comments_label }} collectés</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if post.purchase_intents %}
+                                    <span class="intel-intent-badge intel-intent-badge--{{ post.purchase_tone }}">{{ post.purchase_intents }} · {{ post.purchase_label }}</span>
+                                    {% else %}
+                                    <span class="intel-muted">Aucun signal</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="intel-category-tag">{{ post.category_label }}</span>
+                                    <span class="intel-sentiment-tag intel-sentiment-tag--{{ post.sentiment|default:'pending' }}">{{ post.sentiment_label }}</span>
+                                </td>
+                                <td>
+                                    <span class="intel-demand-badge intel-demand-badge--{{ post.demand_tone }}">{{ post.demand_score }}/5</span>
+                                    <span class="intel-demand-sub">{{ post.demand_label }}</span>
+                                </td>
+                                <td class="intel-muted">{{ post.published_label }}</td>
+                                <td>
+                                    {% if post.has_url %}
+                                    <a href="{{ post.post_url }}" target="_blank" rel="noopener" class="intel-link-ext" aria-label="Ouvrir sur {{ post.platform_label }}">↗</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="intel-load-more-btn js-load-more-btn" hidden>Voir plus</button>
+                {% else %}
+                <div class="intel-empty">
+                    <p>Aucune publication pour ces filtres.</p>
+                    <p class="intel-empty-hint">Lancez une collecte réseaux pour alimenter cette section.</p>
+                </div>
+                {% endif %}
+            </article>
+        </section>
+
+        <section id="decouvertes" class="intel-widget intel-widget--wide intel-discovered intel-discovered--always{% if has_discovered %} intel-discovered--has-data{% endif %}">
+            <div class="intel-discovered-header">
+                <div>
+                    <h3 class="intel-widget-title">Recherches par domaine (Google Trends)</h3>
+                    <p class="intel-card-subtitle">{{ discovered_count }} requête(s) — sélectionnez un domaine</p>
+                </div>
+            </div>
+
+            {% if discovered_by_domain %}
+            <div class="intel-tabs" role="tablist">
+                {% for domain in discovered_by_domain %}
+                <button type="button" class="intel-tab{% if forloop.first %} is-active{% endif %}" role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" data-tab="{{ domain.key }}">
+                    {{ domain.short_label }}
+                    <span class="intel-tab-count">{{ domain.total }}</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="intel-tab-panels">
+                {% for domain in discovered_by_domain %}
+                <div class="intel-tab-panel{% if forloop.first %} is-active{% endif %}" role="tabpanel" data-panel="{{ domain.key }}">
+                    <div class="intel-tab-panel-meta">
+                        <span>Cat. Google {{ domain.cat_id }}</span>
+                        <span>{{ domain.total }} requête(s)</span>
+                    </div>
+                    {% if domain.top %}
+                    <div class="intel-query-grid js-load-more-grid" data-batch-size="10">
+                        {% for q in domain.top %}
+                        <div class="intel-query-chip js-load-more-item">
+                            <span class="intel-query-chip-text" title="{{ q.query }}">{{ q.query|truncatechars:40 }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="intel-load-more-btn js-load-more-btn" hidden>Voir plus</button>
+                    {% endif %}
+                    {% if domain.rising %}
+                    <h4 class="intel-rising-title">En forte hausse</h4>
+                    <div class="intel-query-grid intel-query-grid--rising js-load-more-grid" data-batch-size="10">
+                        {% for q in domain.rising %}
+                        <div class="intel-query-chip intel-query-chip--rising js-load-more-item">
+                            <span class="intel-query-chip-text" title="{{ q.query }}">{{ q.query|truncatechars:40 }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="intel-load-more-btn js-load-more-btn" hidden>Voir plus</button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="intel-empty">
+                <p>Aucune requête découverte.</p>
+                <p class="intel-empty-hint">Allez dans <a href="{% url 'intelligence:domaines' %}">Intelligence → Domaines</a>.</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <details class="intel-expert-panel intel-expert-panel--secondary">
+        <summary class="intel-expert-panel-toggle">Tableau complet — toutes les recherches Trends</summary>
+        <div class="intel-expert-panel-body">
+            {% if table_rows %}
+            <div class="intel-table-wrap">
+                <table class="intel-table js-load-more-table" data-batch-size="10">
+                    <thead><tr><th>Requête</th><th>Domaine</th><th>Type</th><th>Découverte</th></tr></thead>
+                    <tbody>
+                        {% for row in table_rows %}
+                        <tr class="js-load-more-item">
+                            <td><strong title="{{ row.query }}">{{ row.query|truncatechars:40 }}</strong></td>
+                            <td><span class="intel-domain-tag">{{ row.domain_label }}</span></td>
+                            <td>{{ row.query_type }}</td>
+                            <td>{{ row.discovered_at|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="intel-load-more-btn js-load-more-btn" hidden>Voir plus</button>
+            {% else %}
+            <p class="intel-empty-text">Aucune donnée disponible.</p>
+            {% endif %}
+        </div>
+    </details>

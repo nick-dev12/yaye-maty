@@ -1,0 +1,140 @@
+{% with tc=test_context %}
+<section class="collecte-test-panel" aria-labelledby="collecte-test-title">
+    <header class="collecte-test-head">
+        <div>
+            <p class="collecte-test-kicker">Diagnostic immédiat</p>
+            <h2 id="collecte-test-title" class="collecte-test-title">Session de test ({{ tc.session_minutes }} min)</h2>
+            <p class="collecte-test-desc">
+                Limites réduites, délais courts, arrêt possible à tout moment puis analyse hybride automatique.
+                Comparez la configuration production vs test avant de lancer.
+                <strong>Si rien ne démarre : redémarrez le worker Celery</strong> (<code>Ctrl+C</code> puis <code>.\scripts\run_celery_worker.ps1</code>).
+            </p>
+        </div>
+        <div class="collecte-test-head-side">
+            <div class="collecte-test-timer" id="collecte-test-timer" aria-live="polite">
+                <span class="collecte-test-timer-label">Compte à rebours</span>
+                <span class="collecte-test-timer-value" id="collecte-test-timer-value">{{ tc.session_minutes }}:00</span>
+            </div>
+            <span class="collecte-test-badge collecte-test-badge--{% if tc.campaign_ok %}ok{% else %}warn{% endif %}">
+                {{ tc.campaign_message }}
+            </span>
+        </div>
+    </header>
+
+    <div class="collecte-test-plan">
+        <h3 class="collecte-test-subtitle">Plan de test (prochain lancement)</h3>
+        <ul class="collecte-test-plan-list">
+            <li><strong>{{ tc.test_plan.keyword_count }}</strong> mot(s)-clé(s) réseau — {% for kw in tc.test_plan.keywords %}{{ kw.keyword }} ({{ kw.get_platform_display }}){% if not forloop.last %}, {% endif %}{% empty %}aucun{% endfor %}</li>
+            <li><strong>{{ tc.discovery.selected_count }}</strong> domaine(s) Google Trends sélectionné(s)</li>
+        </ul>
+    </div>
+
+    <div class="collecte-test-config-grid">
+        {% for group in tc.config_groups %}
+        <article class="collecte-test-config-card">
+            <h3 class="collecte-test-subtitle">{{ group.title }}</h3>
+            <table class="collecte-test-table">
+                <thead>
+                    <tr>
+                        <th>Paramètre</th>
+                        <th>Production</th>
+                        <th>Test</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in group.rows %}
+                    <tr class="{% if row.changed %}is-changed{% endif %}">
+                        <td>{{ row.label }}</td>
+                        <td>{{ row.production }}</td>
+                        <td>{{ row.test }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </article>
+        {% endfor %}
+
+        <article class="collecte-test-config-card">
+            <h3 class="collecte-test-subtitle">Playwright / scraper</h3>
+            <ul class="collecte-test-kv">
+                <li><span>Headless</span><strong>{% if tc.scraper.headless %}Oui{% else %}Non{% endif %}</strong></li>
+                <li><span>Proxy</span><strong>{{ tc.scraper.proxy }}</strong></li>
+                <li><span>Locale</span><strong>{{ tc.scraper.locale }}</strong></li>
+                <li><span>Fuseau</span><strong>{{ tc.scraper.timezone }}</strong></li>
+            </ul>
+        </article>
+
+        <article class="collecte-test-config-card">
+            <h3 class="collecte-test-subtitle">NLP hybride</h3>
+            <ul class="collecte-test-kv">
+                <li><span>Activé</span><strong>{% if tc.nlp.enabled %}Oui{% else %}Non{% endif %}</strong></li>
+                <li><span>Modèle</span><strong>{{ tc.nlp.model }}</strong></li>
+                <li><span>Seuil</span><strong>{{ tc.nlp.threshold }}</strong></li>
+                <li><span>Limites test</span><strong>{{ tc.nlp.comment_limit_test }} com. / {{ tc.nlp.post_limit_test }} posts</strong></li>
+            </ul>
+        </article>
+
+        <article class="collecte-test-config-card">
+            <h3 class="collecte-test-subtitle">Infrastructure</h3>
+            <ul class="collecte-test-kv">
+                <li><span>Redis</span><strong>{{ tc.infrastructure.broker }}</strong></li>
+                <li><span>Pool Celery</span><strong>{{ tc.infrastructure.worker_pool }}</strong></li>
+                <li><span>Concurrence</span><strong>{{ tc.infrastructure.worker_concurrency }}</strong></li>
+            </ul>
+        </article>
+
+        <article class="collecte-test-config-card collecte-test-config-card--wide">
+            <h3 class="collecte-test-subtitle">Planification Celery Beat</h3>
+            <table class="collecte-test-table collecte-test-table--compact">
+                <thead>
+                    <tr><th>Tâche</th><th>Celery task</th><th>Crontab</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in tc.beat_schedule %}
+                    <tr>
+                        <td>{{ row.name }}</td>
+                        <td><code>{{ row.task }}</code></td>
+                        <td><code>{{ row.schedule }}</code></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </article>
+    </div>
+
+    <div class="collecte-test-launch">
+        <h3 class="collecte-test-subtitle">Lancement test manuel</h3>
+        <div class="collecte-jobs-grid collecte-jobs-grid--test">
+            {% for job in jobs %}
+            {% if job.id != 'keyword' %}
+            <article class="collecte-job collecte-job--{{ job.tone }} collecte-job--test">
+                <div class="collecte-job-body">
+                    <h4 class="collecte-job-title">{{ job.label }}</h4>
+                    <p class="collecte-job-desc">{{ job.desc }}</p>
+                    <p class="collecte-job-meta">Mode test · {{ tc.session_minutes }} min max{% if job.auto_nlp %} · NLP auto{% endif %}</p>
+                </div>
+                <button type="button" class="collecte-job-btn collecte-test-btn" data-job="{{ job.id }}" data-test-mode="1">
+                    Tester
+                </button>
+            </article>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <div class="collecte-keyword-row collecte-keyword-row--test">
+            <label for="collecte-test-keyword-select" class="collecte-keyword-label">Test mot-clé réseau</label>
+            <div class="collecte-keyword-controls">
+                <select id="collecte-test-keyword-select" class="collecte-keyword-select" {% if not social_keywords %}disabled{% endif %}>
+                    {% for kw in social_keywords %}
+                    <option value="{{ kw.pk }}">{{ kw.keyword }} ({{ kw.get_platform_display }})</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="collecte-keyword-btn collecte-test-keyword-btn" id="collecte-test-keyword-btn" data-test-mode="1" {% if not social_keywords %}disabled{% endif %}>
+                    Tester ce mot-clé
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% include "dashboard/intelligence/includes/collection_progress_block.html" with zone="test" %}
+</section>
+{% endwith %}

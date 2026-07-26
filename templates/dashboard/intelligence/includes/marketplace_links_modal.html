@@ -1,0 +1,15 @@
+{% comment %}Modale liens annonces / produits marketplace{% endcomment %}
+<div id="marketplace-links-modal" class="mp-modal" hidden aria-hidden="true" role="dialog" aria-labelledby="mp-modal-title" aria-modal="true">
+    <div class="mp-modal-backdrop js-mp-modal-close" tabindex="-1"></div>
+    <div class="mp-modal-dialog">
+        <header class="mp-modal-head">
+            <h3 id="mp-modal-title" class="mp-modal-title">Annonces</h3>
+            <button type="button" class="mp-modal-close js-mp-modal-close" aria-label="Fermer">&times;</button>
+        </header>
+        <div class="mp-modal-body">
+            <p class="mp-modal-hint">Cliquez sur un lien pour ouvrir l'annonce ou le produit sur la marketplace.</p>
+            <ul class="mp-modal-list" id="mp-modal-list"></ul>
+            <p class="mp-modal-empty" id="mp-modal-empty" hidden>Aucun lien disponible pour cette sélection.</p>
+        </div>
+    </div>
+</div>

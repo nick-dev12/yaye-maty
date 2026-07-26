@@ -1,0 +1,171 @@
+{% comment %}Section Jumia — Données test / Intelligence{% endcomment %}
+<section id="jumia-marche" class="intel-widget intel-widget--wide jumia-test-section" aria-labelledby="jumia-test-title">
+    <div class="jumia-test-head">
+        <div>
+            <p class="collecte-test-kicker">Marketplace Sénégal</p>
+            <h2 id="jumia-test-title" class="intel-card-title">Jumia — prix, stock, notes &amp; avis</h2>
+            <p class="intel-card-subtitle">
+                Collecte via vos mots-clés Paramètres ·
+                {{ jumia_stats.products_total|default:0 }} produit(s) ·
+                {{ jumia_stats.reviews_total|default:0 }} avis
+                {% if jumia_stats.avg_rating %} · note moy. {{ jumia_stats.avg_rating }}/5{% endif %}
+                {% if jumia_stats.out_of_stock %} · <strong>{{ jumia_stats.out_of_stock }} rupture(s)</strong>{% endif %}
+                {% if jumia_stats.with_discount %} · {{ jumia_stats.with_discount }} promo(s){% endif %}
+            </p>
+        </div>
+        <a href="#top10-hub" class="intel-btn intel-btn--outline js-intel-scroll" data-ir10-tab="jumia">Voir le Top 10 Jumia</a>
+    </div>
+
+    {% if market_report.rankings.top_jumia_popular %}
+    <div class="ir10-mini-top" aria-label="Top 3 Jumia">
+        {% for item in market_report.rankings.top_jumia_popular|slice:":3" %}
+        <article class="ir10-mini-card">
+            <span class="ir10-mini-rank">#{{ item.rank }}</span>
+            <strong>{{ item.title|truncatechars:42 }}</strong>
+            <span class="ir10-mini-metric">{{ item.primary_value }} {{ item.primary_label }}</span>
+        </article>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if jumia_stats.by_keyword %}
+    <div class="jumia-keyword-chips" role="list">
+        {% for kw, count in jumia_stats.by_keyword.items %}
+        <span class="jumia-chip" role="listitem">{{ kw }} <strong>{{ count }}</strong></span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if jumia_opportunities %}
+    <div class="jumia-radar" aria-label="Radar opportunités">
+        <h3 class="jumia-panel-title">Radar opportunités</h3>
+        <div class="jumia-radar-grid">
+            {% for opp in jumia_opportunities %}
+            <article class="jumia-opp jumia-opp--{{ opp.tone }}">
+                <header class="jumia-opp-head">
+                    <strong>{{ opp.product_label }}</strong>
+                    {% if opp.stock_alert == 'critical' %}
+                    <span class="jumia-badge jumia-badge--critical">Rupture</span>
+                    {% elif opp.stock_alert == 'watch' %}
+                    <span class="jumia-badge jumia-badge--watch">Stock fragile</span>
+                    {% else %}
+                    <span class="jumia-badge jumia-badge--info">Signal</span>
+                    {% endif %}
+                </header>
+                <p class="jumia-opp-meta">
+                    {% if opp.avg_price_xof %}{{ opp.avg_price_xof|floatformat:0 }} FCFA moy.{% endif %}
+                    {% if opp.avg_rating %} · {{ opp.avg_rating }}★ ({{ opp.total_ratings }}){% endif %}
+                </p>
+                {% if opp.top_failure_tags %}
+                <p class="jumia-opp-fails">Failles : {{ opp.top_failure_tags|join:", " }}</p>
+                {% endif %}
+                <p class="jumia-opp-evidence">{{ opp.evidence_text }}</p>
+                {% if opp.products %}
+                <button type="button"
+                        class="intel-btn intel-btn--outline intel-btn--sm js-marketplace-modal-btn"
+                        data-modal-title="Produits Jumia — {{ opp.product_label|escape }}"
+                        data-items='{{ opp.products_json|escape }}'
+                        data-source="jumia">
+                    Voir les produits ({{ opp.products|length }})
+                </button>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if has_jumia %}
+    <details class="intel-section-details"{% if page_mode == 'test' %} open{% endif %}>
+        <summary class="intel-section-details-toggle">Tableaux détaillés Jumia (produits &amp; avis)</summary>
+    <div class="jumia-grid">
+        <article class="jumia-panel">
+            <h3 class="jumia-panel-title">Produits scrapés</h3>
+            <div class="jumia-table-wrap">
+                <table class="intel-table jumia-table">
+                    <thead>
+                        <tr>
+                            <th>Produit / marque</th>
+                            <th>Prix</th>
+                            <th>Stock</th>
+                            <th>Note</th>
+                            <th>Avis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in jumia_products %}
+                        <tr>
+                            <td>
+                                <a href="{{ p.url }}" target="_blank" rel="noopener" class="jumia-product-link">{{ p.name|truncatechars:60 }}</a>
+                                <span class="jumia-meta">
+                                    {% if p.brand %}<strong>{{ p.brand }}</strong> · {% endif %}
+                                    {{ p.search_keyword|default:"—" }}
+                                    {% if p.seller %} · {{ p.seller }}{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {% if p.price_xof %}<strong>{{ p.price_xof|floatformat:0 }} FCFA</strong>{% else %}—{% endif %}
+                                {% if p.old_price_xof %}<span class="jumia-old">{{ p.old_price_xof|floatformat:0 }}</span>{% endif %}
+                                {% if p.discount_percent %}<span class="jumia-discount">−{{ p.discount_percent }}%</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if p.stock_status == 'out_of_stock' %}
+                                <span class="jumia-badge jumia-badge--critical">Rupture</span>
+                                {% elif p.stock_status == 'low_stock' %}
+                                <span class="jumia-badge jumia-badge--watch">Faible{% if p.stock_quantity %} ({{ p.stock_quantity }}){% endif %}</span>
+                                {% elif p.stock_status == 'in_stock' %}
+                                <span class="jumia-badge jumia-badge--ok">En stock</span>
+                                {% else %}
+                                <span class="jumia-meta">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if p.rating_value %}
+                                <span class="jumia-stars">{{ p.rating_value }}★</span>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td>{{ p.rating_count }}{% if p.comments_count %} <span class="jumia-meta">({{ p.comments_count }} txt)</span>{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">Aucun produit Jumia.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="jumia-panel">
+            <h3 class="jumia-panel-title">Avis clients (NLP)</h3>
+            <div class="jumia-reviews-list">
+                {% for r in jumia_reviews %}
+                <div class="jumia-review{% if r.sentiment == 'negative' %} jumia-review--neg{% elif r.sentiment == 'positive' %} jumia-review--pos{% endif %}">
+                    <div class="jumia-review-top">
+                        <span class="jumia-stars">{% if r.rating_stars %}{{ r.rating_stars }}★{% else %}—{% endif %}</span>
+                        <strong class="jumia-review-title">{{ r.title|default:"Sans titre" }}</strong>
+                        {% if r.verified_purchase %}<span class="jumia-verified">Vérifié</span>{% endif %}
+                        {% if r.sentiment %}<span class="jumia-badge jumia-badge--info">{{ r.sentiment }}</span>{% endif %}
+                    </div>
+                    <p class="jumia-review-text">{{ r.comment_text|default:"(note seule, sans texte)" }}</p>
+                    {% if r.failure_tags %}
+                    <p class="jumia-opp-fails">Failles : {{ r.failure_tags|join:", " }}</p>
+                    {% endif %}
+                    <p class="jumia-review-meta">
+                        {{ r.author|default:"Anonyme" }}
+                        {% if r.review_date %} · {{ r.review_date|date:"d/m/Y" }}{% endif %}
+                        · {{ r.product_name|truncatechars:40 }}
+                        {% if r.is_analyzed %} · analysé{% endif %}
+                    </p>
+                </div>
+                {% empty %}
+                <p class="jumia-empty">Aucun avis scrapé pour l’instant.</p>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+    </details>
+    {% else %}
+    <div class="jumia-empty-state">
+        <p>Lancez le job <strong>Jumia marché</strong> pour remplir cette section (prix, stock, notes, avis).</p>
+    </div>
+    {% endif %}
+</section>

@@ -1,0 +1,95 @@
+{% extends "accounts/base_auth.html" %}
+
+{% block title %}Inscription — YAYEMATY MARKET{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <aside class="auth-brand-panel">
+        <div class="auth-brand-content">
+            <div class="auth-logo">
+                {% include "includes/brand_logo.html" with logo_class="brand-logo--auth" %}
+            </div>
+
+            <div class="auth-brand-text">
+                <h2>Rejoignez YAYEMATY<br>Market Intelligence.</h2>
+                <p>Créez votre espace administrateur pour piloter l'intelligence de marché agricole au Sénégal.</p>
+            </div>
+
+            <ul class="auth-features">
+                <li>
+                    <span class="feature-icon feature-icon--orange" aria-hidden="true">&#9670;</span>
+                    Accès au tableau de bord
+                </li>
+                <li>
+                    <span class="feature-icon feature-icon--bleu" aria-hidden="true">&#9670;</span>
+                    Analyse Google Trends & réseaux
+                </li>
+                <li>
+                    <span class="feature-icon feature-icon--jaune" aria-hidden="true">&#9670;</span>
+                    Gestion des domaines marché
+                </li>
+            </ul>
+        </div>
+        <div class="auth-brand-footer">
+            <p>&copy; {% now "Y" %} YAYEMATY MARKET — Sénégal</p>
+        </div>
+    </aside>
+
+    <main class="auth-form-panel">
+        <div class="auth-form-wrapper">
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="auth-card">
+                <div class="auth-card-header">
+                    <h2>Créer un compte</h2>
+                    <p class="auth-subtitle">Inscrivez-vous pour accéder à la plateforme</p>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-error">
+                    {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post" class="auth-form">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <span class="field-error">{{ field.errors.0 }}</span>
+                        {% endif %}
+                        {% if field.help_text %}
+                        <span class="field-help">{{ field.help_text }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">S'inscrire</button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>ou</span>
+                </div>
+
+                <div class="auth-footer">
+                    <p>Déjà un compte ?</p>
+                    <a href="{% url 'login' %}" class="btn btn-secondary">Se connecter</a>
+                </div>
+            </div>
+
+            <p class="auth-mobile-brand">
+                {% include "includes/brand_logo.html" with logo_class="brand-logo--auth-mobile" %}
+            </p>
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{
+  "prod": {
+    "products": 0,
+    "reviews": 0
+  },
+  "test": {
+    "products": 8,
+    "reviews": 40,
+    "snapshots": 8,
+    "with_brand": 5,
+    "with_discount": 0,
+    "stock": [
+      {
+        "stock_status": "in_stock",
+        "c": 8
+      }
+    ],
+    "analyzed_reviews": 40,
+    "neg_reviews": 7,
+    "signals": 2
+  },
+  "nlp": {
+    "updated": 40,
+    "missing": 0,
+    "products_touched": 6,
+    "analyzed": 40
+  },
+  "signals_refresh": {
+    "created": 2,
+    "computed_at": "2026-07-25T19:18:33.299844+00:00"
+  },
+  "signal_rows": [
+    {
+      "slug": "telephone",
+      "avg_price": "8364.00",
+      "alert": "",
+      "boost": 12.0,
+      "fails": [
+        "notice_manquante",
+        "qualite_neg",
+        "batterie"
+      ],
+      "evidence": "Prix moy. 8 364 FCFA · Failles: notice_manquante, qualite_neg, batterie · Note 4.2★ (640 avis)"
+    },
+    {
+      "slug": "iphone",
+      "avg_price": "21779.75",
+      "alert": "",
+      "boost": 6.0,
+      "fails": [
+        "qualite_neg",
+        "fragile",
+        "pieces"
+      ],
+      "evidence": "Prix moy. 21 779 FCFA · Failles: qualite_neg, fragile, pieces · Note 2.9★ (150 avis)"
+    }
+  ],
+  "sample_products": [
+    {
+      "name": "Téléphone T101 - 1,77\" - 4Mo /4Mo RAM - 1000 mAh -",
+      "brand": "Tecno",
+      "price": "9990.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": 5.0
+    },
+    {
+      "name": "Téléphone Fixe-pour Le Bureau à la Maison Restaura",
+      "brand": "",
+      "price": "7366.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": 4.2
+    },
+    {
+      "name": "3520 Trépied Appareil Photo Reflex Photographie Ca",
+      "brand": "",
+      "price": "12600.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": 4.0
+    },
+    {
+      "name": "1280 Téléphone KGT tél double sim original",
+      "brand": "Kgtel",
+      "price": "3500.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": 3.6
+    },
+    {
+      "name": "Iphone 6 - 4.7\" 1 Go RAM + 64 Go ROM 99,9% NOUVEAU",
+      "brand": "Renewed",
+      "price": "33900.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": 2.2
+    },
+    {
+      "name": "F12 Écouteur Bluetooth sans fil pour iPhone Samsun",
+      "brand": "RichRipple",
+      "price": "1449.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": 3.5
+    },
+    {
+      "name": "Chargeur Ultra-Rapide 4 En 1, Chargeur Universel,C",
+      "brand": "",
+      "price": "2870.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": 3.1
+    },
+    {
+      "name": "iPhone 6s Plus doré 5.5\" 2+64G 12MP 2750mAh Avec B",
+      "brand": "Renewed",
+      "price": "48900.00",
+      "old": "None",
+      "disc": null,
+      "stock": "in_stock",
+      "rating": null
+    }
+  ]
+}

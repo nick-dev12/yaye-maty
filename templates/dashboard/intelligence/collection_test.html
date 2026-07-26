@@ -1,0 +1,64 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Session de test — YAYEMATY MARKET{% endblock %}
+{% block body_class %}intel-layout collecte-layout collecte-test-layout{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/collection-control.css' %}?v=12">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="main-content intelligence-page collecte-page collecte-test-page"
+     id="collecte-app"
+     data-url-lancer="{% url 'intelligence:collecte_api_lancer' %}"
+     data-url-statut="{% url 'intelligence:collecte_api_statut' task_id='00000000-0000-0000-0000-000000000000' %}"
+     data-url-arreter="{% url 'intelligence:collecte_api_arreter' %}"
+     data-url-reset="{% url 'intelligence:collecte_api_reset_session' %}"
+     data-url-intelligence="{% url 'intelligence:collecte_test_donnees' %}"
+     data-job-keyword="keyword"
+     data-session-minutes="{{ test_context.session_minutes|default:20 }}"
+     data-active-test="{% if active_tasks.test %}{{ active_tasks.test.task_id }}{% endif %}"
+     data-active-prod="">
+
+    {% csrf_token %}
+
+    <header class="intel-topbar collecte-topbar">
+        <div class="collecte-topbar-copy">
+            <p class="collecte-hero-label">Diagnostic immédiat</p>
+            <h1 class="intel-topbar-title">Session de test</h1>
+            <p class="collecte-hero-desc">
+                Limites réduites, délais courts, arrêt possible à tout moment puis analyse hybride automatique.
+                Consultez les résultats sur la page Données test après chaque session.
+            </p>
+        </div>
+        <div class="intel-topbar-actions">
+            <a href="{% url 'intelligence:collecte_test_donnees' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 15V5m4 10V9m4 6V7m4 8V4"/></svg>
+                Données test
+            </a>
+            <a href="{% url 'intelligence:collecte' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5l-5 5 5 5"/></svg>
+                Collecte prod.
+            </a>
+            <div class="intel-user-chip">
+                <span class="intel-user-avatar">{{ user.username|slice:":1"|upper }}</span>
+                <span class="intel-user-meta">
+                    <span class="intel-user-name">{{ user.username }}</span>
+                    <span class="intel-user-role">Analyste marché</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    {% include "dashboard/intelligence/includes/celery_ui_panel.html" %}
+
+    {% include "dashboard/intelligence/includes/collection_test_section.html" %}
+</div>
+{% endblock %}
+
+{% block activity_panel %}{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/collection-control.js' %}?v=12"></script>
+{% endblock %}

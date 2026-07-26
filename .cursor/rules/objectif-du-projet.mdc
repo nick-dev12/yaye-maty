@@ -1,0 +1,50 @@
+---
+alwaysApply: true
+---
+
+objectif de l'aplication
+
+# Contexte du Projet : YAYEMATY MARKET (Intelligence de marché)
+
+## Rôle de l'IA
+Tu es un développeur expert en Python, Django (Architecture MTV), web scraping, et Data Science. Ton code doit être propre, modulaire, sécurisé et optimisé pour la performance.
+
+## Objectif du projet
+Créer une plateforme e-commerce **généraliste** et un tableau de bord d'intelligence de marché au Sénégal. YAYEMATY veut vendre **toutes catégories de produits** ; le périmètre de veille est défini par les **mots-clés Paramètres**, pas par un secteur fixe. Le système collecte des données publiques (tendances de recherche, réseaux sociaux, marketplaces) pour estimer la demande avant l'achat de stocks.
+
+> Règle détaillée : voir `.cursor/rules/mots-cles-source-verite.mdc`
+
+## Stack Technique Obligatoire
+- Backend : Python 3.x, Django
+- Base de données : PostgreSQL
+- Extraction de données : `pytrends` (Google Trends), `Playwright` via Python (réseaux sociaux)
+- Frontend : Templates Django (HTML/CSS/JS) ou intégration légère de composants modernes si nécessaire.
+
+## Architecture & Contraintes d'Infrastructure
+Respecter strictement cette séparation des tâches :
+1. Serveur VPS (Logistique) : Héberge l'application Django, PostgreSQL, et exécute les tâches de scraping (Playwright/Pytrends) via des processus en arrière-plan (ex: Celery ou Cron).
+2. Machine Locale (Cerveau) : L'exécution des modèles d'Intelligence Artificielle (NLP) pour l'analyse des textes et la catégorisation se fait STRICTEMENT en local sur l'ordinateur personnel (optimisé pour un processeur AMD Ryzen 7). Ne JAMAIS proposer d'exécuter des modèles IA lourds sur le VPS. Prévoir des API REST sur Django pour que la machine locale puisse récupérer les données brutes et renvoyer les données analysées.
+
+## Charte Graphique & UI/UX (Tableau de bord Admin)
+Le design du tableau de bord doit être minimaliste, orienté "Data-Driven" (style analytique).
+Code couleurs strict à utiliser dans le CSS (variables `:root` dans `static/css/style.css`) :
+- Orange (Action/Mise en avant) : #F25C19 → `var(--color-orange)`
+- Bleu (Info/Liens/Données) : #2E7DB5 → `var(--color-bleu)`
+- Jaune (Alertes/Highlights/Tendances) : #F0B429 → `var(--color-jaune)`
+- Gris (Bordures/Éléments secondaires) : #8C8C8C → `var(--color-gris)`
+- Noir (Texte principal/Contraste fort) : #1A1A1A ou #000000 → `var(--color-noir)`
+- Blanc (Fonds/Cartes) : #FFFFFF → `var(--color-blanc)`
+
+Variantes disponibles : `--color-orange-soft`, `--color-bleu-soft`, `--color-jaune-soft`, et les variables `-rgb` pour les fonds translucides.
+
+## Règles de Code (Django)
+- Respecter l'architecture MTV de Django.
+- Garder les "Views" fines (Fat Models, Skinny Views) : placer la logique métier complexe dans les modèles ou des services dédiés (ex: `services.py`).
+- Documenter les fonctions complexes avec des Docstrings.
+- Gérer les erreurs proprement, particulièrement pour les scripts de scraping qui peuvent échouer en cas de changement de structure des sites cibles.
+- il faut toujours que tu configure correctement le responsive design comme un professionnel en web design afin de toujours ajuster et reduire la taille des elements en fonction des different type d'ecrant sur tablette et mobile et de bien les optimiser 
+
+## regle pour le design
+- il faut que tu cree toujours des design tres beau elegant et atractif 
+- la structure et dispositionnements des element doit toujour etre hergonomique 
+- il faute que tu compte toujours comme un expert en UI et UX dans le design 

@@ -1,0 +1,458 @@
+{
+  "elapsed_seconds": 83.9,
+  "time_limit_hit": false,
+  "job_result": {
+    "success": true,
+    "message": "Jumia : 12 produit(s) créé(s), 0 mis à jour, 46 avis, 12 snapshot(s)",
+    "nouvelles_donnees": 58,
+    "products_created": 12,
+    "products_updated": 0,
+    "reviews_created": 46,
+    "keywords": [
+      {
+        "keyword": "iphone",
+        "listings": 4,
+        "products_created": 4,
+        "products_updated": 0,
+        "reviews_created": 19,
+        "snapshots_created": 4
+      },
+      {
+        "keyword": "telephone",
+        "listings": 4,
+        "products_created": 4,
+        "products_updated": 0,
+        "reviews_created": 21,
+        "snapshots_created": 4
+      },
+      {
+        "keyword": "telephone et accessoir",
+        "listings": 4,
+        "products_created": 4,
+        "products_updated": 0,
+        "reviews_created": 6,
+        "snapshots_created": 4
+      }
+    ],
+    "errors": [],
+    "requests": 36
+  },
+  "isolation": {
+    "prod_before": {
+      "products": 0,
+      "reviews": 0
+    },
+    "prod_after": {
+      "products": 0,
+      "reviews": 0
+    },
+    "prod_unchanged": true,
+    "test_products_count": 12,
+    "test_reviews_count": 46
+  },
+  "by_keyword": {
+    "telephone et accessoir": {
+      "products": 4,
+      "reviews": 6
+    },
+    "telephone": {
+      "products": 4,
+      "reviews": 21
+    },
+    "iphone": {
+      "products": 4,
+      "reviews": 19
+    }
+  },
+  "products_sample": [
+    {
+      "sku": "DO971SE0OY549NAFAMZ",
+      "name": "SAC À CHAUSSURES FITNESS PLIABLE NOIR",
+      "keyword": "telephone et accessoir",
+      "price": "2000.00",
+      "rating": null,
+      "rating_count": 0,
+      "comments_count": 0,
+      "seller": "DECATHLON SN",
+      "category": "Sacs à équipement"
+    },
+    {
+      "sku": "KI391SE0YY82XNAFAMZ",
+      "name": "Lot De 40 Cônes Coupelles",
+      "keyword": "telephone et accessoir",
+      "price": "9500.00",
+      "rating": null,
+      "rating_count": 0,
+      "comments_count": 0,
+      "seller": "DECATHLON SN",
+      "category": "Accessoires"
+    },
+    {
+      "sku": "KI391SE0SLHQ9NAFAMZ",
+      "name": "Jeu De Cartons Arbitre Jaune Rouge",
+      "keyword": "telephone et accessoir",
+      "price": "2500.00",
+      "rating": 4.0,
+      "rating_count": 2,
+      "comments_count": 2,
+      "seller": "DECATHLON SN",
+      "category": "Accessoires"
+    },
+    {
+      "sku": "GE944SE0YBKTQNAFAMZ",
+      "name": "10x Football disque cône soucoupe Football Cross entraînement sport espace marqu",
+      "keyword": "telephone et accessoir",
+      "price": "2964.00",
+      "rating": 4.1,
+      "rating_count": 23,
+      "comments_count": 4,
+      "seller": "MODE PLUS",
+      "category": "Accessoires"
+    },
+    {
+      "sku": "TE292MP0XQ2KPNAFAMZ",
+      "name": "Téléphone T101 - 1,77\" - 4Mo /4Mo RAM - 1000 mAh - Double Sim",
+      "keyword": "telephone",
+      "price": "9990.00",
+      "rating": 5.0,
+      "rating_count": 1,
+      "comments_count": 0,
+      "seller": "GAMMA+ ELECTRONIC",
+      "category": "Téléphones cellulaires"
+    },
+    {
+      "sku": "GE944EA0WV62FNAFAMZ",
+      "name": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone",
+      "price": "7366.00",
+      "rating": 4.2,
+      "rating_count": 116,
+      "comments_count": 32,
+      "seller": "Bluecoastcqc-COD",
+      "category": "Téléphones à cordon"
+    },
+    {
+      "sku": "GE944EA0WK5MHNAFAMZ",
+      "name": "3520 Trépied Appareil Photo Reflex Photographie Caméra En Direct Support De Télé",
+      "keyword": "telephone",
+      "price": "12600.00",
+      "rating": 4.0,
+      "rating_count": 10,
+      "comments_count": 1,
+      "seller": "Telehoor-Sea-COD",
+      "category": "Trépieds"
+    },
+    {
+      "sku": "KG364MP1HODOHNAFAMZ",
+      "name": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone",
+      "price": "3500.00",
+      "rating": 3.6,
+      "rating_count": 513,
+      "comments_count": 90,
+      "seller": "KGTEL ET CORN MOBILE",
+      "category": "Téléphones cellulaires"
+    },
+    {
+      "sku": "RE008MP0UUSTTNAFAMZ",
+      "name": "Iphone 6 - 4.7\" 1 Go RAM + 64 Go ROM 99,9% NOUVEAU- 8Mpx Caméra Touch ID Smartph",
+      "keyword": "iphone",
+      "price": "33900.00",
+      "rating": 2.2,
+      "rating_count": 6,
+      "comments_count": 1,
+      "seller": "Alisa-COD",
+      "category": "Téléphones d’iOS"
+    },
+    {
+      "sku": "RI996EA17TTY1NAFAMZ",
+      "name": "F12 Écouteur Bluetooth sans fil pour iPhone Samsung Pods",
+      "keyword": "iphone",
+      "price": "1449.00",
+      "rating": 3.5,
+      "rating_count": 121,
+      "comments_count": 24,
+      "seller": "Minimalism-COD",
+      "category": "Écouteurs Bluetooth"
+    },
+    {
+      "sku": "GE944EA0G9YB1NAFAMZ",
+      "name": "Chargeur Ultra-Rapide 4 En 1, Chargeur Universel,Câble De Données  Compatible Av",
+      "keyword": "iphone",
+      "price": "2870.00",
+      "rating": 3.1,
+      "rating_count": 23,
+      "comments_count": 8,
+      "seller": "Xxx Mall-Sea-COD",
+      "category": "Chargeurs de mur"
+    },
+    {
+      "sku": "RE008MP16QD19NAFAMZ",
+      "name": "iPhone 6s Plus doré 5.5\" 2+64G 12MP 2750mAh Avec Batterie Externe EasyPie 10000m",
+      "keyword": "iphone",
+      "price": "48900.00",
+      "rating": null,
+      "rating_count": 0,
+      "comments_count": 0,
+      "seller": "BuyGoodPhones-COD",
+      "category": "Téléphones d’iOS"
+    }
+  ],
+  "reviews_sample": [
+    {
+      "stars": 5,
+      "title": "avis",
+      "text": "Bon article.",
+      "author": "Doura",
+      "date": "2022-09-07",
+      "verified": true,
+      "product": "Jeu De Cartons Arbitre Jaune Rouge",
+      "keyword": "telephone et accessoir"
+    },
+    {
+      "stars": 3,
+      "title": "Cartons jaune / rouge",
+      "text": "Pas mal",
+      "author": "Moussa",
+      "date": "2026-02-19",
+      "verified": true,
+      "product": "Jeu De Cartons Arbitre Jaune Rouge",
+      "keyword": "telephone et accessoir"
+    },
+    {
+      "stars": 5,
+      "title": "Bien très bien",
+      "text": "Vraiment je suis ravis et content de la qualité",
+      "author": "Souleymane",
+      "date": "2021-08-15",
+      "verified": true,
+      "product": "10x Football disque cône soucoupe Football Cross entraînemen",
+      "keyword": "telephone et accessoir"
+    },
+    {
+      "stars": 5,
+      "title": "bon produit",
+      "text": "Bon produit",
+      "author": "Aloys",
+      "date": "2022-07-27",
+      "verified": true,
+      "product": "10x Football disque cône soucoupe Football Cross entraînemen",
+      "keyword": "telephone et accessoir"
+    },
+    {
+      "stars": 5,
+      "title": "tres bon",
+      "text": "J'adore",
+      "author": "Mbissine",
+      "date": "2023-09-06",
+      "verified": true,
+      "product": "10x Football disque cône soucoupe Football Cross entraînemen",
+      "keyword": "telephone et accessoir"
+    },
+    {
+      "stars": 4,
+      "title": "Superbe produit",
+      "text": "En variant les couleurs",
+      "author": "Alioune Djindo",
+      "date": "2023-11-27",
+      "verified": true,
+      "product": "10x Football disque cône soucoupe Football Cross entraînemen",
+      "keyword": "telephone et accessoir"
+    },
+    {
+      "stars": 5,
+      "title": "J'aime ca",
+      "text": "Dommage que la notice n'est pas en français",
+      "author": "Edouard Henry",
+      "date": "2025-07-01",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 5,
+      "title": "Oui",
+      "text": "Bonsoir",
+      "author": "Cheikh tidiane Diatta Diatta",
+      "date": "2025-07-07",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 5,
+      "title": "coll",
+      "text": "Bien????????",
+      "author": "Cheikh",
+      "date": "2025-07-14",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 4,
+      "title": "j'aime ça",
+      "text": "en tout cas le téléphone marche correctement je suis grès satisfait",
+      "author": "MBISSANE",
+      "date": "2025-10-30",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 4,
+      "title": "téléphone fixe",
+      "text": "Pour une meilleure utilisation, expliquer la notice d'emploi en français et en arabe.",
+      "author": "SECOU",
+      "date": "2025-12-08",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 5,
+      "title": "aime",
+      "text": "Machalla",
+      "author": "Amady",
+      "date": "2026-01-20",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 5,
+      "title": "la qualite et le prix",
+      "text": "Le prix est très abordable",
+      "author": "Abdoulaye",
+      "date": "2026-02-11",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 3,
+      "title": "Volume anormal",
+      "text": "",
+      "author": "Fabien",
+      "date": "2026-02-25",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 5,
+      "title": "Jaime !",
+      "text": "Produit sans soucis ni tracas",
+      "author": "BAMBA",
+      "date": "2026-02-27",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 5,
+      "title": "Qualité",
+      "text": "Top",
+      "author": "Dior THIAM",
+      "date": "2026-05-13",
+      "verified": true,
+      "product": "Téléphone Fixe-pour Le Bureau à la Maison Restaurant d'hôtel",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 3,
+      "title": "pas mal",
+      "text": "Pas mal",
+      "author": "cherif khoutoub",
+      "date": "2025-01-16",
+      "verified": true,
+      "product": "3520 Trépied Appareil Photo Reflex Photographie Caméra En Di",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 2,
+      "title": "top",
+      "text": "Très bon produits",
+      "author": "Abdouramane",
+      "date": "2026-05-11",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 5,
+      "title": "MASHA ALLAH",
+      "text": "LA RADIO FONCTIONNE TRÈS BIEN AL HAMDOULILAH MASHA ALLAH ????????????????????????????????",
+      "author": "AMADOU LAMINE",
+      "date": "2026-05-20",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 2,
+      "title": "observations",
+      "text": "Batterie ne dure pas longtemps",
+      "author": "Mamadou",
+      "date": "2026-06-10",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 4,
+      "title": "satisfaction",
+      "text": "C'est top",
+      "author": "Anna",
+      "date": "2026-06-16",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 4,
+      "title": "kgtel",
+      "text": "Très utile je l'utilise comme secours, peut rester des jours sans se décharger RAS",
+      "author": "Bineta",
+      "date": "2026-06-18",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 1,
+      "title": "Mécontentement",
+      "text": "Mauvaise \nNe marche pas",
+      "author": "Coura Traoré",
+      "date": "2026-06-25",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 3,
+      "title": "c'estcool",
+      "text": "C'est cool",
+      "author": "Aliou",
+      "date": "2026-06-30",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    },
+    {
+      "stars": 4,
+      "title": "Nickel",
+      "text": "Rien à signaler",
+      "author": "Khady",
+      "date": "2026-07-16",
+      "verified": true,
+      "product": "1280 Téléphone KGT tél double sim original",
+      "keyword": "telephone"
+    }
+  ],
+  "ratings_coverage": {
+    "products_with_rating": 9,
+    "reviews_with_stars": 46,
+    "verified_reviews": 46
+  }
+}

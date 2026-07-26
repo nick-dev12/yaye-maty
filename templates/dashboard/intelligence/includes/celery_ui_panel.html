@@ -1,0 +1,67 @@
+{% if celery_ui_enabled %}
+<section class="collecte-celery-panel" id="collecte-celery-panel" aria-labelledby="collecte-celery-title"
+         data-url-status="{% url 'intelligence:collecte_api_celery_status' %}"
+         data-url-start="{% url 'intelligence:collecte_api_celery_start' %}"
+         data-url-stop="{% url 'intelligence:collecte_api_celery_stop' %}">
+    <header class="collecte-celery-head">
+        <div>
+            <h2 id="collecte-celery-title" class="collecte-celery-title">Services Celery (local)</h2>
+            <p class="collecte-celery-sub">
+                Démarrez le worker et le planificateur sans ouvrir le terminal.
+                Une fenêtre s’ouvre pour afficher les logs — laissez-la ouverte pendant vos collectes.
+            </p>
+        </div>
+        <button type="button" class="collecte-celery-refresh" id="collecte-celery-refresh" aria-label="Actualiser l'état Celery">
+            Actualiser
+        </button>
+    </header>
+
+    <div class="collecte-celery-grid">
+        <article class="collecte-celery-card" data-component="worker">
+            <div class="collecte-celery-card-head">
+                <h3>Worker Celery</h3>
+                <span class="collecte-celery-pill collecte-celery-pill--{% if celery_ui_status.worker_online %}online{% else %}offline{% endif %}" id="celery-worker-pill">
+                    {% if celery_ui_status.worker_online %}Actif{% else %}Inactif{% endif %}
+                </span>
+            </div>
+            <p class="collecte-celery-meta" id="celery-worker-meta">{{ celery_ui_status.worker_message }}</p>
+            <p class="collecte-celery-hint">Pool <strong>{{ celery_ui_status.pool }}</strong> · concurrence {{ celery_ui_status.concurrency }}</p>
+            <div class="collecte-celery-actions">
+                <button type="button" class="collecte-celery-btn collecte-celery-btn--start" data-action="start" data-component="worker">
+                    Démarrer worker
+                </button>
+                <button type="button" class="collecte-celery-btn collecte-celery-btn--stop" data-action="stop" data-component="worker">
+                    Arrêter
+                </button>
+            </div>
+        </article>
+
+        <article class="collecte-celery-card" data-component="beat">
+            <div class="collecte-celery-card-head">
+                <h3>Celery Beat</h3>
+                <span class="collecte-celery-pill collecte-celery-pill--{% if celery_ui_status.beat_online %}online{% else %}offline{% endif %}" id="celery-beat-pill">
+                    {% if celery_ui_status.beat_online %}Actif{% else %}Inactif{% endif %}
+                </span>
+            </div>
+            <p class="collecte-celery-meta" id="celery-beat-meta">
+                {% if celery_ui_status.beat_online %}
+                Planificateur actif (PID {{ celery_ui_status.beat_pid }})
+                {% else %}
+                Planifie Google Trends, réseaux, Jumia et Jiji aux horaires configurés.
+                {% endif %}
+            </p>
+            <p class="collecte-celery-hint">Un seul Beat à la fois — optionnel en dev si vous lancez les collectes manuellement.</p>
+            <div class="collecte-celery-actions">
+                <button type="button" class="collecte-celery-btn collecte-celery-btn--start" data-action="start" data-component="beat">
+                    Démarrer Beat
+                </button>
+                <button type="button" class="collecte-celery-btn collecte-celery-btn--stop" data-action="stop" data-component="beat">
+                    Arrêter
+                </button>
+            </div>
+        </article>
+    </div>
+
+    <p class="collecte-celery-note" id="collecte-celery-feedback" role="status" aria-live="polite"></p>
+</section>
+{% endif %}

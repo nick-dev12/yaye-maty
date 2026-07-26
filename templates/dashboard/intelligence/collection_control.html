@@ -1,0 +1,126 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Collecte manuelle — YAYEMATY MARKET{% endblock %}
+{% block body_class %}intel-layout collecte-layout{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/collection-control.css' %}?v=12">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="main-content intelligence-page collecte-page"
+     id="collecte-app"
+     data-url-lancer="{% url 'intelligence:collecte_api_lancer' %}"
+     data-url-statut="{% url 'intelligence:collecte_api_statut' task_id='00000000-0000-0000-0000-000000000000' %}"
+     data-url-arreter="{% url 'intelligence:collecte_api_arreter' %}"
+     data-url-reset="{% url 'intelligence:collecte_api_reset_session' %}"
+     data-url-intelligence="{% url 'intelligence:index' %}"
+     data-job-keyword="keyword"
+     data-session-minutes="{{ test_context.session_minutes|default:20 }}"
+     data-active-test="{% if active_tasks.test %}{{ active_tasks.test.task_id }}{% endif %}"
+     data-active-prod="{% if active_tasks.prod %}{{ active_tasks.prod.task_id }}{% endif %}">
+
+    {% csrf_token %}
+
+    <header class="intel-topbar collecte-topbar">
+        <div class="collecte-topbar-copy">
+            <p class="collecte-hero-label">Contrôle instantané</p>
+            <h1 class="intel-topbar-title">Collecte manuelle</h1>
+            <p class="collecte-hero-desc">
+                Lancez Google Trends, les réseaux sociaux, Jumia, Jiji ou l’analyse NLP sans attendre la planification.
+                La progression est mémorisée : vous pouvez actualiser la page sans perdre le suivi.
+            </p>
+        </div>
+        <div class="intel-topbar-actions">
+            <a href="{% url 'intelligence:collecte_test' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4v4l3 2M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                Session test
+            </a>
+            <a href="{% url 'intelligence:index' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5l-5 5 5 5"/></svg>
+                Intelligence
+            </a>
+            <div class="intel-user-chip">
+                <span class="intel-user-avatar">{{ user.username|slice:":1"|upper }}</span>
+                <span class="intel-user-meta">
+                    <span class="intel-user-name">{{ user.username }}</span>
+                    <span class="intel-user-role">Analyste marché</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <section class="collecte-stats" aria-label="État des sources">
+        <article class="collecte-stat">
+            <span class="collecte-stat-value">{{ social_keywords_count|default:keywords_count }}</span>
+            <span class="collecte-stat-label">Mots-clés réseaux actifs (Paramètres)</span>
+        </article>
+        <article class="collecte-stat">
+            <span class="collecte-stat-value">{{ keywords_count }}</span>
+            <span class="collecte-stat-label">Mots-clés marché (Jumia, Jiji, réseaux)</span>
+        </article>
+        <article class="collecte-stat collecte-stat--accent">
+            <span class="collecte-stat-value">{{ jobs|length }}</span>
+            <span class="collecte-stat-label">Types de collecte disponibles</span>
+        </article>
+    </section>
+
+    {% include "dashboard/intelligence/includes/celery_ui_panel.html" %}
+
+    <section class="collecte-panel collecte-panel--production" aria-labelledby="collecte-jobs-title">
+        <div class="collecte-panel-head">
+            <h2 id="collecte-jobs-title" class="collecte-panel-title">Collecte production</h2>
+            {% if not celery_ui_enabled %}
+            <p class="collecte-panel-sub">Le worker Celery doit être démarré : <code>.\scripts\run_celery_worker.ps1</code></p>
+            {% else %}
+            <p class="collecte-panel-sub">Démarrez le worker Celery ci-dessus, puis lancez une collecte.</p>
+            {% endif %}
+        </div>
+
+        <div class="collecte-jobs-grid">
+            {% for job in jobs %}
+            <article class="collecte-job collecte-job--{{ job.tone }}" data-job="{{ job.id }}">
+                <div class="collecte-job-body">
+                    <h3 class="collecte-job-title">{{ job.label }}</h3>
+                    <p class="collecte-job-desc">{{ job.desc }}</p>
+                </div>
+                <button type="button"
+                        class="collecte-job-btn"
+                        data-job="{{ job.id }}"
+                        {% if job.id == 'keyword' %}data-requires-keyword="1"{% endif %}>
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M16 16v-5h-5M16 4l-4 4M4 16l4-4"/></svg>
+                    Lancer
+                </button>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div class="collecte-keyword-row" id="collecte-keyword-row">
+            <label for="collecte-keyword-select" class="collecte-keyword-label">Mot-clé réseau (Paramètres)</label>
+            <div class="collecte-keyword-controls">
+                <select id="collecte-keyword-select" class="collecte-keyword-select" {% if not social_keywords %}disabled{% endif %}>
+                    {% if social_keywords %}
+                        {% for kw in social_keywords %}
+                        <option value="{{ kw.pk }}">{{ kw.keyword }} ({{ kw.get_platform_display }})</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="">Aucun mot-clé réseau actif</option>
+                    {% endif %}
+                </select>
+                <button type="button" class="collecte-keyword-btn" id="collecte-keyword-btn" {% if not social_keywords %}disabled{% endif %}>
+                    Lancer ce mot-clé
+                </button>
+            </div>
+        </div>
+
+        {% include "dashboard/intelligence/includes/collection_progress_block.html" with zone="prod" %}
+    </section>
+</div>
+{% endblock %}
+
+{% block activity_panel %}{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/collection-control.js' %}?v=12"></script>
+{% endblock %}

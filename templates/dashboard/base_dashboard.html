@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tableau de bord — YAYEMATY MARKET{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/intelligence.css' %}?v=16">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="dashboard-body {% block body_class %}{% endblock %}">
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+    <div class="dashboard-app" id="dashboardApp">
+        {% block sidebar %}
+        {% include "includes/dashboard_sidebar.html" %}
+        {% endblock %}
+
+        <div class="dashboard-main">
+            <header class="mobile-topbar">
+                <button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 5.25A.75.75 0 012.75 9h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 9.75zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75a.75.75 0 01-.75-.75z" clip-rule="evenodd"/></svg>
+                </button>
+                <a href="{% url 'dashboard' %}" class="mobile-topbar-brand">
+                    {% include "includes/brand_logo.html" with logo_class="brand-logo--topbar" %}
+                </a>
+                <div class="mobile-topbar-avatar">{{ user.username|slice:":1"|upper }}</div>
+            </header>
+
+            {% block dashboard_content %}{% endblock %}
+        </div>
+
+        <aside class="activity-panel">
+            {% block activity_panel %}{% endblock %}
+        </aside>
+    </div>
+
+    <script src="{% static 'js/dashboard.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

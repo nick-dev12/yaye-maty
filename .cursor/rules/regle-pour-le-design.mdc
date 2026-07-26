@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+
+## regle pour le design
+- il faut que tu cree toujours des design tres beau elegant et atractif 
+- la structure et dispositionnements des element doit toujour etre hergonomique 
+- il faute que tu compte toujours comme un expert en UI et UX dans le design
+
+## Charte couleurs YAYEMATY (obligatoire)
+Utiliser **uniquement** ces couleurs via les variables CSS (`style.css`) :
+- Orange (Action / Mise en avant) : `#F25C19` → `var(--color-orange)`
+- Bleu (Info / Liens / Données) : `#2E7DB5` → `var(--color-bleu)`
+- Jaune (Alertes / Highlights / Tendances) : `#F0B429` → `var(--color-jaune)`
+- Gris (Bordures / Secondaire) : `#8C8C8C` → `var(--color-gris)`
+- Noir (Texte / Contraste) : `#1A1A1A` → `var(--color-noir)`
+- Blanc (Fonds / Cartes) : `#FFFFFF` → `var(--color-blanc)`
+
+Répartition UX recommandée :
+- **Orange** : boutons principaux, CTA, éléments actifs importants
+- **Bleu** : liens, info, graphiques secondaires, badges informatifs
+- **Jaune** : tendances, alertes douces, highlights, succès légers
+- **Noir / Gris / Blanc** : texte, structure, fonds

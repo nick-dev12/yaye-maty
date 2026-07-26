@@ -1,0 +1,129 @@
+{% comment %}Hub Top 10 unifié — classements lisibles{% endcomment %}
+<section id="top10-hub" class="ir10-hub" aria-labelledby="top10-hub-title">
+    <header class="ir10-hub-head">
+        <div>
+            <p class="yd-kicker">Classements marché</p>
+            <h2 id="top10-hub-title" class="ir10-hub-title">Top 10 — ce qui buzz sur le marché</h2>
+            <p class="ir10-hub-sub">Six classements simples pour savoir quoi sourcer, ce qui est recherché et ce qui attire l'attention.</p>
+        </div>
+        <a href="{% url 'intelligence:collecte' %}" class="ir-btn ir-btn--primary">Lancer une collecte</a>
+    </header>
+
+    <details class="ir10-glossary">
+        <summary class="ir10-glossary-toggle">Comment lire les Top 10 ?</summary>
+        <ul class="ir10-glossary-list">
+            <li><strong>Vues</strong> — nombre de fois qu'une vidéo ou une annonce a été consultée.</li>
+            <li><strong>Intentions d'achat</strong> — commentaires où les gens disent vouloir acheter.</li>
+            <li><strong>Score sourcing</strong> — combinaison de tout ce qui précède pour vous dire quoi mettre en stock.</li>
+            <li><strong>En hausse (Google)</strong> — recherche qui monte cette semaine au Sénégal.</li>
+        </ul>
+    </details>
+
+    {% if market_report.sections %}
+    <div class="ir10-tabs" role="tablist" aria-label="Type de classement">
+        {% for section in market_report.sections %}
+        <button type="button"
+                class="ir10-tab{% if forloop.first %} ir10-tab--active{% endif %}"
+                role="tab"
+                id="ir10-tab-{{ section.id }}"
+                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                aria-controls="ir10-panel-{{ section.id }}"
+                data-ir10-tab="{{ section.id }}">
+            {{ section.label }}
+            {% if section.count %}<span class="ir10-tab-count">{{ section.count }}</span>{% endif %}
+        </button>
+        {% endfor %}
+    </div>
+
+    {% for section in market_report.sections %}
+    <div class="ir10-panel{% if forloop.first %} ir10-panel--active{% endif %}"
+         id="ir10-panel-{{ section.id }}"
+         role="tabpanel"
+         aria-labelledby="ir10-tab-{{ section.id }}"
+         data-ir10-panel="{{ section.id }}"
+         {% if not forloop.first %}hidden{% endif %}>
+
+        <header class="ir10-panel-head">
+            <h3 class="ir10-panel-title">{{ section.title }}</h3>
+            <p class="ir10-panel-hint">{{ section.hint }}</p>
+        </header>
+
+        {% if section.has_data %}
+        <div class="ir10-podium">
+            {% for item in section.items|slice:":3" %}
+            <article class="ir10-podium-card ir10-podium-card--rank-{{ item.rank }} ir10-podium-card--{{ item.tone|default:'bleu' }}">
+                <div class="ir10-podium-rank">
+                    {% if item.rank == 1 %}<span class="ir10-medal" aria-hidden="true">🥇</span>{% elif item.rank == 2 %}<span class="ir10-medal">🥈</span>{% elif item.rank == 3 %}<span class="ir10-medal">🥉</span>{% endif %}
+                    <span class="ir10-rank-num">#{{ item.rank }}</span>
+                </div>
+                <h4 class="ir10-podium-title" title="{{ item.title }}">
+                    {% if item.url %}
+                    <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title|truncatechars:55 }}</a>
+                    {% else %}
+                    {{ item.title|truncatechars:55 }}
+                    {% endif %}
+                </h4>
+                {% if item.subtitle %}<p class="ir10-podium-sub">{{ item.subtitle|truncatechars:70 }}</p>{% endif %}
+                <p class="ir10-metric-hero">
+                    <span class="ir10-metric-value">{{ item.primary_value|floatformat:0 }}</span>
+                    <span class="ir10-metric-label">{{ item.primary_label }}</span>
+                </p>
+                {% if item.badges %}
+                <div class="ir10-badges">
+                    {% for badge in item.badges %}
+                    <span class="ir10-badge ir10-badge--{{ badge.tone }}">{{ badge.label }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <p class="ir10-why"><strong>Pourquoi ici ?</strong> {{ item.why_here }}</p>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% if section.items|length > 3 %}
+        <div class="ir10-rankings">
+            <h4 class="ir10-rankings-title">Classement #4 – #{{ section.items|length }}</h4>
+            <ol class="ir10-rank-list">
+                {% for item in section.items|slice:"3:" %}
+                <li class="ir10-rank-row">
+                    <span class="ir10-rank-row-num">#{{ item.rank }}</span>
+                    <div class="ir10-rank-row-main">
+                        <p class="ir10-rank-row-title" title="{{ item.title }}">
+                            {% if item.url %}
+                            <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title|truncatechars:48 }}</a>
+                            {% else %}
+                            {{ item.title|truncatechars:48 }}
+                            {% endif %}
+                        </p>
+                        {% if item.subtitle %}<span class="ir10-rank-row-sub">{{ item.subtitle|truncatechars:50 }}</span>{% endif %}
+                        <div class="ir10-progress" aria-hidden="true">
+                            <span class="ir10-progress-fill" style="width: {{ item.progress_pct|default:50 }}%"></span>
+                        </div>
+                    </div>
+                    <div class="ir10-rank-row-metric">
+                        <strong>{{ item.primary_value|floatformat:0 }}</strong>
+                        <span>{{ item.primary_label }}</span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="ir10-empty">
+            <p>Aucune donnée pour ce classement pour l'instant.</p>
+            <p class="ir10-empty-hint">{{ section.empty_action }}</p>
+            <a href="{% url section.empty_url_name %}" class="ir-btn ir-btn--outline">{{ section.empty_action|truncatewords:4 }}</a>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="ir10-empty ir10-empty--global">
+        <p>Lancez une collecte pour alimenter les classements Top 10.</p>
+        <a href="{% url 'intelligence:collecte' %}" class="ir-btn ir-btn--primary">Démarrer la collecte</a>
+    </div>
+    {% endif %}
+</section>

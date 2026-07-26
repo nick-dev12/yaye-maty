@@ -1,0 +1,60 @@
+---
+description: Scraping et analyse pilotés par les mots-clés Paramètres — pas par secteur
+alwaysApply: true
+---
+
+# Mots-clés = source de vérité (YAYEMATY MARKET)
+
+## Principe définitif
+
+YAYEMATY est une **marketplace généraliste** au Sénégal : l'entreprise veut **tout vendre**, sans secteur dominant.
+
+Le **scraping**, la **collecte**, l'**analyse concurrentielle** et l'**intelligence de marché** ne se basent **jamais** sur un secteur prédéfini (ex. agriculture, jardin, électroménager). Ils se basent **exclusivement** sur les **mots-clés actifs** configurés dans **Paramètres**.
+
+## Source de vérité
+
+| Plateforme | Mots-clés à utiliser |
+|------------|----------------------|
+| TikTok / Facebook | `MarketSearchKeyword` actifs (réseaux) |
+| Jumia | `MarketSearchKeyword` actifs (plateforme `jumia`) |
+| Jiji | `MarketSearchKeyword` actifs (plateforme `jiji`) |
+| Google Trends | mots-clés actifs de veille |
+
+Service central : `ActiveKeywordService` (`list_for_social()`, `list_for_jumia()`, `list_for_jiji()`, etc.).
+
+## Ce que l'IA doit faire
+
+- Collecter, filtrer, afficher et analyser **uniquement** ce qui correspond aux mots-clés définis par l'utilisateur.
+- Traiter chaque mot-clé comme une **unité de veille** indépendante (prix, avis, tendances, demande réseaux).
+- Adapter catégories marketplace (Jumia/Jiji) au **mot-clé** et à son `product_category` optionnel — **pas** à un secteur métier global.
+- Proposer des KPIs et tableaux de bord **par mot-clé / groupe de mots-clés**, pas par secteur supposé.
+
+## Ce que l'IA ne doit jamais faire
+
+- Supposer que l'agricole, le jardin ou tout autre secteur est **prioritaire** ou **dominant**.
+- Hardcoder des catégories type `/terrasse-jardin-exterieur/` comme défaut universel sans lien avec le mot-clé.
+- Exclure ou déprioriser des produits hors « niche agricole ».
+- Rédiger analyses, docs ou UI en mode « plateforme agricole only ».
+- Utiliser `SocialScrapeTarget` (hashtags/groupes fixes) pour les collectes planifiées — les mots-clés Paramètres priment.
+
+## Page d'accueil Jumia / listings larges
+
+Utile **si et seulement si** filtré par les mots-clés actifs. L'accueil seule ne définit pas le périmètre métier : les mots-clés le définissent.
+
+## Exemples
+
+```
+✅ Mot-clé « iPhone 15 » → collecter listings Jumia/Jiji + posts réseaux + trends sur ce terme.
+✅ Mot-clé « couveuse 24 oeufs » → même logique, sans traitement spécial « agricole ».
+✅ Mot-clé « ventilateur » → catégorie Jumia dérivée du mot-clé, pas du secteur supposé.
+
+❌ « Scraper le jardin Jumia car YAYEMATY est agricole. »
+❌ « Ignorer les mots-clés mode/tech, ce n'est pas notre cœur de métier. »
+❌ Dashboard centré « équipement agricole » sans tenir compte des mots-clés Paramètres.
+```
+
+## Implémentation
+
+- Nouvelle feature collecte/analyse : partir de `ActiveKeywordService`, jamais d'une liste secteur en dur.
+- Fallback marketplace : dériver de `product_category` + mot-clé (`marketplace_catalog_utils`), pas d'un secteur par défaut imposé.
+- Tests : couvrir plusieurs types de mots-clés (tech, maison, agricole, mode…) pour éviter le biais secteur.

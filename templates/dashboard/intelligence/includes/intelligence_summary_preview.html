@@ -1,0 +1,22 @@
+{% comment %}Aperçu 3 cartes — lien vers hub Top 10{% endcomment %}
+<section class="ir-preview" aria-labelledby="ir-preview-title">
+    <header class="ir-preview-head">
+        <h3 id="ir-preview-title" class="ir-section-title">Les 3 signaux forts du moment</h3>
+        <p class="ir-section-sub">Un aperçu rapide — cliquez pour voir le Top 10 complet.</p>
+    </header>
+    {% if market_report.preview_cards %}
+    <div class="ir-preview-grid">
+        {% for card in market_report.preview_cards %}
+        <a href="#top10-hub" class="ir-preview-card ir-preview-card--{{ card.tone }} js-intel-scroll" data-ir10-tab="{{ card.tab_id }}">
+            <span class="ir-preview-label">{{ card.label }}</span>
+            <strong class="ir-preview-title">{{ card.title }}</strong>
+            <span class="ir-preview-metric">{{ card.metric }}</span>
+            <p class="ir-preview-why">{{ card.why|truncatechars:90 }}</p>
+            <span class="ir-preview-cta">Voir le Top 10 →</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="ir-empty-inline">Collectez des données pour voir les signaux forts du marché.</p>
+    {% endif %}
+</section>

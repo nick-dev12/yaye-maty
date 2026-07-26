@@ -1,0 +1,89 @@
+{# Lecture marché — Intelligence (veille mots-clés Paramètres) #}
+
+<section class="intel-reading yd-dashboard" id="intel-resume" aria-label="Lecture marché">
+
+    <header class="ir-hero">
+        <div class="ir-hero-copy">
+            <p class="yd-kicker">Lecture marché</p>
+            <h2 class="ir-hero-title">
+                {% if page_mode == 'archives' %}Archives — vision claire
+                {% elif page_mode == 'test' %}Données test — vision claire
+                {% else %}Que se passe-t-il sur le marché ?{% endif %}
+            </h2>
+            <p class="ir-hero-sub">{{ reading_summary }}</p>
+        </div>
+        <div class="ir-hero-actions">
+            {% if page_mode == 'test' %}
+            <a href="{% url 'intelligence:collecte_test' %}" class="ir-btn ir-btn--ghost">Session test</a>
+            {% endif %}
+            <a href="{{ social_demand.settings_url }}" class="ir-btn ir-btn--outline">Mots-clés Paramètres</a>
+            <a href="#top10-hub" class="ir-btn ir-btn--primary js-intel-scroll">Voir les Top 10</a>
+        </div>
+    </header>
+
+    <section class="ir-kpi-section" aria-labelledby="intel-kpi-title">
+        <header class="ir-section-head">
+            <div>
+                <h3 id="intel-kpi-title" class="ir-section-title">Où en est la veille ?</h3>
+                <p class="ir-section-sub">Quatre chiffres pour comprendre la situation en un coup d'œil</p>
+            </div>
+        </header>
+        <div class="ir-kpi-grid">
+            {% for kpi in decision_kpis %}
+            <article class="ir-kpi ir-kpi--{{ kpi.tone }}">
+                <span class="ir-kpi-icon" aria-hidden="true">
+                    {% if kpi.id == 'posts' %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M4 6h16M4 12h10M4 18h14"/></svg>
+                    {% elif kpi.id == 'intents' %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 12h18"/></svg>
+                    {% elif kpi.id == 'jumia' %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M6 20V8l6-4 6 4v12"/><path stroke-linecap="round" d="M9 20v-6h6v6"/></svg>
+                    {% else %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path stroke-linecap="round" d="M12 8v4l3 2"/></svg>
+                    {% endif %}
+                </span>
+                <p class="ir-kpi-label">{{ kpi.label }}</p>
+                <p class="ir-kpi-value">{{ kpi.value }}</p>
+                <p class="ir-kpi-hint">{{ kpi.hint }}</p>
+                <span class="ir-kpi-trend {% if kpi.trend.up %}is-up{% else %}is-neutral{% endif %}">{{ kpi.trend.label }}</span>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% include "dashboard/intelligence/includes/intelligence_summary_preview.html" %}
+
+    <section class="ir-actions" aria-labelledby="intel-actions-title">
+        <header class="ir-panel-head">
+            <div class="ir-panel-head-main">
+                <h3 id="intel-actions-title" class="ir-panel-title">3 actions du jour</h3>
+                <p class="ir-panel-sub">Priorités concrètes pour avancer sur le marché</p>
+            </div>
+            <a href="#top10-hub" class="ir-link ir-link--strong js-intel-scroll">Top 10 →</a>
+        </header>
+        <ul class="ir-action-list">
+            {% for task in priority_tasks|slice:":3" %}
+            <li>
+                <a href="{{ task.url }}" class="ir-action ir-action--{{ task.tone }}">
+                    <span class="ir-action-icon" aria-hidden="true">
+                        {% if task.icon == 'pending' %}
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path stroke-linecap="round" d="M10 6v4l2.5 2.5"/></svg>
+                        {% elif task.icon == 'star' %}
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2l2.4 4.9 5.4.8-3.9 3.8.9 5.3L10 14.8l-4.8 2.5.9-5.3-3.9-3.8 5.4-.8L10 2z"/></svg>
+                        {% else %}
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/></svg>
+                        {% endif %}
+                    </span>
+                    <span class="ir-action-copy">
+                        <strong>{{ task.title }}</strong>
+                        <span>{{ task.meta }}</span>
+                    </span>
+                </a>
+            </li>
+            {% empty %}
+            <li class="ir-empty-inline">Aucune action prioritaire — lancez une collecte pour alimenter la veille.</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+</section>

@@ -1,0 +1,140 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{% if page_mode == 'archives' %}Archives Intelligence{% else %}Intelligence de marché{% endif %} — YAYEMATY MARKET{% endblock %}
+{% block body_class %}intel-layout{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/intelligence-archives.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/intelligence-reading.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/collection-control.css' %}?v=8">
+<link rel="stylesheet" href="{% static 'css/intelligence-report.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/dashboard-home.css' %}?v=13">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="main-content intelligence-page">
+
+    <header class="intel-topbar">
+        <h1 class="intel-topbar-title">{% if page_mode == 'archives' %}Archives Intelligence{% else %}Intelligence marché{% endif %}</h1>
+        <div class="intel-search">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <circle cx="9" cy="9" r="5.5"/><path stroke-linecap="round" d="M13.5 13.5L17 17"/>
+            </svg>
+            <input type="search" placeholder="Rechercher requête, domaine, publication…" aria-label="Recherche">
+        </div>
+        <div class="intel-topbar-actions">
+            {% if page_mode == 'archives' %}
+            <a href="{% url 'intelligence:index' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5l-5 5 5 5"/></svg>
+                Flux actuel
+            </a>
+            {% else %}
+            <a href="{% url 'intelligence:archives' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h12v4H4V4zm0 6h8v6H4v-6zm10 0h2v6h-2v-6z"/></svg>
+                Archives
+            </a>
+            {% endif %}
+            <a href="{% url 'intelligence:domaines' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M3 5h14M6 10h8M9 15h5"/></svg>
+                Export résumé
+            </a>
+            <button type="button" class="intel-icon-btn" aria-label="Notifications">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M10 2.8a4.5 4.5 0 014.5 4.5v2.2l1.2 2.4H4.3l1.2-2.4V7.3A4.5 4.5 0 0110 2.8zM8 15.5a2 2 0 004 0"/></svg>
+            </button>
+            <button type="button" class="intel-icon-btn" aria-label="Messages">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5h12v8H8l-3 2.2V5.5z"/></svg>
+            </button>
+            <div class="intel-user-chip">
+                <span class="intel-user-avatar">{{ user.username|slice:":1"|upper }}</span>
+                <span class="intel-user-meta">
+                    <span class="intel-user-name">{{ user.username }}</span>
+                    <span class="intel-user-role">Analyste marché</span>
+                </span>
+                <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 4.5L6 8l3-3.5"/></svg>
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="intel-messages">
+        {% for message in messages %}
+        <div class="intel-alert intel-alert--{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if data_window %}
+    <section class="intel-live-banner{% if page_mode == 'archives' %} intel-live-banner--archives{% endif %}" aria-label="Fenêtre de données">
+        <div class="intel-live-banner-main">
+            {% if page_mode == 'live' %}
+            <span class="intel-live-dot" aria-hidden="true"></span>
+            {% else %}
+            <span class="intel-live-dot intel-live-dot--archive" aria-hidden="true"></span>
+            {% endif %}
+            <div>
+                <p class="intel-live-title">
+                    {% if page_mode == 'live' %}
+                    {{ data_window.label }} — flux en direct
+                    {% else %}
+                    {{ data_window.label }}
+                    {% endif %}
+                </p>
+                <p class="intel-live-meta">
+                    {% if page_mode == 'live' %}
+                    Dernière mise à jour : {{ data_window.last_update_label }}
+                    {% else %}
+                    {{ data_window.total_posts }} publication(s) · {{ data_window.total_discovered }} requête(s) Trends
+                    {% if data_window.last_update_label != 'Aucune donnée archivée' %} · Dernière collecte {{ data_window.last_update_label }}{% endif %}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% if page_mode == 'archives' %}
+        <form method="get" action="{% url 'intelligence:archives' %}" class="intel-archive-filters">
+            <label class="intel-archive-field">
+                <span class="sr-only">Date de début</span>
+                <input type="date" name="date_debut" value="{{ archive_filters.date_start|default:'' }}" class="intel-archive-input" aria-label="Du">
+            </label>
+            <label class="intel-archive-field">
+                <span class="sr-only">Date de fin</span>
+                <input type="date" name="date_fin" value="{{ archive_filters.date_end|default:'' }}" class="intel-archive-input" aria-label="Au">
+            </label>
+            <button type="submit" class="intel-archive-btn">Filtrer</button>
+            {% if archive_filters.date_start or archive_filters.date_end %}
+            <a href="{% url 'intelligence:archives' %}" class="intel-live-link">Tout l'historique</a>
+            {% endif %}
+        </form>
+        {% else %}
+        <a href="{% url 'intelligence:archives' %}" class="intel-live-link">Consulter les archives historiques →</a>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {% include "dashboard/intelligence/includes/intelligence_report_nav.html" %}
+
+    {% include "dashboard/intelligence/includes/intelligence_reading_layout.html" %}
+
+    {% include "dashboard/intelligence/includes/intelligence_top10_hub.html" %}
+
+    <section class="intel-details-anchor" id="intel-expert" aria-label="Analyses détaillées">
+        <header class="intel-details-head">
+            <div>
+                <p class="yd-kicker">Mode analyste</p>
+                <h2 class="intel-section-title">Données brutes et tableaux</h2>
+                <p class="intel-section-sub">Pour approfondir — Trends, publications, Jumia et Jiji en détail.</p>
+            </div>
+        </header>
+
+        {% include "dashboard/intelligence/includes/intelligence_dashboard_body.html" %}
+        {% include "dashboard/intelligence/includes/jumia_test_section.html" %}
+        {% include "dashboard/intelligence/includes/jiji_test_section.html" %}
+    </section>
+
+    {% include "dashboard/intelligence/includes/marketplace_links_modal.html" %}
+</div>
+<script src="{% static 'js/intelligence.js' %}?v=4"></script>
+<script src="{% static 'js/intelligence-report.js' %}?v=1"></script>
+<script src="{% static 'js/intelligence-marketplace-modal.js' %}?v=1"></script>
+{% endblock %}
+
+{% block activity_panel %}{% endblock %}

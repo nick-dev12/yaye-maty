@@ -1,0 +1,25 @@
+{% comment %}Aperçu signaux — renvoie vers Intelligence / Top 10{% endcomment %}
+<section class="yd-section yd-section--signals" aria-labelledby="yd-signals-title">
+    <header class="yd-section-head">
+        <div>
+            <h2 id="yd-signals-title" class="yd-section-title">Les 3 signaux forts du moment</h2>
+            <p class="yd-section-sub">Un aperçu rapide — le détail complet est dans Intelligence marché.</p>
+        </div>
+        <a href="{% url 'intelligence:index' %}#top10-hub" class="yd-link yd-link--strong">Top 10 complet →</a>
+    </header>
+    {% if market_report.preview_cards %}
+    <div class="yd-signals-grid">
+        {% for card in market_report.preview_cards %}
+        <a href="{% url 'intelligence:index' %}#top10-hub" class="yd-signal-card yd-signal-card--{{ card.tone }}">
+            <span class="yd-signal-card-label">{{ card.label }}</span>
+            <strong class="yd-signal-card-title">{{ card.title }}</strong>
+            <span class="yd-signal-card-metric">{{ card.metric }}</span>
+            <p class="yd-signal-card-why">{{ card.why|truncatechars:90 }}</p>
+            <span class="yd-signal-card-cta">Voir le Top 10 →</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="yd-empty-inline">Aucun signal fort pour l’instant — configurez vos mots-clés puis consultez Intelligence marché.</p>
+    {% endif %}
+</section>

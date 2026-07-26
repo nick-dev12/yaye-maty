@@ -1,0 +1,777 @@
+﻿{
+  "timestamp": "2026-07-17T13:14:52.943200+00:00",
+  "keywords_active": 8,
+  "social_comments_before": 24,
+  "post_stats": {
+    "total_tiktok": 168,
+    "with_video_id": 148,
+    "with_metrics": 110,
+    "with_saves": 0,
+    "with_comments_json": 1,
+    "with_comments_10_plus": 0,
+    "comments_scraped_total": 2,
+    "analysis_pending": 0,
+    "analysis_done": 168
+  },
+  "samples": [
+    {
+      "id": 171,
+      "video_id": "7563762444703649035",
+      "metrics": {
+        "views": 3372,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 4,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "tracteurs_machinisme",
+      "sentiment": "positive",
+      "demand_score": 3,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 170,
+      "video_id": "7651739671856237832",
+      "metrics": {
+        "views": 301,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 2,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "marche_prix",
+      "sentiment": "positive",
+      "demand_score": 4,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at"
+      ],
+      "first_comment_keys": [
+        "text",
+        "commented_at",
+        "published_at",
+        "platform_comment_id"
+      ],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 169,
+      "video_id": "7496762198170160390",
+      "metrics": {
+        "views": 296,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 20,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "tracteurs_machinisme",
+      "sentiment": "neutral",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 168,
+      "video_id": "7652746396923219218",
+      "metrics": {
+        "views": 433,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "tracteurs_machinisme",
+      "sentiment": "positive",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 167,
+      "video_id": "7531092245928267013",
+      "metrics": {
+        "views": 738,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "formation_conseil",
+      "sentiment": "positive",
+      "demand_score": 1,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 166,
+      "video_id": "7657452543701765383",
+      "metrics": {
+        "views": 154,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "tracteurs_machinisme",
+      "sentiment": "positive",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 165,
+      "video_id": "7654235075466235150",
+      "metrics": {
+        "views": 279,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "tracteurs_machinisme",
+      "sentiment": "neutral",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 164,
+      "video_id": "7647849136112307477",
+      "metrics": {
+        "views": 134,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "marche_prix",
+      "sentiment": "positive",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 163,
+      "video_id": "7655287084311203090",
+      "metrics": {
+        "views": 2026,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "tracteurs_machinisme",
+      "sentiment": "positive",
+      "demand_score": 2,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 162,
+      "video_id": "7566743855631043896",
+      "metrics": {
+        "views": 129,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "semences_engrais",
+      "sentiment": "positive",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 161,
+      "video_id": "7583695943313231126",
+      "metrics": {
+        "views": 220,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 4,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "semences_engrais",
+      "sentiment": "negative",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 160,
+      "video_id": "7652698119620087060",
+      "metrics": {
+        "views": 184,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 0,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "semences_engrais",
+      "sentiment": "negative",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "hashtags",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 159,
+      "video_id": "7465739852831591685",
+      "metrics": {
+        "views": 1320,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 9,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "semences_engrais",
+      "sentiment": "positive",
+      "demand_score": 1,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 158,
+      "video_id": "7427385501193211168",
+      "metrics": {
+        "views": 319,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 2,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "semences_engrais",
+      "sentiment": "negative",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 157,
+      "video_id": "7524041753758813496",
+      "metrics": {
+        "views": 1306,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 7,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "solaire_pompage",
+      "sentiment": "positive",
+      "demand_score": 1,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 156,
+      "video_id": "7648754644969147665",
+      "metrics": {
+        "views": 205,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "irrigation",
+      "sentiment": "positive",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 155,
+      "video_id": "7557808795057917195",
+      "metrics": {
+        "views": 329,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 5,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "semences_engrais",
+      "sentiment": "positive",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 154,
+      "video_id": "7535019474487938317",
+      "metrics": {
+        "views": 4112,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 6,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "semences_engrais",
+      "sentiment": "positive",
+      "demand_score": 4,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 153,
+      "video_id": "7453875018875915525",
+      "metrics": {
+        "views": 178,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 13,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "irrigation",
+      "sentiment": "negative",
+      "demand_score": 0,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    },
+    {
+      "id": 152,
+      "video_id": "7436403712056167735",
+      "metrics": {
+        "views": 1983,
+        "likes": null,
+        "shares": null,
+        "saves": null
+      },
+      "hashtags_count": 6,
+      "published_at": null,
+      "comments_count": 0,
+      "comments_scraped_count": 0,
+      "analysis_status": "done",
+      "category": "irrigation",
+      "sentiment": "positive",
+      "demand_score": 2,
+      "missing_fields": [
+        "like_count",
+        "share_count",
+        "save_count",
+        "published_at",
+        "comments"
+      ],
+      "first_comment_keys": [],
+      "nlp_export_keys": [
+        "id",
+        "platform",
+        "video_id",
+        "validation",
+        "context",
+        "conversion",
+        "scraped_at"
+      ]
+    }
+  ],
+  "comment_sync": {
+    "created": 0,
+    "updated": 24,
+    "skipped": 0,
+    "posts": 3
+  },
+  "social_comments_after_sync": 24,
+  "nlp_pipeline": {
+    "sync": {
+      "created": 0,
+      "updated": 24,
+      "skipped": 0,
+      "posts": 3
+    },
+    "comments": {
+      "keyword": 0,
+      "camembert": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "posts": {
+      "keyword": 0,
+      "camembert": 0,
+      "updated": 0,
+      "skipped": 0
+    }
+  },
+  "comments_analyzed": 24,
+  "comment_intents": [
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "demande_information",
+    "intention_achat",
+    "demande_information",
+    "intention_achat",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "intention_achat",
+    "demande_information",
+    "demande_information",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet",
+    "hors_sujet"
+  ]
+}

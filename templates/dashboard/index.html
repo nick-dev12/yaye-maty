@@ -1,0 +1,202 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord — YAYEMATY MARKET{% endblock %}
+{% block body_class %}dashboard-home{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-home.css' %}?v=15">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="th-shell yd-shell">
+    <header class="th-topbar">
+        <div class="th-topbar-search">
+            <svg class="th-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <circle cx="9" cy="9" r="5.5"/><path stroke-linecap="round" d="M13.5 13.5L17 17"/>
+            </svg>
+            <input type="search" placeholder="Rechercher publications, Jumia, Jiji…" aria-label="Recherche">
+            <kbd class="th-kbd">⌘K</kbd>
+        </div>
+        <div class="th-topbar-actions">
+            <span class="th-window-badge" title="{{ data_window.label }}">{{ data_window.short_label }}</span>
+            <button type="button" class="th-date-btn" aria-label="Période">
+                <svg class="th-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="14" height="13" rx="2"/><path stroke-linecap="round" d="M3 8h14M7 2v3M13 2v3"/></svg>
+                <span>{{ date_range }}</span>
+            </button>
+            <button type="button" class="th-icon-btn th-notif-btn" aria-label="Analyses en attente">
+                <svg class="th-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M10 3a5 5 0 00-5 5v3l-1.5 2.5h13L15 11V8a5 5 0 00-5-5z"/><path stroke-linecap="round" d="M8.5 16a1.5 1.5 0 003 0"/></svg>
+                {% if notification_count %}<span class="th-notif-badge">{{ notification_count }}</span>{% endif %}
+            </button>
+            <div class="th-profile">
+                <div class="th-profile-avatar">{{ display_name|slice:":1"|upper }}</div>
+                <div class="th-profile-text">
+                    <span class="th-profile-name">{{ display_name }}</span>
+                    <span class="th-profile-role">{{ user_role }}</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="th-content yd-dashboard">
+        <section class="yd-hero" aria-label="Accueil">
+            <div class="yd-hero-glow" aria-hidden="true"></div>
+            <div class="yd-hero-inner">
+                <div class="yd-hero-copy">
+                    <p class="yd-kicker">Lecture marché · mots-clés Paramètres</p>
+                    <h1 class="yd-title">{{ greeting }}, {{ first_name }}</h1>
+                    <p class="yd-sub">{{ summary_line }}</p>
+                    <div class="yd-hero-meta">
+                        <span class="yd-hero-chip">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path stroke-linecap="round" d="M8 4v4l2.5 1.5"/></svg>
+                            {{ data_window.last_update_label }}
+                        </span>
+                        {% if notification_count %}
+                        <span class="yd-hero-chip yd-hero-chip--alert">{{ notification_count }} analyse(s) en attente</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="yd-head-actions">
+                    <a href="{{ social_demand.settings_url }}" class="th-btn th-btn--ghost">Mots-clés Paramètres</a>
+                    <a href="{% url 'intelligence:index' %}" class="th-btn th-btn--primary">Intelligence marché</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="yd-section yd-section--kpis" aria-labelledby="yd-kpi-title">
+            <header class="yd-section-head">
+                <div>
+                    <h2 id="yd-kpi-title" class="yd-section-title">Où en est la veille ?</h2>
+                    <p class="yd-section-sub">Quatre signaux pour décider rapidement — réseaux, demande, Jumia, Jiji</p>
+                </div>
+            </header>
+            <div class="yd-kpi-grid">
+                {% for kpi in decision_kpis %}
+                <article class="yd-kpi yd-kpi--{{ kpi.tone }}">
+                    <div class="yd-kpi-icon" aria-hidden="true">
+                        {% if kpi.id == 'posts' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M4 6h16M4 12h10M4 18h14"/></svg>
+                        {% elif kpi.id == 'intents' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 17h12M6 17a2 2 0 01-2-2V9a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2M6 17l-1 3M18 17l1 3"/></svg>
+                        {% elif kpi.id == 'jumia' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M4 7h16l-2 11H6L4 7z"/><path stroke-linecap="round" d="M9 11v4M15 11v4"/></svg>
+                        {% else %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M4 18h16M6 18V8l6-4 6 4v10"/><path stroke-linecap="round" d="M10 12h4"/></svg>
+                        {% endif %}
+                    </div>
+                    <p class="yd-kpi-label">{{ kpi.label }}</p>
+                    <p class="yd-kpi-value">{{ kpi.value }}</p>
+                    <p class="yd-kpi-hint">{{ kpi.hint }}</p>
+                    <span class="yd-kpi-trend {% if kpi.trend.up %}is-up{% else %}is-down{% endif %}">{{ kpi.trend.label }}</span>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% include "dashboard/includes/home_market_preview.html" %}
+
+        <section class="yd-panel yd-panel--market yd-panel--compact" aria-labelledby="yd-market-title">
+            <header class="yd-panel-head">
+                <div>
+                    <h2 id="yd-market-title" class="yd-panel-title">Marché en bref</h2>
+                    <p class="yd-panel-sub">Jumia (neuf) vs Jiji (local) — synthèse avant arbitrage</p>
+                </div>
+                <a href="{% url 'intelligence:index' %}" class="yd-link yd-link--strong">Analyses détaillées →</a>
+            </header>
+
+            <div class="yd-market-grid yd-market-grid--compact">
+                <article class="yd-market-card">
+                    <header class="yd-market-card-head">
+                        <h3>Prix &amp; stock Jumia</h3>
+                        <span class="yd-chip yd-chip--bleu">{{ market_overview.jumia.products }} produit{{ market_overview.jumia.products|pluralize }}</span>
+                    </header>
+                    {% if market_overview.has_jumia %}
+                    <div class="yd-stat-chips">
+                        {% if market_overview.jumia.avg_rating %}
+                        <span class="yd-chip yd-chip--jaune">★ {{ market_overview.jumia.avg_rating }}</span>
+                        {% endif %}
+                        {% if market_overview.jumia.out_of_stock %}
+                        <span class="yd-chip yd-chip--orange">{{ market_overview.jumia.out_of_stock }} rupture{{ market_overview.jumia.out_of_stock|pluralize }}</span>
+                        {% endif %}
+                    </div>
+                    {% if market_overview.jumia.products_preview %}
+                    <ul class="yd-preview-list">
+                        {% for p in market_overview.jumia.products_preview|slice:":2" %}
+                        <li class="yd-preview-item">
+                            <div>
+                                <strong title="{{ p.name }}">{{ p.name|truncatechars:38 }}</strong>
+                                <span class="yd-preview-meta">
+                                    {% if p.stock_status == 'out_of_stock' %}<em class="yd-tag yd-tag--orange">Rupture</em>{% endif %}
+                                </span>
+                            </div>
+                            {% if p.price_xof %}
+                            <span class="yd-preview-price">{{ p.price_xof|floatformat:0 }} FCFA</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% else %}
+                    <p class="yd-empty-inline">Aucune donnée Jumia dans la fenêtre actuelle.</p>
+                    {% endif %}
+                </article>
+
+                <article class="yd-market-card">
+                    <header class="yd-market-card-head">
+                        <h3>Occasions Jiji</h3>
+                        <span class="yd-chip yd-chip--bleu">{{ market_overview.jiji.listings }} annonce{{ market_overview.jiji.listings|pluralize }}</span>
+                    </header>
+                    {% if market_overview.has_jiji %}
+                    <div class="yd-stat-chips">
+                        {% if market_overview.jiji.avg_price %}
+                        <span class="yd-chip">~ {{ market_overview.jiji.avg_price|floatformat:0 }} FCFA</span>
+                        {% endif %}
+                        <span class="yd-chip yd-chip--jaune">{{ market_overview.jiji.used }} occasion{{ market_overview.jiji.used|pluralize }}</span>
+                    </div>
+                    {% if market_overview.jiji.listings_preview %}
+                    <ul class="yd-preview-list">
+                        {% for l in market_overview.jiji.listings_preview|slice:":2" %}
+                        <li class="yd-preview-item">
+                            <div>
+                                <strong title="{{ l.title }}">{{ l.title|truncatechars:38 }}</strong>
+                                <span class="yd-preview-meta">{{ l.views_count }} vue{{ l.views_count|pluralize }}</span>
+                            </div>
+                            {% if l.price_xof %}
+                            <span class="yd-preview-price">{{ l.price_xof|floatformat:0 }} FCFA</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% else %}
+                    <p class="yd-empty-inline">Aucune annonce Jiji collectée.</p>
+                    {% endif %}
+                </article>
+            </div>
+
+            {% if market_overview.arbitrage %}
+            <div class="yd-arbitrage yd-arbitrage--compact">
+                <header class="yd-arbitrage-head">
+                    <h3>{{ market_overview.arbitrage_title }}</h3>
+                </header>
+                <ul class="yd-arb-list">
+                    {% for arb in market_overview.arbitrage|slice:":2" %}
+                    <li class="yd-arb yd-arb--{{ arb.tone }}">
+                        <div>
+                            <strong>{{ arb.product_label }}</strong>
+                            <span>{{ arb.evidence_text|truncatechars:72 }}</span>
+                        </div>
+                        {% if arb.gap_percent != None %}
+                        <em class="yd-arb-gap">−{{ arb.gap_percent }}%</em>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block activity_panel %}{% endblock %}

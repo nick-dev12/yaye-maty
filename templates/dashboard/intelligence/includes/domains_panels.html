@@ -1,0 +1,174 @@
+<section id="gestion"
+         class="settings-panel domains-panel js-domains-panel{% if active_anchor != 'decouverte' %} is-visible{% endif %}"
+         data-panel="gestion"
+         role="tabpanel"
+         aria-labelledby="tab-gestion"
+         {% if active_anchor == 'decouverte' %}hidden{% endif %}>
+    <header class="domains-panel-head">
+        <div class="domains-panel-head-icon domains-panel-head-icon--gestion" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M4 6h16M4 12h10M4 18h14"/></svg>
+        </div>
+        <div>
+            <h2 class="domains-panel-title">Gestion des domaines</h2>
+        </div>
+        <button type="button"
+                class="domains-btn domains-btn--primary js-open-add-domain"
+                aria-haspopup="dialog">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M10 4v12M4 10h12"/></svg>
+            Ajouter un domaine
+        </button>
+    </header>
+
+    <div class="settings-domain-modal js-add-domain-modal{% if not show_add_form %} is-hidden{% endif %}"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="add-domain-title">
+        <button type="button"
+                class="settings-domain-modal-backdrop js-close-add-domain"
+                aria-label="Fermer"></button>
+        <div class="settings-domain-modal-panel domains-modal-panel">
+            <div class="settings-domain-modal-header">
+                <h3 id="add-domain-title">Ajouter un domaine</h3>
+                <button type="button" class="settings-btn settings-btn--ghost js-close-add-domain">Annuler</button>
+            </div>
+            <form method="post" id="add-domain-form" class="settings-form settings-form--add-domain js-add-domain-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_domain">
+                <div class="settings-form-group">
+                    <label for="id_label">{{ domain_form.label.label }}</label>
+                    {{ domain_form.label }}
+                    {% if domain_form.label.help_text %}
+                    <span class="settings-field-help">{{ domain_form.label.help_text }}</span>
+                    {% endif %}
+                    {% if domain_form.label.errors %}
+                    <span class="settings-field-error">{{ domain_form.label.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                <div class="settings-domain-modal-actions">
+                    <button type="button" class="settings-btn settings-btn--outline js-close-add-domain">Annuler</button>
+                    <button type="submit" class="settings-btn settings-btn--primary">Ajouter le domaine</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if market_domains %}
+    <div class="domains-registry">
+        <h3 class="domains-registry-title">Domaines enregistrés <span class="domains-registry-count">{{ market_domains|length }}</span></h3>
+        <ul class="domains-registry-list">
+            {% for domain in market_domains %}
+            <li class="domains-registry-item">
+                <div class="domains-registry-main">
+                    <span class="domains-registry-dot" aria-hidden="true"></span>
+                    <div>
+                        <strong class="domains-registry-name">{{ domain.label }}</strong>
+                        <span class="domains-registry-meta">Cat. {{ domain.cat_id }} · {{ domain.seed_count }} seed(s)</span>
+                    </div>
+                </div>
+                <form method="post" class="domains-registry-delete" onsubmit="return confirm('Supprimer ce domaine ?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_domain">
+                    <input type="hidden" name="domain_id" value="{{ domain.pk }}">
+                    <button type="submit" class="domains-btn domains-btn--ghost domains-btn--danger">Supprimer</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="domains-empty-panel">
+        <div class="domains-empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M8 12h8M12 8v8"/></svg>
+        </div>
+        <p>Aucun domaine enregistré</p>
+        <p class="domains-empty-hint">Cliquez sur « Ajouter un domaine » pour commencer l'analyse Google Trends.</p>
+        <button type="button" class="domains-btn domains-btn--outline js-open-add-domain">Ajouter un domaine</button>
+    </div>
+    {% endif %}
+</section>
+
+<section id="decouverte"
+         class="settings-panel domains-panel js-domains-panel{% if active_anchor == 'decouverte' %} is-visible{% endif %}"
+         data-panel="decouverte"
+         role="tabpanel"
+         aria-labelledby="tab-decouverte"
+         {% if active_anchor != 'decouverte' %}hidden{% endif %}>
+    <header class="domains-panel-head domains-panel-head--stack">
+        <div class="domains-panel-head-icon domains-panel-head-icon--decouverte" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M4 16V8m4 8V5m4 11v-6m4 6V9m4 7V4"/></svg>
+        </div>
+        <div>
+            <h2 class="domains-panel-title">Découverte par domaine</h2>
+            <p class="domains-panel-desc">
+                Sélectionnez jusqu'à <strong>{{ max_domains }}</strong> domaine(s) (limite Google Trends),
+                enregistrez puis lancez la découverte.
+            </p>
+        </div>
+    </header>
+
+    <div class="domains-discovery-layout">
+        <div class="domains-discovery-config">
+            <form method="post" class="settings-form js-domain-limit-form domains-config-form" data-max="{{ max_domains }}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_config">
+
+                <div class="settings-form-group">
+                    <label class="domains-field-label">{{ config_form.selected_domains.label }}</label>
+                    {% if config_form.selected_domains.field.queryset %}
+                    <div class="domains-select-grid js-domain-checkboxes">
+                        {% for checkbox in config_form.selected_domains %}
+                        <label class="domains-select-card">
+                            {{ checkbox.tag }}
+                            <span class="domains-select-card-label">{{ checkbox.choice_label }}</span>
+                            <span class="domains-select-check" aria-hidden="true">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" d="M5 10l3 3 7-7"/></svg>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="settings-field-help">Ajoutez d'abord un domaine dans l'onglet Gestion.</p>
+                    {% endif %}
+                    {% if config_form.selected_domains.errors %}
+                    <span class="settings-field-error">{{ config_form.selected_domains.errors.0 }}</span>
+                    {% endif %}
+                    <span class="settings-field-help">Maximum {{ max_domains }} domaines par session.</span>
+                </div>
+
+                <div class="settings-form-row domains-form-row">
+                    <div class="settings-form-group">
+                        <label for="id_timeframe">{{ config_form.timeframe.label }}</label>
+                        {{ config_form.timeframe }}
+                    </div>
+                    <div class="settings-form-group">
+                        <label for="id_region">{{ config_form.region.label }}</label>
+                        {{ config_form.region }}
+                    </div>
+                </div>
+
+                <button type="submit" class="domains-btn domains-btn--dark">Enregistrer la configuration</button>
+            </form>
+        </div>
+
+        <aside class="domains-discovery-aside">
+            <div class="domains-discovery-cta">
+                <span class="domains-discovery-cta-badge">pytrends</span>
+                <h3>Lancer la collecte</h3>
+                <p>Exécute une découverte immédiate sur les domaines sélectionnés et alimente le tableau Intelligence.</p>
+                <form method="post" class="domains-discovery-run">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="run_discovery">
+                    <button type="submit" class="domains-btn domains-btn--primary domains-btn--wide">
+                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5L8 5.5z"/></svg>
+                        Lancer la découverte
+                    </button>
+                </form>
+            </div>
+            <ul class="domains-discovery-tips">
+                <li>Enregistrez la configuration avant de lancer.</li>
+                <li>Région par défaut : Sénégal (SN).</li>
+                <li>Résultats visibles dans Intelligence → Requêtes.</li>
+            </ul>
+        </aside>
+    </div>
+</section>

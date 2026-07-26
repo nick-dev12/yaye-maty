@@ -1,0 +1,134 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Domaines de recherche — YAYEMATY MARKET{% endblock %}
+{% block body_class %}intel-layout{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/settings.css' %}?v=4">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="main-content intelligence-page domains-page">
+
+    <header class="intel-topbar domains-topbar">
+        <div class="domains-topbar-copy">
+            <p class="domains-hero-label">Google Trends · Sénégal</p>
+            <h1 class="intel-topbar-title">Domaines de recherche</h1>
+        </div>
+        <div class="intel-topbar-actions">
+            <a href="{% url 'intelligence:index' %}" class="intel-topbar-chip">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5l-5 5 5 5"/></svg>
+                Intelligence
+            </a>
+            <div class="intel-user-chip">
+                <span class="intel-user-avatar">{{ user.username|slice:":1"|upper }}</span>
+                <span class="intel-user-meta">
+                    <span class="intel-user-name">{{ user.username }}</span>
+                    <span class="intel-user-role">Analyste marché</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="intel-messages">
+        {% for message in messages %}
+        <div class="intel-alert intel-alert--{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <section class="domains-overview" aria-label="Vue d'ensemble">
+        <article class="domains-overview-intro">
+            <h2 class="domains-overview-title">Vue d'ensemble</h2>
+        </article>
+        <div class="domains-kpi-grid">
+            {% for kpi in overview.kpis %}
+            <article class="domains-kpi domains-kpi--{{ kpi.tone }}">
+                <span class="domains-kpi-value">{{ kpi.value }}</span>
+                <span class="domains-kpi-label">{{ kpi.label }}</span>
+                <span class="domains-kpi-hint">{{ kpi.hint }}</span>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if domain_cards %}
+    <section class="domains-stats-section" aria-label="Résultats par secteur d'activité">
+        <div class="domains-section-head">
+            <h3 class="domains-section-title">Que contient chaque secteur ?</h3>
+        </div>
+
+        <div class="domains-card-grid">
+            {% for card in domain_cards %}
+            <article class="domains-stat-card domains-stat-card--{{ card.tone }}{% if card.is_selected %} is-selected{% endif %}">
+                <header class="domains-stat-card-head">
+                    <div>
+                        <h4 class="domains-stat-card-title" title="{{ card.label }}">{{ card.label }}</h4>
+                    </div>
+                    <span class="domains-stat-status domains-stat-status--{{ card.status_tone }}">{{ card.status_label }}</span>
+                </header>
+
+                <ul class="domains-stat-metrics">
+                    {% for metric in card.metrics %}
+                    <li class="domains-stat-metric domains-stat-metric--{{ metric.tone }}">
+                        <div class="domains-stat-metric-top">
+                            <span class="domains-stat-metric-label">{{ metric.label }}</span>
+                            <span class="domains-stat-metric-value">{{ metric.value }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <footer class="domains-stat-footer">
+                    <div class="domains-stat-footer-item">
+                        <span class="domains-stat-footer-label">Dernière collecte</span>
+                        <span class="domains-stat-footer-value">{{ card.last_discovery_short }}</span>
+                    </div>
+                    <div class="domains-stat-footer-item">
+                        <span class="domains-stat-footer-label">Mots-clés de départ</span>
+                        <span class="domains-stat-footer-value">{{ card.seed_count }} configuré{{ card.seed_count|pluralize }}</span>
+                    </div>
+                </footer>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="domains-workspace" aria-label="Gestion et découverte">
+        <nav class="domains-tabs" role="tablist" aria-label="Sections domaines">
+            <button type="button"
+                    class="domains-tab js-domains-tab{% if active_anchor != 'decouverte' %} is-active{% endif %}"
+                    role="tab"
+                    id="tab-gestion"
+                    aria-selected="{% if active_anchor != 'decouverte' %}true{% else %}false{% endif %}"
+                    aria-controls="gestion"
+                    data-panel="gestion">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path stroke-linecap="round" d="M10 6v4h3"/></svg>
+                Gestion des domaines
+            </button>
+            <button type="button"
+                    class="domains-tab js-domains-tab{% if active_anchor == 'decouverte' %} is-active{% endif %}"
+                    role="tab"
+                    id="tab-decouverte"
+                    aria-selected="{% if active_anchor == 'decouverte' %}true{% else %}false{% endif %}"
+                    aria-controls="decouverte"
+                    data-panel="decouverte">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" d="M4 15V5m4 10V9m4 6V7m4 8V4"/></svg>
+                Découverte par domaine
+            </button>
+        </nav>
+
+        <div class="domains-panels">
+            {% include "dashboard/intelligence/includes/domains_panels.html" %}
+        </div>
+    </section>
+</div>
+
+<script src="{% static 'js/settings.js' %}?v=2"></script>
+<script src="{% static 'js/domains.js' %}?v=2"></script>
+{% endblock %}
+
+{% block activity_panel %}{% endblock %}
