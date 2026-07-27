@@ -39,6 +39,7 @@ from intelligence.scrapers.human_behavior import random_sleep
 from intelligence.scrapers.post_id_utils import extract_post_id
 from intelligence.scrapers.social_scraper import SocialScraper
 
+from intelligence.services.django_orm_safe import run_orm_safe
 from intelligence.services.social_dedup_service import SocialDedupService
 
 from intelligence.services.social_post_service import SocialPostService
@@ -156,9 +157,9 @@ class SearchTopDownService:
         harvest_limit = min(keyword.max_videos, session_cap) if session_cap else keyword.max_videos
 
         search_url = keyword.build_search_url()
-        known_ids = (
-            SocialDedupService.known_ids_for_platform(keyword.platform) if scheduled else set()
-        )
+        known_ids: set[str] = set()
+        if scheduled:
+            known_ids = run_orm_safe(SocialDedupService.known_ids_for_platform, keyword.platform)
 
         bundle = self.scraper.browser_factory.open(keyword.platform, headless=headless)
 
@@ -280,22 +281,21 @@ class SearchTopDownService:
 
 
 
-        save_stats = SocialPostService.save_extracted_posts(
+        def _persist_top_down_results() -> dict:
+            stats = SocialPostService.save_extracted_posts(
+                platform=keyword.platform,
+                source_url=search_url,
+                extracted=extracted,
+                skip_if_exists=scheduled,
+            )
+            from intelligence.services.collection_model_router import CollectionModelRouter
 
-            platform=keyword.platform,
+            if not CollectionModelRouter().is_test:
+                keyword.last_scraped_at = timezone.now()
+                keyword.save(update_fields=['last_scraped_at', 'updated_at'])
+            return stats
 
-            source_url=search_url,
-
-            extracted=extracted,
-
-            skip_if_exists=scheduled,
-
-        )
-
-        from intelligence.services.collection_model_router import CollectionModelRouter
-        if not CollectionModelRouter().is_test:
-            keyword.last_scraped_at = timezone.now()
-            keyword.save(update_fields=['last_scraped_at', 'updated_at'])
+        save_stats = run_orm_safe(_persist_top_down_results)
 
 
 

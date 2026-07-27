@@ -16,6 +16,7 @@ from intelligence.scrapers.human_behavior import (
 )
 from intelligence.scrapers.social_scraper import SocialScraper
 from intelligence.scrapers.tiktok_scrape_schema import clamp_max_comments, MIN_COMMENTS_PER_VIDEO
+from intelligence.services.django_orm_safe import run_orm_safe
 from intelligence.services.social_post_service import SocialPostService
 
 logger = logging.getLogger(__name__)
@@ -99,13 +100,17 @@ class SocialExtractionService:
         finally:
             bundle.close()
 
-        save_stats = SocialPostService.save_extracted_posts(
-            platform=target.platform,
-            source_url=target.url,
-            extracted=extracted,
-            skip_if_exists=skip_existing,
-        )
-        SocialPostService.touch_target(target)
+        def _persist_target_results() -> dict:
+            stats = SocialPostService.save_extracted_posts(
+                platform=target.platform,
+                source_url=target.url,
+                extracted=extracted,
+                skip_if_exists=skip_existing,
+            )
+            SocialPostService.touch_target(target)
+            return stats
+
+        save_stats = run_orm_safe(_persist_target_results)
 
         return ExtractionRunResult(
             target_id=target.pk,
@@ -188,15 +193,19 @@ class SocialExtractionService:
         finally:
             bundle.close()
 
-        save_stats = SocialPostService.save_extracted_posts(
-            platform=platform,
-            source_url=url,
-            extracted=extracted,
-            skip_if_exists=skip_existing,
-        )
-        if not CollectionModelRouter().is_test:
-            keyword.last_scraped_at = timezone.now()
-            keyword.save(update_fields=['last_scraped_at', 'updated_at'])
+        def _persist_keyword_results() -> dict:
+            stats = SocialPostService.save_extracted_posts(
+                platform=platform,
+                source_url=url,
+                extracted=extracted,
+                skip_if_exists=skip_existing,
+            )
+            if not CollectionModelRouter().is_test:
+                keyword.last_scraped_at = timezone.now()
+                keyword.save(update_fields=['last_scraped_at', 'updated_at'])
+            return stats
+
+        save_stats = run_orm_safe(_persist_keyword_results)
 
         return ExtractionRunResult(
             target_id=keyword.pk,
