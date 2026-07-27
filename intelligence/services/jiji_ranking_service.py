@@ -12,9 +12,17 @@ class JijiRankingService:
     def get_top_listings(cls, *, limit: int = 10) -> list[dict]:
         router = CollectionModelRouter()
         Listing = router.jiji_listing_model
-        rows = Listing.objects.filter(views_count__gt=0).order_by(
+        with_views = Listing.objects.filter(views_count__gt=0).order_by(
             '-views_count', '-scraped_at',
         )[:limit]
+        rows = list(with_views)
+        if len(rows) < limit:
+            seen_ids = {row.pk for row in rows}
+            extra = (
+                Listing.objects.exclude(pk__in=seen_ids)
+                .order_by('-scraped_at')[: max(0, limit - len(rows))]
+            )
+            rows.extend(extra)
 
         out: list[dict] = []
         for rank, listing in enumerate(rows, start=1):

@@ -193,6 +193,11 @@ class JijiCollectionService:
                 f'Jiji : {created} annonce(s) créée(s), {updated} mise(s) à jour, '
                 f'{skipped_total} ignorée(s) (déjà connues), {snaps} snapshot(s)'
             )
+            if created == 0 and updated == 0 and not cancelled and not errors:
+                msg += (
+                    ' — aucune annonce extraite (Jiji peut bloquer le VPS : '
+                    'vérifiez les logs Celery ou relancez après déploiement Playwright).'
+                )
             if cancelled:
                 msg = f'Interrompu — {msg}'
             cls._report(progress, 95 if not cancelled else 90, msg)

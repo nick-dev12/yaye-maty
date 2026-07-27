@@ -214,7 +214,7 @@ class JijiScraper:
             page = max(1, int(listing_page_offset or 1))
             search_path = f'/search?query={q}' if page <= 1 else f'/search?query={q}&page={page}'
             try:
-                html = self._get(search_path)
+                html = self._get(search_path, card_fallback=True)
                 _merge(self._parse_listing_cards(html))
                 if self.use_playwright and len(cards) < max_products * 2:
                     try:
@@ -231,7 +231,7 @@ class JijiScraper:
         # 2) Catégorie + scroll
         if path and len(cards) < max_products:
             try:
-                html = self._get(path)
+                html = self._get(path, card_fallback=True)
                 _merge(self._parse_listing_cards(html))
                 if self.use_playwright:
                     try:
@@ -249,7 +249,7 @@ class JijiScraper:
         if not search_first and len(cards) < max(1, max_products // 2) and keyword.strip():
             q = quote_plus(keyword.strip())
             try:
-                html = self._get(f'/search?query={q}')
+                html = self._get(f'/search?query={q}', card_fallback=True)
                 _merge(self._parse_listing_cards(html))
             except JijiScraperError:
                 pass
@@ -287,7 +287,7 @@ class JijiScraper:
 
     def fetch_homepage_cards(self) -> list[dict]:
         """Parse les annonces Trending de la page d'accueil Jiji."""
-        html = self._get('/')
+        html = self._get('/', card_fallback=True)
         return self._parse_listing_cards(html, source='trending')
 
     def filter_cards_by_keyword(self, cards: list[dict], keyword: str) -> list[dict]:
@@ -302,6 +302,11 @@ class JijiScraper:
     ) -> ExtractedJijiListing | None:
         html = self._get(listing_url)
         extracted = self._parse_listing_page(html, listing_url)
+        if not extracted and self.use_playwright:
+            full_url = listing_url if listing_url.startswith('http') else urljoin(BASE_URL, listing_url)
+            logger.info('Fiche Jiji illisible en HTTP — repli Playwright sur %s', full_url)
+            html = self._get_playwright(full_url)
+            extracted = self._parse_listing_page(html, listing_url)
         if not extracted:
             return None
         extracted.search_keyword = keyword
@@ -337,11 +342,19 @@ class JijiScraper:
         if self.should_cancel and self.should_cancel():
             raise JijiScraperError('Collecte Jiji annulée')
 
-    def _looks_like_challenge(self, html: str) -> bool:
+    def _looks_like_challenge(self, html: str, status_code: int | None = None) -> bool:
+        if status_code in (403, 429, 503):
+            return True
         low = (html or '').lower()
         return any(m in low for m in CHALLENGE_MARKERS)
 
-    def _get(self, path_or_url: str) -> str:
+    def _get(self, path_or_url: str, *, card_fallback: bool = False) -> str:
+        """
+        Charge une page Jiji (HTTP puis repli Playwright si besoin).
+
+        ``card_fallback`` : si le HTML HTTP ne contient aucune carte annonce,
+        retente avec Playwright (pages rendues côté client sur le VPS).
+        """
         self._check_cancel()
         self._throttle()
         url = path_or_url if path_or_url.startswith('http') else urljoin(BASE_URL, path_or_url)
@@ -349,16 +362,27 @@ class JijiScraper:
         self._last_request_at = time.monotonic()
         try:
             resp = self.session.get(url, timeout=self.timeout)
+            html = resp.text or ''
+            if self._looks_like_challenge(html, resp.status_code):
+                if self.use_playwright:
+                    logger.info('Jiji challenge HTTP %s — repli Playwright sur %s', resp.status_code, url)
+                    return self._get_playwright(url)
+                raise JijiScraperError(f'Blocage Jiji HTTP {resp.status_code} sur {url}')
+            if resp.status_code >= 400:
+                if self.use_playwright:
+                    logger.info('Jiji HTTP %s — repli Playwright sur %s', resp.status_code, url)
+                    return self._get_playwright(url)
+                raise JijiScraperError(f'HTTP {resp.status_code} sur {url}')
         except requests.RequestException as exc:
-            raise JijiScraperError(f'Requête Jiji échouée : {exc}') from exc
-
-        if resp.status_code in (403, 503) or self._looks_like_challenge(resp.text):
             if self.use_playwright:
+                logger.warning('Requête Jiji échouée (%s) — repli Playwright sur %s', exc, url)
                 return self._get_playwright(url)
-            raise JijiScraperError(f'Blocage Jiji HTTP {resp.status_code} sur {url}')
-        if resp.status_code >= 400:
-            raise JijiScraperError(f'HTTP {resp.status_code} sur {url}')
-        return resp.text
+            raise JijiScraperError(f'Requête Jiji échouée : {exc}') from exc
+        else:
+            if card_fallback and self.use_playwright and not self._parse_listing_cards(html):
+                logger.info('Jiji HTTP sans cartes — repli Playwright sur %s', url)
+                return self._get_playwright(url)
+            return html
 
     def _ensure_playwright(self):
         if self._pw_bundle is not None:
@@ -368,21 +392,37 @@ class JijiScraper:
         except ImportError as exc:
             raise JijiScraperError('Playwright non installé') from exc
 
-        playwright = sync_playwright().start()
-        browser = playwright.chromium.launch(headless=True)
+        stealth_cm = None
+        try:
+            from playwright_stealth import Stealth
+            from intelligence.scrapers.constants import CHROMIUM_LAUNCH_ARGS, DEFAULT_VIEWPORT
+
+            stealth = Stealth(navigator_languages_override=('fr-FR', 'fr'))
+            stealth_cm = stealth.use_sync(sync_playwright())
+            playwright = stealth_cm.__enter__()
+            browser = playwright.chromium.launch(headless=True, args=CHROMIUM_LAUNCH_ARGS)
+            viewport = DEFAULT_VIEWPORT
+        except ImportError:
+            from intelligence.scrapers.constants import DEFAULT_VIEWPORT
+
+            playwright = sync_playwright().start()
+            browser = playwright.chromium.launch(headless=True)
+            viewport = DEFAULT_VIEWPORT
+
         context = browser.new_context(
             user_agent=USER_AGENT,
             locale='fr-FR',
-            viewport={'width': 1365, 'height': 900},
+            viewport=viewport,
         )
         page = context.new_page()
 
         class _Bundle:
-            def __init__(self, pw, br, ctx, pg):
+            def __init__(self, pw, br, ctx, pg, stealth_context=None):
                 self.playwright = pw
                 self.browser = br
                 self.context = ctx
                 self.page = pg
+                self.stealth_cm = stealth_context
 
             def close(self):
                 try:
@@ -391,9 +431,12 @@ class JijiScraper:
                     try:
                         self.browser.close()
                     finally:
-                        self.playwright.stop()
+                        if self.stealth_cm is not None:
+                            self.stealth_cm.__exit__(None, None, None)
+                        else:
+                            self.playwright.stop()
 
-        self._pw_bundle = _Bundle(playwright, browser, context, page)
+        self._pw_bundle = _Bundle(playwright, browser, context, page, stealth_cm)
         return self._pw_bundle
 
     def _get_playwright(self, url: str) -> str:
@@ -405,9 +448,12 @@ class JijiScraper:
         page = bundle.page
         page.goto(url, wait_until='domcontentloaded', timeout=int(self.timeout * 1000))
         try:
-            page.wait_for_timeout(1200)
+            page.wait_for_selector('a.qa-advert-list-item, .qa-advert-title', timeout=8000)
         except Exception:
-            pass
+            try:
+                page.wait_for_timeout(1800)
+            except Exception:
+                pass
         html = page.content()
         if self._looks_like_challenge(html):
             raise JijiScraperError(f'Challenge anti-bot persistant (Playwright) sur {url}')

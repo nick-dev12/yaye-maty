@@ -97,13 +97,21 @@ class MarketDataWindowService:
 
         jumia_products = router.jumia_products_qs().count()
         jumia_reviews = router.jumia_reviews_qs().count()
+        jiji_listings = router.jiji_listings_qs().count()
         last_jumia = (
             router.jumia_product_model.objects.order_by('-scraped_at')
             .values_list('scraped_at', flat=True)
             .first()
         )
+        last_jiji = (
+            router.jiji_listing_model.objects.order_by('-scraped_at')
+            .values_list('scraped_at', flat=True)
+            .first()
+        )
         if last_jumia:
             last_update = max(last_update, last_jumia) if last_update else last_jumia
+        if last_jiji:
+            last_update = max(last_update, last_jiji) if last_update else last_jiji
 
         return {
             'days': None,
@@ -120,6 +128,7 @@ class MarketDataWindowService:
             'total_recommendations': router.recommendations_qs().count(),
             'total_jumia_products': jumia_products,
             'total_jumia_reviews': jumia_reviews,
+            'total_jiji_listings': jiji_listings,
         }
 
     @classmethod

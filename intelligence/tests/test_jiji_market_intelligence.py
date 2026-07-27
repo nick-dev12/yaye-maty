@@ -59,6 +59,29 @@ DETAIL_HTML = """
 
 
 class JijiScraperParseTests(TestCase):
+    def test_get_falls_back_to_playwright_when_http_has_no_cards(self):
+        scraper = JijiScraper(use_playwright=True)
+        empty_html = '<html><body><div id="app"></div></body></html>'
+
+        def _fake_get(*args, **kwargs):
+            return type('Resp', (), {'status_code': 200, 'text': empty_html})()
+
+        scraper.session.get = _fake_get
+        scraper._get_playwright = lambda url: LISTING_HTML  # noqa: ARG005
+        html = scraper._get('/search?query=motopompe', card_fallback=True)
+        self.assertIn('Motopompe Honda', html)
+
+    def test_get_skips_playwright_when_http_has_cards(self):
+        scraper = JijiScraper(use_playwright=True)
+        calls = {'n': 0}
+        scraper._get_playwright = lambda url: calls.__setitem__('n', calls['n'] + 1) or LISTING_HTML  # noqa: ARG005
+        scraper.session.get = lambda *args, **kwargs: type(  # noqa: ARG005
+            'Resp', (), {'status_code': 200, 'text': LISTING_HTML},
+        )()
+        html = scraper._get('/search?query=motopompe', card_fallback=True)
+        self.assertIn('Motopompe Honda', html)
+        self.assertEqual(calls['n'], 0)
+
     def test_parse_listing_cards_and_filter(self):
         scraper = JijiScraper(use_playwright=False)
         cards = scraper._parse_listing_cards(LISTING_HTML)

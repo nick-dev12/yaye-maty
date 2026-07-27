@@ -34,8 +34,6 @@ class JijiMarketSignalService:
         Jumia = router.jumia_product_model
         Jiji = router.jiji_listing_model
 
-        from intelligence.models import JijiListing
-
         jumia_by_slug = {
             row['catalog_product_slug']: row
             for row in Jumia.objects.exclude(catalog_product_slug='')
@@ -44,7 +42,7 @@ class JijiMarketSignalService:
             .annotate(avg_price=Avg('price_xof'), n=Count('id'))
         }
         jiji_agg = (
-            Jiji.objects.filter(condition=JijiListing.Condition.NEW)
+            Jiji.objects.filter(condition=Jiji.Condition.NEW)
             .exclude(price_xof__isnull=True)
             .values('catalog_product_slug', 'search_keyword')
             .annotate(

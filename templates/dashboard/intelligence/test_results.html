@@ -53,6 +53,9 @@
                     {% if data_window.total_jumia_products is not None %}
                     · {{ data_window.total_jumia_products }} produit(s) Jumia · {{ data_window.total_jumia_reviews }} avis
                     {% endif %}
+                    {% if data_window.total_jiji_listings is not None %}
+                    · {{ data_window.total_jiji_listings }} annonce(s) Jiji
+                    {% endif %}
                     · {{ data_window.last_update_label }}
                 </p>
             </div>
