@@ -19,6 +19,14 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+## Déploiement production (VPS Webuzo)
+
+Guide complet étape par étape : **[DEPLOYMENT.md](DEPLOYMENT.md)**
+
+Inclut : Gunicorn, Nginx/Webuzo, PostgreSQL, Redis, Celery, Playwright, SSL et dépannage.
+
+Fichiers prêts à copier : dossier `deploy/` et `.env.production.example`.
+
 ## Celery (Linux / VPS)
 
 ```bash

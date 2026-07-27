@@ -1,0 +1,19 @@
+[Unit]
+Description=Gunicorn YAYEMATY — analyse.yayematy.com
+After=network.target postgresql.service redis.service
+
+[Service]
+User=colobanes
+Group=colobanes
+WorkingDirectory=/home/colobanes/analyse.yayematy.com
+Environment="PATH=/home/colobanes/analyse.yayematy.com/venv/bin"
+ExecStart=/home/colobanes/analyse.yayematy.com/venv/bin/gunicorn \
+    --workers 2 \
+    --bind unix:/home/colobanes/analyse.yayematy.com/gunicorn.sock \
+    --timeout 120 \
+    yayematy_project.wsgi:application
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

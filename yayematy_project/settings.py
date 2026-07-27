@@ -130,6 +130,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -270,3 +271,11 @@ NLP_CLASSIFIER = {
     'MODEL_NAME': os.getenv('NLP_MODEL_NAME', 'cmarkea/distilcamembert-base-nli'),
     'CONFIDENCE_THRESHOLD': float(os.getenv('NLP_CONFIDENCE_THRESHOLD', '0.55')),
 }
+
+# Production derrière Nginx + HTTPS (voir DEPLOYMENT.md)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True

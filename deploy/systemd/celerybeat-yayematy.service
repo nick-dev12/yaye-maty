@@ -1,0 +1,16 @@
+[Unit]
+Description=Celery Beat YAYEMATY
+After=network.target redis.service celery-yayematy.service
+
+[Service]
+Type=simple
+User=colobanes
+Group=colobanes
+WorkingDirectory=/home/colobanes/analyse.yayematy.com
+Environment="PATH=/home/colobanes/analyse.yayematy.com/venv/bin"
+ExecStart=/home/colobanes/analyse.yayematy.com/venv/bin/celery -A yayematy_project beat -l info
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
