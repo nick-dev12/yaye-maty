@@ -1050,6 +1050,10 @@
     gap: 0.85rem;
 }
 
+.jiji-panel--wide {
+    grid-column: 1 / -1;
+}
+
 .jiji-panel-title {
     margin: 0 0 0.65rem;
     font-size: 0.95rem;

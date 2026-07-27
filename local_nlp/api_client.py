@@ -56,6 +56,32 @@ class IntelligenceApiClient:
         logger.info('Analyses envoyées : %s', payload.get('stats', {}))
         return payload
 
+    def fetch_raw_jiji_listings(self, *, limit: int | None = None) -> list[dict[str, Any]]:
+        params = {}
+        if limit is not None:
+            params['limit'] = limit
+        url = self.config.endpoint('raw-jiji-listings/')
+        response = self.session.get(url, params=params, timeout=self.config.timeout_seconds)
+        response.raise_for_status()
+        payload = response.json()
+        listings = payload.get('listings', [])
+        logger.info('%s annonce(s) Jiji reçue(s) du VPS.', len(listings))
+        return listings
+
+    def submit_jiji_analysis(self, results: list[dict[str, Any]]) -> dict[str, Any]:
+        if not results:
+            return {'success': True, 'stats': {'updated': 0}}
+        url = self.config.endpoint('analyzed-jiji-listings/')
+        response = self.session.post(
+            url,
+            json={'results': results},
+            timeout=self.config.timeout_seconds,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        logger.info('Analyses Jiji envoyées : %s', payload.get('stats', {}))
+        return payload
+
     def health_check(self) -> bool:
         """Vérifie que l'API répond (via social-posts)."""
         url = self.config.endpoint('social-posts/')

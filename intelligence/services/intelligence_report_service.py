@@ -58,10 +58,13 @@ class IntelligenceReportService:
         },
         {
             'id': 'jiji',
-            'key': 'top_jiji_views',
-            'label': 'Jiji',
-            'title': 'Top 10 annonces Jiji',
-            'hint': 'Annonces locales les plus consultées — signal de demande directe.',
+            'key': 'top_jiji_analyzed',
+            'label': 'Jiji NLP',
+            'title': 'Top 10 annonces Jiji analysées',
+            'hint': (
+                'Annonces locales filtrées et analysées (produit agricole, pertinence, '
+                'sentiment) — prêtes pour le sourcing.'
+            ),
             'empty_action': 'Lancez la collecte Jiji.',
             'empty_url_name': 'intelligence:collecte',
         },
@@ -99,6 +102,7 @@ class IntelligenceReportService:
         top_social_likes = SocialRankingService.get_top_posts(
             metric='likes', limit=limit, since=since, until=until,
         )
+        top_jiji_analyzed = JijiRankingService.get_top_analyzed(limit=limit)
         top_jiji_views = JijiRankingService.get_top_listings(limit=limit)
         top_jumia_popular = JumiaRankingService.get_top_products(limit=limit)
 
@@ -107,6 +111,7 @@ class IntelligenceReportService:
             'top_searches': top_searches,
             'top_social_views': top_social_views,
             'top_social_likes': top_social_likes,
+            'top_jiji_analyzed': top_jiji_analyzed,
             'top_jiji_views': top_jiji_views,
             'top_jumia_popular': top_jumia_popular,
         }
@@ -239,7 +244,7 @@ class IntelligenceReportService:
         specs = (
             ('top_sourcing', 'orange', 'À sourcer', '#top10-hub', 'sourcing'),
             ('top_social_views', 'jaune', 'Plus vu', '#top10-hub', 'social_views'),
-            ('top_jiji_views', 'bleu', 'Jiji', '#top10-hub', 'jiji'),
+            ('top_jiji_analyzed', 'orange', 'Jiji analysé', '#top10-hub', 'jiji'),
         )
         for key, tone, label, anchor, tab_id in specs:
             items = rankings.get(key) or []

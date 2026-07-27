@@ -55,6 +55,9 @@
                     {% endif %}
                     {% if data_window.total_jiji_listings is not None %}
                     · {{ data_window.total_jiji_listings }} annonce(s) Jiji
+                    {% if data_window.total_jiji_analyzed %}
+                    ({{ data_window.total_jiji_analyzed }} analysée(s))
+                    {% endif %}
                     {% endif %}
                     · {{ data_window.last_update_label }}
                 </p>

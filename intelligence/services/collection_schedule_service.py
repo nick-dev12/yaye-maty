@@ -140,15 +140,14 @@ class CollectionScheduleService:
             logger.info('Session Jumia ignorée : %s', reason)
             return {'success': False, 'skipped': True, 'reason': reason}
 
+        from intelligence.collection_config import get_nlp_batch_limit
         from intelligence.services.jumia_collection_service import JumiaCollectionService
         from intelligence.services.jumia_market_signal_service import JumiaMarketSignalService
         from intelligence.services.jumia_nlp_analysis_service import JumiaNlpAnalysisService
 
         collect = JumiaCollectionService.run(test_mode=False)
-        # Analyse lexicale VPS (rapide) — CamemBERT reste sur machine locale via API
         nlp = JumiaNlpAnalysisService.analyze_pending_locally(
-            limit=200,
-            use_camembert=False,
+            limit=get_nlp_batch_limit(default=200),
         )
         try:
             JumiaMarketSignalService.refresh_all()
@@ -160,7 +159,7 @@ class CollectionScheduleService:
             'skipped': False,
             'reason': reason,
             'collect': collect,
-            'nlp_lexical': nlp,
+            'nlp': nlp,
             'products_created': collect.get('products_created', 0),
             'reviews_created': collect.get('reviews_created', 0),
             'nouvelles_donnees': collect.get('nouvelles_donnees', 0),
@@ -187,10 +186,15 @@ class CollectionScheduleService:
             logger.info('Session Jiji ignorée : %s', reason)
             return {'success': False, 'skipped': True, 'reason': reason}
 
+        from intelligence.collection_config import get_nlp_batch_limit
         from intelligence.services.jiji_collection_service import JijiCollectionService
         from intelligence.services.jiji_market_signal_service import JijiMarketSignalService
+        from intelligence.services.jiji_nlp_analysis_service import JijiNlpAnalysisService
 
         collect = JijiCollectionService.run(test_mode=False)
+        nlp = JijiNlpAnalysisService.analyze_pending_locally(
+            limit=get_nlp_batch_limit(default=200),
+        )
         try:
             hints = JijiMarketSignalService.refresh_arbitrage_hints()
         except Exception:
@@ -202,6 +206,7 @@ class CollectionScheduleService:
             'skipped': False,
             'reason': reason,
             'collect': collect,
+            'nlp': nlp,
             'hints': hints,
             'listings_created': collect.get('listings_created', 0),
             'nouvelles_donnees': collect.get('nouvelles_donnees', 0),

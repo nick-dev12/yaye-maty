@@ -129,6 +129,9 @@ class MarketDataWindowService:
             'total_jumia_products': jumia_products,
             'total_jumia_reviews': jumia_reviews,
             'total_jiji_listings': jiji_listings,
+            'total_jiji_analyzed': router.jiji_listing_model.objects.filter(
+                is_analyzed=True, is_agricultural=True,
+            ).count(),
         }
 
     @classmethod

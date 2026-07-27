@@ -1,22 +1,32 @@
-{% comment %}Section Jiji — marché local Sénégal{% endcomment %}
+{% comment %}Section Jiji — marché local Sénégal + NLP{% endcomment %}
 <section id="jiji-marche" class="intel-widget intel-widget--wide jiji-test-section" aria-labelledby="jiji-test-title">
     <div class="jiji-test-head">
         <div>
-            <p class="collecte-test-kicker">Marketplace locale</p>
-            <h2 id="jiji-test-title" class="intel-card-title">Jiji — neuf, occasion &amp; vendeurs locaux</h2>
+            <p class="collecte-test-kicker">Marketplace locale · NLP</p>
+            <h2 id="jiji-test-title" class="intel-card-title">Jiji — annonces analysées &amp; filtrées</h2>
             <p class="intel-card-subtitle">
-                Collecte via vos mots-clés Paramètres ·
-                {{ jiji_stats.listings_total|default:0 }} annonce(s) ·
-                {{ jiji_stats.total_views|default:0 }} vue(s)
+                {{ jiji_stats.listings_agricultural|default:0 }} annonce(s) agricole(s) analysée(s)
+                · {{ jiji_stats.listings_total|default:0 }} scrapée(s)
+                {% if jiji_stats.listings_pending_nlp %} · {{ jiji_stats.listings_pending_nlp }} en attente NLP{% endif %}
+                · {{ jiji_stats.total_views|default:0 }} vue(s)
                 {% if jiji_stats.used %} · <strong>{{ jiji_stats.used }} occasion</strong>{% endif %}
-                {% if jiji_stats.negotiable %} · {{ jiji_stats.negotiable }} négociable(s){% endif %}
             </p>
         </div>
-        <a href="#top10-hub" class="intel-btn intel-btn--outline js-intel-scroll" data-ir10-tab="jiji">Voir le Top 10 Jiji</a>
+        <a href="#top10-hub" class="intel-btn intel-btn--outline js-intel-scroll" data-ir10-tab="jiji">Top 10 Jiji NLP</a>
     </div>
 
-    {% if market_report.rankings.top_jiji_views %}
-    <div class="ir10-mini-top" aria-label="Top 3 Jiji">
+    {% if market_report.rankings.top_jiji_analyzed %}
+    <div class="ir10-mini-top" aria-label="Top 3 Jiji analysées">
+        {% for item in market_report.rankings.top_jiji_analyzed|slice:":3" %}
+        <article class="ir10-mini-card">
+            <span class="ir10-mini-rank">#{{ item.rank }}</span>
+            <strong>{{ item.title|truncatechars:42 }}</strong>
+            <span class="ir10-mini-metric">{{ item.primary_value }} {{ item.primary_label }}</span>
+        </article>
+        {% endfor %}
+    </div>
+    {% elif market_report.rankings.top_jiji_views %}
+    <div class="ir10-mini-top" aria-label="Top 3 Jiji vues">
         {% for item in market_report.rankings.top_jiji_views|slice:":3" %}
         <article class="ir10-mini-card">
             <span class="ir10-mini-rank">#{{ item.rank }}</span>
@@ -37,7 +47,7 @@
 
     {% if jiji_keyword_demand %}
     <div class="jiji-demand" aria-label="Demande par vues Jiji">
-        <h3 class="jiji-panel-title">Demande locale (vues Jiji par mot-clé)</h3>
+        <h3 class="jiji-panel-title">Demande locale (annonces analysées par mot-clé)</h3>
         <div class="jiji-demand-grid">
             {% for row in jiji_keyword_demand %}
             <article class="jiji-demand-card">
@@ -48,19 +58,7 @@
                 <p class="jiji-opp-meta">
                     {{ row.ads }} annonce(s)
                     {% if row.avg_price %} · moy. {{ row.avg_price|floatformat:0 }} FCFA{% endif %}
-                    · max {{ row.max_views }} vues/annonce
                 </p>
-                {% if row.top_listing_title %}
-                <p class="jiji-opp-evidence">
-                    Top :
-                    {% if row.top_listing_url %}
-                    <a href="{{ row.top_listing_url }}" target="_blank" rel="noopener" class="jiji-product-link">{{ row.top_listing_title|truncatechars:48 }}</a>
-                    {% else %}
-                    {{ row.top_listing_title|truncatechars:48 }}
-                    {% endif %}
-                    ({{ row.top_listing_views }} vues)
-                </p>
-                {% endif %}
                 {% if row.listings %}
                 <button type="button"
                         class="intel-btn intel-btn--outline intel-btn--sm js-marketplace-modal-btn"
@@ -88,21 +86,7 @@
                     <span class="jiji-badge jiji-badge--gap">−{{ opp.gap_percent }}%</span>
                     {% endif %}
                 </header>
-                <p class="jiji-opp-meta">
-                    {% if opp.jumia_avg_price %}Jumia ~ {{ opp.jumia_avg_price|floatformat:0 }} FCFA · {% endif %}
-                    Jiji ~ {{ opp.jiji_avg_price|floatformat:0 }} FCFA
-                    (min {{ opp.jiji_min_price|floatformat:0 }})
-                </p>
                 <p class="jiji-opp-evidence">{{ opp.evidence_text }}</p>
-                {% if opp.listings %}
-                <button type="button"
-                        class="intel-btn intel-btn--outline intel-btn--sm js-marketplace-modal-btn"
-                        data-modal-title="Annonces Jiji — {{ opp.product_label|escape }}"
-                        data-items='{{ opp.listings_json|escape }}'
-                        data-source="jiji">
-                    Voir les annonces ({{ opp.listings|length }})
-                </button>
-                {% endif %}
             </article>
             {% endfor %}
         </div>
@@ -111,18 +95,18 @@
 
     {% if has_jiji %}
     <details class="intel-section-details"{% if page_mode == 'test' %} open{% endif %}>
-        <summary class="intel-section-details-toggle">Tableaux détaillés Jiji (annonces &amp; vendeurs)</summary>
+        <summary class="intel-section-details-toggle">Annonces Jiji analysées (filtrées agricole)</summary>
     <div class="jiji-grid">
-        <article class="jiji-panel">
-            <h3 class="jiji-panel-title">Annonces scrapées</h3>
+        <article class="jiji-panel jiji-panel--wide">
+            <h3 class="jiji-panel-title">Annonces traitées par NLP</h3>
             <div class="jiji-table-wrap">
                 <table class="intel-table jiji-table">
                     <thead>
                         <tr>
                             <th>Annonce</th>
+                            <th>Produit NLP</th>
+                            <th>Pertinence</th>
                             <th>Prix</th>
-                            <th>État</th>
-                            <th>Lieu</th>
                             <th>Vues</th>
                         </tr>
                     </thead>
@@ -130,68 +114,43 @@
                         {% for p in jiji_listings %}
                         <tr>
                             <td>
-                                <a href="{{ p.url }}" target="_blank" rel="noopener" class="jiji-product-link">{{ p.title|truncatechars:55 }}</a>
+                                <a href="{{ p.url }}" target="_blank" rel="noopener" class="jiji-product-link">{{ p.title|truncatechars:50 }}</a>
                                 <span class="jiji-meta">
                                     {{ p.seller_name|default:"—" }}
-                                    {% if p.seller_is_premium %} · Premium{% endif %}
-                                    {% if p.search_keyword %} · {{ p.search_keyword }}{% endif %}
+                                    {% if p.is_analyzed %} · <span class="jiji-badge jiji-badge--info">analysé</span>{% endif %}
+                                    {% if p.sentiment %} · {{ p.sentiment }}{% endif %}
                                 </span>
                             </td>
                             <td>
-                                {% if p.price_xof %}{{ p.price_xof|floatformat:0 }}{% else %}—{% endif %}
-                                {% if p.is_negotiable %}<span class="jiji-badge jiji-badge--nego">Négociable</span>{% endif %}
+                                <strong>{{ p.extracted_product|default:p.nlp_category|default:"—" }}</strong>
+                                {% if p.keywords_detected %}
+                                <span class="jiji-meta">{{ p.keywords_detected|join:", "|truncatechars:40 }}</span>
+                                {% endif %}
                             </td>
-                            <td>{{ p.condition_label }}</td>
                             <td>
-                                <span class="jiji-meta">{{ p.location_area|default:p.location_region|default:"—" }}</span>
+                                {% if p.relevance_score %}{{ p.relevance_score|floatformat:0 }}%{% else %}—{% endif %}
+                            </td>
+                            <td>
+                                {% if p.price_xof %}{{ p.price_xof|floatformat:0 }}{% else %}—{% endif %}
+                                {% if p.is_negotiable %}<span class="jiji-badge jiji-badge--nego">Nég.</span>{% endif %}
                             </td>
                             <td>{{ p.views_count }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="5">Aucune annonce Jiji.</td></tr>
+                        <tr><td colspan="5">Aucune annonce analysée — lancez la collecte Jiji.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </article>
-
-        <article class="jiji-panel">
-            <h3 class="jiji-panel-title">Top vendeurs locaux</h3>
-            <div class="jiji-sellers-list">
-                {% for s in jiji_top_sellers %}
-                <div class="jiji-seller">
-                    <strong>{{ s.seller_name }}</strong>
-                    <span class="jiji-meta">
-                        {{ s.ads_count }} annonce(s) · {{ s.views }} vue(s)
-                        {% if s.member_since %} · {{ s.member_since }}{% endif %}
-                        {% if s.is_verified %} · Vérifié{% endif %}
-                        {% if s.is_premium %} · Premium{% endif %}
-                    </span>
-                    {% if s.regions %}
-                    <span class="jiji-meta">{{ s.regions|join:", " }}</span>
-                    {% endif %}
-                </div>
-                {% empty %}
-                <p class="jiji-meta">Aucun vendeur agrégé pour l’instant.</p>
-                {% endfor %}
-            </div>
-
-            {% if jiji_heatmap %}
-            <h3 class="jiji-panel-title jiji-panel-title--sub">Carte demande (régions)</h3>
-            <ul class="jiji-heatmap">
-                {% for h in jiji_heatmap %}
-                <li>
-                    <span>{{ h.area|default:h.region }}</span>
-                    <strong>{{ h.ads }}</strong>
-                    <span class="jiji-meta">{{ h.views }} vues</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-        </article>
     </div>
     </details>
+    {% elif has_jiji_raw %}
+    <p class="intel-card-subtitle">
+        {{ jiji_stats.listings_total }} annonce(s) en base — analyse NLP en cours ou hors périmètre agricole.
+        Relancez la collecte Jiji ou le client NLP local.
+    </p>
     {% else %}
-    <p class="intel-card-subtitle">Lancez le job <strong>Jiji marché local</strong> en session test pour peupler cette section.</p>
+    <p class="intel-card-subtitle">Lancez le job <strong>Jiji marché local</strong> pour collecter et analyser les annonces.</p>
     {% endif %}
 </section>

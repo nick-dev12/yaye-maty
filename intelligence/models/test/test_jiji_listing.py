@@ -8,6 +8,10 @@ from intelligence.models.jiji_listing import JijiListing
 class TestJijiListing(models.Model):
     """Copie isolée de JijiListing pour les sessions de test."""
 
+    AnalysisStatus = JijiListing.AnalysisStatus
+    Sentiment = JijiListing.Sentiment
+    Intent = JijiListing.Intent
+    AnalysisMethod = JijiListing.AnalysisMethod
     Condition = JijiListing.Condition
 
     listing_id = models.CharField('ID annonce', max_length=80, unique=True, db_index=True)
@@ -43,6 +47,43 @@ class TestJijiListing(models.Model):
     image_url = models.URLField('Image', max_length=500, blank=True)
     attributes = models.JSONField('Attributs', default=dict, blank=True)
     phone_revealed = models.BooleanField('Contact révélé', default=False)
+    analysis_status = models.CharField(
+        'Statut NLP',
+        max_length=16,
+        choices=AnalysisStatus.choices,
+        default=AnalysisStatus.PENDING,
+        db_index=True,
+    )
+    is_analyzed = models.BooleanField('Analysé', default=False, db_index=True)
+    analyzed_at = models.DateTimeField('Analysé le', null=True, blank=True)
+    nlp_analyzed_at = models.DateTimeField('NLP le', null=True, blank=True)
+    sentiment = models.CharField(
+        'Sentiment annonce',
+        max_length=16,
+        choices=Sentiment.choices,
+        blank=True,
+        db_index=True,
+    )
+    intent = models.CharField(
+        'Intention détectée',
+        max_length=32,
+        choices=Intent.choices,
+        blank=True,
+        db_index=True,
+    )
+    extracted_product = models.CharField('Produit extrait', max_length=120, blank=True, db_index=True)
+    nlp_category = models.CharField('Catégorie NLP', max_length=64, blank=True, db_index=True)
+    keywords_detected = models.JSONField('Mots-clés détectés', default=list, blank=True)
+    relevance_score = models.FloatField('Pertinence agricole', null=True, blank=True, db_index=True)
+    is_agricultural = models.BooleanField('Pertinent agricole', default=True, db_index=True)
+    aspects = models.JSONField('Aspects détectés', default=dict, blank=True)
+    analysis_method = models.CharField(
+        'Méthode analyse',
+        max_length=16,
+        choices=AnalysisMethod.choices,
+        default=AnalysisMethod.PENDING,
+    )
+    confidence_score = models.FloatField('Confiance NLP', null=True, blank=True)
     scraped_at = models.DateTimeField('Scrapé le', auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField('Mis à jour le', auto_now=True)
 
@@ -54,3 +95,8 @@ class TestJijiListing(models.Model):
 
     def __str__(self):
         return f'[TEST] {self.title[:60]}'
+
+    @property
+    def text(self) -> str:
+        parts = [p for p in (self.title, self.description, self.search_keyword) if p]
+        return ' — '.join(parts)

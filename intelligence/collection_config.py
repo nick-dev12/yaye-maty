@@ -130,3 +130,18 @@ def get_effective_collection_config(*, test_mode: bool = False) -> dict[str, Any
     if test_mode:
         config.update(TEST_MODE_OVERRIDES)
     return config
+
+
+def is_nlp_camembert_enabled() -> bool:
+    """True si CamemBERT doit tourner sur le VPS (NLP_CLASSIFIER_ENABLED dans .env)."""
+    nlp = getattr(settings, 'NLP_CLASSIFIER', {})
+    return bool(nlp.get('ENABLED', True))
+
+
+def get_nlp_batch_limit(*, default: int = 200) -> int:
+    """Plafond batch NLP — aligné sur COLLECTION_NLP_* du .env."""
+    config = get_collection_config()
+    posts = int(config.get('NLP_POST_LIMIT') or 0)
+    comments = int(config.get('NLP_COMMENT_LIMIT') or 0)
+    cap = max(posts, comments, default)
+    return min(cap, 500)

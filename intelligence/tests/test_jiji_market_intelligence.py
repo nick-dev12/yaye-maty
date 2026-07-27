@@ -119,6 +119,45 @@ class JijiScraperParseTests(TestCase):
 
 
 class JijiPersistAndArbitrageTests(TestCase):
+    def test_jiji_nlp_lexical_agricultural(self):
+        stats = __import__(
+            'intelligence.services.jiji_nlp_analysis_service',
+            fromlist=['JijiNlpAnalysisService'],
+        ).JijiNlpAnalysisService.analyze_text_lexical(
+            'Motopompe Honda irrigation neuf Dakar prix negociable',
+        )
+        self.assertTrue(stats['is_agricultural'])
+        self.assertEqual(stats['analysis_status'], JijiListing.AnalysisStatus.DONE)
+        self.assertGreater(stats['relevance_score'], 0.3)
+
+    def test_jiji_nlp_skips_phone_listing(self):
+        from intelligence.services.jiji_nlp_analysis_service import JijiNlpAnalysisService
+
+        stats = JijiNlpAnalysisService.analyze_text_lexical('iPhone 15 Pro Max telephone Samsung')
+        self.assertFalse(stats['is_agricultural'])
+        self.assertEqual(stats['analysis_status'], JijiListing.AnalysisStatus.SKIPPED)
+
+    def test_jiji_nlp_pipeline_test_tables(self):
+        token = set_collection_context(CollectionRunContext.test())
+        try:
+            TestJijiListing.objects.create(
+                listing_id='nlp-test-1',
+                listing_url='https://jiji.sn/x/nlp-test-1.html',
+                title='Motopompe test NLP',
+                description='Pompe irrigation agricole neuf',
+                search_keyword='motopompe',
+                views_count=120,
+            )
+            from intelligence.services.jiji_nlp_analysis_service import JijiNlpAnalysisService
+
+            stats = JijiNlpAnalysisService.analyze_pending_locally(limit=10, use_camembert=False)
+            self.assertGreaterEqual(stats.get('analyzed', 0), 1)
+            row = TestJijiListing.objects.get(listing_id='nlp-test-1')
+            self.assertTrue(row.is_analyzed)
+            self.assertTrue(row.is_agricultural)
+        finally:
+            reset_collection_context(token)
+
     def test_persist_isolation_and_snapshot(self):
         extracted = ExtractedJijiListing(
             listing_id='ISOJIJI01',

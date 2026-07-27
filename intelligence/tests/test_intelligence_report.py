@@ -33,7 +33,7 @@ class IntelligenceReportServiceTests(TestCase):
         self.assertEqual(len(report['sections']), 6)
         keys = {s['key'] for s in report['sections']}
         self.assertIn('top_sourcing', keys)
-        self.assertIn('top_jiji_views', keys)
+        self.assertIn('top_jiji_analyzed', keys)
 
     def test_build_report_items_have_why_here_when_data(self):
         token = set_collection_context(CollectionRunContext.test())
@@ -41,15 +41,20 @@ class IntelligenceReportServiceTests(TestCase):
             TestJijiListing.objects.create(
                 listing_id='RPT001',
                 listing_url='https://jiji.sn/rpt.html',
-                title='Pompe test rapport',
+                title='Motopompe test rapport',
+                description='Pompe irrigation agricole',
                 views_count=500,
-                search_keyword='pompe',
+                search_keyword='motopompe',
+                is_analyzed=True,
+                is_agricultural=True,
+                relevance_score=0.82,
+                analysis_status=JijiListing.AnalysisStatus.DONE,
             )
             report = IntelligenceReportService.build_report(limit=10)
-            jiji_items = report['rankings']['top_jiji_views']
+            jiji_items = report['rankings']['top_jiji_analyzed']
             self.assertTrue(jiji_items)
             self.assertTrue(jiji_items[0]['why_here'])
-            self.assertEqual(jiji_items[0]['primary_value'], 500)
+            self.assertGreater(jiji_items[0]['primary_value'], 0)
         finally:
             reset_collection_context(token)
 
@@ -98,11 +103,35 @@ class JumiaJijiRankingTests(TestCase):
             TestJijiListing.objects.create(
                 listing_id='RANKJ02',
                 listing_url='https://jiji.sn/b.html',
-                title='Annonce vue',
+                title='Motopompe annonce vue',
+                description='Irrigation agricole',
                 views_count=88,
+                is_analyzed=True,
+                is_agricultural=True,
+                relevance_score=0.7,
+                analysis_status=JijiListing.AnalysisStatus.DONE,
             )
             rows = JijiRankingService.get_top_listings(limit=5)
             self.assertEqual(rows[0]['primary_value'], 88)
+        finally:
+            reset_collection_context(token)
+
+    def test_jiji_top_analyzed(self):
+        token = set_collection_context(CollectionRunContext.test())
+        try:
+            TestJijiListing.objects.create(
+                listing_id='RANKJ03',
+                listing_url='https://jiji.sn/c.html',
+                title='Tracteur occasion',
+                description='Materiel agricole',
+                views_count=10,
+                is_analyzed=True,
+                is_agricultural=True,
+                relevance_score=0.91,
+                analysis_status=JijiListing.AnalysisStatus.DONE,
+            )
+            rows = JijiRankingService.get_top_analyzed(limit=5)
+            self.assertGreaterEqual(rows[0]['primary_value'], 90)
         finally:
             reset_collection_context(token)
 

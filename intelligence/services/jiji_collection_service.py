@@ -186,13 +186,17 @@ class JijiCollectionService:
                 skipped_total += int(homepage_result.get('listings_skipped') or 0)
 
             cls._refresh_signals_safe()
+            nlp_stats = cls._analyze_nlp_safe() or {}
 
             nouvelles = created
             cancelled = bool(should_cancel and should_cancel())
+            analyzed_n = int(nlp_stats.get('analyzed') or 0)
             msg = (
                 f'Jiji : {created} annonce(s) créée(s), {updated} mise(s) à jour, '
                 f'{skipped_total} ignorée(s) (déjà connues), {snaps} snapshot(s)'
             )
+            if analyzed_n:
+                msg += f', {analyzed_n} analysée(s) (NLP)'
             if created == 0 and updated == 0 and not cancelled and not errors:
                 msg += (
                     ' — aucune annonce extraite (Jiji peut bloquer le VPS : '
@@ -211,6 +215,7 @@ class JijiCollectionService:
                 'snapshots_created': snaps,
                 'homepage_radar': homepage_result,
                 'keywords': keyword_summaries,
+                'nlp': nlp_stats,
                 'errors': errors[:20],
                 'requests': scraper.request_count,
                 'playwright_fetches': scraper.playwright_fetches,
@@ -235,6 +240,21 @@ class JijiCollectionService:
             }
         finally:
             scraper.close()
+
+    @classmethod
+    def _analyze_nlp_safe(cls) -> dict:
+        """Analyse NLP Jiji après collecte (lexical + CamemBERT si NLP_CLASSIFIER_ENABLED)."""
+        try:
+            from intelligence.collection_config import get_nlp_batch_limit
+            from intelligence.services.jiji_nlp_analysis_service import JijiNlpAnalysisService
+
+            return cls._run_orm_safe(
+                JijiNlpAnalysisService.analyze_pending_locally,
+                limit=get_nlp_batch_limit(default=200),
+            )
+        except Exception:
+            logger.exception('Analyse NLP Jiji échouée')
+            return {}
 
     @classmethod
     def _refresh_signals_safe(cls) -> None:
@@ -311,6 +331,10 @@ class JijiCollectionService:
             listing_id=extracted.listing_id,
             defaults=defaults,
         )
+        if was_created:
+            obj.analysis_status = Listing.AnalysisStatus.PENDING
+            obj.is_analyzed = False
+            obj.save(update_fields=['analysis_status', 'is_analyzed', 'updated_at'])
         snap_n = 0
         need_snap = was_created
         if not was_created:

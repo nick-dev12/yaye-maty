@@ -150,3 +150,42 @@ class SocialApiController:
 
         stats = JumiaNlpAnalysisService.apply_analysis_results(results)
         return JsonResponse({'success': True, 'stats': stats})
+
+    def raw_jiji_listings(self, request) -> JsonResponse:
+        """
+        GET /api/raw-jiji-listings/
+
+        Annonces Jiji non analysées — à traiter sur la machine locale (CamemBERT).
+        """
+        from intelligence.services.jiji_nlp_analysis_service import JijiNlpAnalysisService
+
+        try:
+            limit = min(int(request.GET.get('limit', self.DEFAULT_LIMIT)), 200)
+        except (TypeError, ValueError):
+            limit = self.DEFAULT_LIMIT
+
+        listings = JijiNlpAnalysisService.get_pending_for_nlp(limit=limit)
+        return JsonResponse({
+            'count': len(listings),
+            'schema_version': 'jiji_listing_v1',
+            'listings': [JijiNlpAnalysisService.serialize_for_nlp(row) for row in listings],
+        })
+
+    def analyzed_jiji_listings(self, request) -> JsonResponse:
+        """
+        POST /api/analyzed-jiji-listings/
+
+        Body: {"results": [{"id": 1, "sentiment": "positive", "nlp_category": "irrigation", ...}]}
+        """
+        from intelligence.services.jiji_nlp_analysis_service import JijiNlpAnalysisService
+
+        body = parse_json_body(request)
+        if body is None:
+            return JsonResponse({'error': 'JSON invalide.'}, status=400)
+
+        results = body.get('results') if isinstance(body, dict) else body
+        if not isinstance(results, list):
+            return JsonResponse({'error': 'Le champ "results" (liste) est requis.'}, status=400)
+
+        stats = JijiNlpAnalysisService.apply_analysis_results(results)
+        return JsonResponse({'success': True, 'stats': stats})

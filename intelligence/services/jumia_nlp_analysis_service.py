@@ -195,12 +195,17 @@ class JumiaNlpAnalysisService:
         return {'updated': updated, 'missing': missing, 'products_touched': len(touched_products)}
 
     @classmethod
-    def analyze_pending_locally(cls, *, limit: int = 50, use_camembert: bool = True) -> dict:
+    def analyze_pending_locally(cls, *, limit: int = 50, use_camembert: bool | None = None) -> dict:
         """
-        Analyse locale (machine cerveau) des avis pending.
+        Analyse locale des avis pending.
 
-        Utilise un filtre lexical rapide, puis CamemBERT si activé.
+        ``use_camembert`` : None → lit ``NLP_CLASSIFIER_ENABLED`` (.env VPS).
         """
+        from intelligence.collection_config import is_nlp_camembert_enabled
+
+        if use_camembert is None:
+            use_camembert = is_nlp_camembert_enabled()
+
         pending = cls.get_pending_for_nlp(limit=limit)
         results = []
         for review in pending:
@@ -228,6 +233,7 @@ class JumiaNlpAnalysisService:
             results.append(payload)
         stats = cls.apply_analysis_results(results)
         stats['analyzed'] = len(results)
+        stats['camembert'] = use_camembert
         return stats
 
     @classmethod

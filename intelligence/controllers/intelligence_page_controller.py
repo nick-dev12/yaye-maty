@@ -592,6 +592,16 @@ class IntelligencePageController:
             },
             {
                 'method': 'GET',
+                'path': '/intelligence/api/raw-jiji-listings/',
+                'description': 'Annonces Jiji brutes pour analyse NLP locale.',
+            },
+            {
+                'method': 'POST',
+                'path': '/intelligence/api/analyzed-jiji-listings/',
+                'description': 'Résultats NLP Jiji (local → VPS).',
+            },
+            {
+                'method': 'GET',
                 'path': '/intelligence/api/social-posts/',
                 'description': 'Liste des publications sociales collectées.',
             },

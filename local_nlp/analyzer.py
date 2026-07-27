@@ -65,6 +65,19 @@ NEGATIVE_WORDS = (
 )
 
 
+@dataclass(frozen=True)
+class JijiAnalysisResult:
+    """Résultat d'analyse pour une annonce Jiji."""
+
+    listing_id: int
+    nlp_category: str
+    sentiment: str
+    keywords: list[str]
+    relevance_score: float
+    extracted_product: str
+    is_agricultural: bool
+
+
 class AgriculturalAnalyzer:
     """Analyse locale des textes collectés sur les réseaux sociaux."""
 
@@ -103,6 +116,54 @@ class AgriculturalAnalyzer:
                 'sentiment': item.sentiment,
                 'keywords': item.keywords,
                 'status': 'done',
+            }
+            for item in results
+        ]
+
+    def analyze_jiji_batch(self, listings: list[dict]) -> list[JijiAnalysisResult]:
+        return [self.analyze_jiji_listing(row) for row in listings]
+
+    def analyze_jiji_listing(self, listing: dict) -> JijiAnalysisResult:
+        listing_id = int(listing['id'])
+        text = str(listing.get('text') or listing.get('title') or '')
+        desc = str(listing.get('description') or '')
+        combined = self._normalize(f'{text} {desc}')
+        category, cat_score = self._detect_category(combined)
+        sentiment = self._detect_sentiment(combined)
+        keywords = self._extract_keywords(combined, category)
+        agri_hints = (
+            'agricol', 'motopompe', 'pompe', 'tracteur', 'irrigation', 'semence',
+            'engrais', 'ferme', 'volaille', 'farm', 'solaire',
+        )
+        phone_hints = ('iphone', 'telephone', 'samsung', 'smartphone')
+        is_agricultural = any(h in combined for h in agri_hints) and not any(
+            h in combined for h in phone_hints
+        )
+        product_label = (listing.get('search_keyword') or listing.get('title') or '')[:80]
+        return JijiAnalysisResult(
+            listing_id=listing_id,
+            nlp_category=category,
+            sentiment=sentiment,
+            keywords=keywords,
+            relevance_score=round(cat_score if is_agricultural else 0.1, 2),
+            extracted_product=product_label,
+            is_agricultural=is_agricultural,
+        )
+
+    def to_jiji_api_payload(self, results: list[JijiAnalysisResult]) -> list[dict]:
+        return [
+            {
+                'id': item.listing_id,
+                'nlp_category': item.nlp_category,
+                'sentiment': item.sentiment,
+                'keywords_detected': item.keywords,
+                'relevance_score': item.relevance_score,
+                'extracted_product': item.extracted_product,
+                'extracted_product_slug': item.nlp_category.replace(' ', '_')[:80],
+                'is_agricultural': item.is_agricultural,
+                'analysis_status': 'done' if item.is_agricultural else 'skipped',
+                'method': 'keyword',
+                'confidence': item.relevance_score,
             }
             for item in results
         ]

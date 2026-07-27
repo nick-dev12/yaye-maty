@@ -688,9 +688,9 @@ class ManualCollectionService:
                 {
                     'id': cls.JOB_JIJI,
                     'label': 'Jiji marché local',
-                    'desc': 'Annonces locales neuf/occasion (volume = max_videos Paramètres)',
+                    'desc': 'Annonces locales + analyse NLP (produit, pertinence agricole)',
                     'tone': 'jaune',
-                    'auto_nlp': False,
+                    'auto_nlp': True,
                 },
                 {
                     'id': cls.JOB_KEYWORD,
@@ -739,9 +739,9 @@ class ManualCollectionService:
             {
                 'id': cls.JOB_JIJI,
                 'label': 'Jiji marché local',
-                'desc': 'Annonces Jiji — nb annonces = max_videos Paramètres',
+                'desc': 'Annonces Jiji + analyse NLP (produit agricole, pertinence)',
                 'tone': 'jaune',
-                'auto_nlp': False,
+                'auto_nlp': True,
             },
             {
                 'id': cls.JOB_KEYWORD,

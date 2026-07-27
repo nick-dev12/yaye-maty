@@ -129,3 +129,16 @@ def api_raw_jumia_reviews_view(request):
 @require_http_methods(['POST'])
 def api_analyzed_jumia_reviews_view(request):
     return _api.analyzed_jumia_reviews(request)
+
+
+@csrf_exempt
+@require_api_key
+def api_raw_jiji_listings_view(request):
+    return _api.raw_jiji_listings(request)
+
+
+@csrf_exempt
+@require_api_key
+@require_http_methods(['POST'])
+def api_analyzed_jiji_listings_view(request):
+    return _api.analyzed_jiji_listings(request)

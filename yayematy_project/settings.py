@@ -265,7 +265,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-# NLP CamemBERT zero-shot — exécution sur VPS (~500 Mo RAM)
+# NLP CamemBERT zero-shot — VPS si NLP_CLASSIFIER_ENABLED=True, sinon lexical seul
 NLP_CLASSIFIER = {
     'ENABLED': os.getenv('NLP_CLASSIFIER_ENABLED', 'True').lower() in ('true', '1', 'yes'),
     'MODEL_NAME': os.getenv('NLP_MODEL_NAME', 'cmarkea/distilcamembert-base-nli'),

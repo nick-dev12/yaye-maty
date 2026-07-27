@@ -32,4 +32,10 @@ urlpatterns = [
         views.api_analyzed_jumia_reviews_view,
         name='api_analyzed_jumia_reviews',
     ),
+    path('api/raw-jiji-listings/', views.api_raw_jiji_listings_view, name='api_raw_jiji_listings'),
+    path(
+        'api/analyzed-jiji-listings/',
+        views.api_analyzed_jiji_listings_view,
+        name='api_analyzed_jiji_listings',
+    ),
 ]
