@@ -1,14 +1,42 @@
 # Mises à jour sur le serveur — YAYEMATY MARKET
 
-Guide rapide pour **mettre à jour le code**, **publier les fichiers statiques** (CSS, JS, images) et **redémarrer les services** après chaque déploiement.
+Guide pratique pour **déployer et mettre à jour** le site sur le VPS : Git, fichiers statiques, migrations, redémarrage Gunicorn/Celery.
 
-> Installation initiale complète du VPS : voir **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+> **Installation initiale** (première fois sur le VPS) : **[DEPLOYMENT.md](DEPLOYMENT.md)**  
+> Modèle `.env` production : **`.env.production.example`**
+
+---
+
+## Environnement de référence
+
+| Élément | Valeur |
+|---------|--------|
+| VPS | Ubuntu 24.04 — Contabo Cloud VPS 8 |
+| IP | `173.249.41.61` |
+| Domaine | `https://analyse.yayematy.com` |
+| Utilisateur Linux | **`colobanes`** (propriétaire du projet) |
+| Dossier projet | `/home/colobanes/analyse.yayematy.com` |
+| Virtualenv | `/home/colobanes/analyse.yayematy.com/venv` |
+| Dépôt Git | `https://github.com/nick-dev12/yaye-maty` |
+
+---
+
+## Règle d’or sur le VPS
+
+| Action | Utilisateur |
+|--------|-------------|
+| `git pull`, `migrate`, `collectstatic`, `pip install` | **`colobanes`** (`sudo -u colobanes …`) |
+| `systemctl restart …` | **root** ou **sudo** |
+
+**Ne jamais** faire `git pull` en **root** directement sur le dossier de `colobanes` (erreur *dubious ownership*).
+
+**Ne jamais** modifier **`settings.py`** sur le VPS — la config prod va dans **`.env`**.
 
 ---
 
 ## Workflow complet (PC → GitHub → VPS)
 
-### 1. Sur votre PC (Windows) — envoyer les modifications
+### 1. Sur votre PC (Windows)
 
 ```powershell
 cd "C:\Users\jomas\Desktop\yaye maty"
@@ -18,183 +46,373 @@ git commit -m "Description de vos changements"
 git push origin main
 ```
 
-### 2. Sur le VPS — récupérer et déployer
-
-Connectez-vous en SSH :
+### 2. Connexion SSH au VPS
 
 ```bash
 ssh root@173.249.41.61
 ```
 
-Puis exécutez **cette commande bloc** (copier-coller) :
+### 3. Commande bloc — déploiement standard (recommandé)
+
+Copier-coller **en root** :
 
 ```bash
-cd /home/colobanes/analyse.yayematy.com
-git pull
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py collectstatic --noinput
-systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
-systemctl status gunicorn-yayematy celery-yayematy celerybeat-yayematy
-python manage.py check_infrastructure --celery-task
-```
-
-### 3. Vérifier dans le navigateur
-
-- Site : https://analyse.yayematy.com
-- Rafraîchir avec **Ctrl+F5** si vous avez modifié du CSS/JS
-
----
-## Environnement de référence
-
-| Élément | Valeur |
-|---------|--------|
-| Serveur | VPS Ubuntu 24.04 (Webuzo) |
-| Domaine | `https://analyse.yayematy.com` |
-| Utilisateur | `colobanes` |
-| Dossier projet | `/home/colobanes/analyse.yayematy.com` |
-| Virtualenv | `/home/colobanes/analyse.yayematy.com/venv` |
-
----
-
-## Commande essentielle — fichiers statiques
-
-À exécuter **sur le VPS** après chaque déploiement qui modifie `static/` (CSS, JS, images) :
-
-```bash
-cd /home/colobanes/analyse.yayematy.com
-source venv/bin/activate
-python manage.py collectstatic --noinput
-```
-
-**Rôle :** copie le contenu de `static/` vers `staticfiles/` (`STATIC_ROOT`).  
-**Nginx** sert les URLs `/static/` depuis `staticfiles/` — **pas Gunicorn**.
-
-Après `collectstatic`, un simple **Ctrl+F5** dans le navigateur suffit si vous n’avez modifié **que** du CSS/JS.
-
----
-
-## Faut-il redémarrer Gunicorn et Celery ?
-
-| Type de changement | `collectstatic` | Gunicorn | Celery worker | Celery Beat |
-|--------------------|-----------------|----------|---------------|-------------|
-| CSS / JS / images uniquement | ✅ Oui | ❌ Non | ❌ Non | ❌ Non |
-| Code Python (views, services, tasks…) | — | ✅ Oui | ✅ Oui | ⚠️ Si `settings.py` ou planification |
-| Migrations base de données | — | ✅ Oui | ✅ Oui | ❌ (sauf settings) |
-| Fichier `.env` (DB, Redis, NLP…) | — | ✅ Oui | ✅ Oui | ✅ Oui |
-
-**En pratique :** après un `git pull` complet, redémarrez les trois services (voir ci-dessous).
-
----
-
-## Déploiement complet (recommandé)
-
-À lancer **sur le VPS** après chaque `git push` :
-
-```bash
-cd /home/colobanes/analyse.yayematy.com
-git pull
-
-source venv/bin/activate
-pip install -r requirements.txt          # uniquement si requirements.txt a changé
-python manage.py migrate                 # uniquement si de nouvelles migrations existent
-python manage.py collectstatic --noinput
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  git pull
+  source venv/bin/activate
+  pip install -r requirements.txt -q
+  python manage.py migrate
+  python manage.py collectstatic --noinput
+'
 
 sudo systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
-```
 
-### Vérifications
-
-```bash
-sudo systemctl status gunicorn-yayematy celery-yayematy celerybeat-yayematy
-python manage.py check_infrastructure --celery-task
+sudo systemctl status gunicorn-yayematy celery-yayematy celerybeat-yayematy --no-pager
 curl -I https://analyse.yayematy.com/
 ```
 
-Tous les services doivent être **active (running)**.
+### 4. Vérifier dans le navigateur
+
+- Ouvrir : https://analyse.yayematy.com
+- **Ctrl+F5** si CSS/JS modifiés
 
 ---
 
-## Déploiement rapide — CSS / JS seulement
+## Quoi redémarrer selon les fichiers modifiés ?
 
-Si vous avez **uniquement** modifié des fichiers dans `static/` :
+| Fichiers modifiés (exemples) | `git pull` | `pip install` | `migrate` | `collectstatic` | Gunicorn | Celery worker | Celery Beat |
+|------------------------------|:----------:|:---------------:|:---------:|:---------------:|:--------:|:-------------:|:-----------:|
+| `static/css/`, `static/js/` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `templates/` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `intelligence/views.py`, `controllers/` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `intelligence/tasks.py`, `services/` | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| `yayematy_project/settings.py`, `.env` | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| `CELERY_BEAT_SCHEDULE` (settings) | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| `intelligence/migrations/` | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `requirements.txt` | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| `deploy/systemd/*.service` | ✅ | ❌ | ❌ | ❌ | ⚠️ | ⚠️ | ⚠️ |
+
+⚠️ = copier le fichier vers `/etc/systemd/system/`, puis `systemctl daemon-reload` + restart.
+
+**En cas de doute** après un déploiement : redémarrez les **3 services** (sans danger).
+
+---
+
+## Déploiements rapides (ciblés)
+
+### CSS / JS / images seulement
 
 ```bash
-cd /home/colobanes/analyse.yayematy.com
-git pull
-source venv/bin/activate
-python manage.py collectstatic --noinput
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  git pull
+  source venv/bin/activate
+  python manage.py collectstatic --noinput
+'
 ```
 
-**Pas de redémarrage** Gunicorn / Celery nécessaire.
+Pas de redémarrage Gunicorn/Celery.
 
----
-
-## Déploiement rapide — code Python seulement
-
-Si vous avez modifié du code Django **sans** toucher aux fichiers statiques :
+### Code Python seulement (sans static)
 
 ```bash
-cd /home/colobanes/analyse.yayematy.com
-git pull
-source venv/bin/activate
-python manage.py migrate                 # si besoin
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  git pull
+  source venv/bin/activate
+  python manage.py migrate
+'
+
 sudo systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
 ```
 
-`collectstatic` n’est pas obligatoire dans ce cas.
+### Fichier `.env` modifié (sans git)
+
+```bash
+sudo systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
+```
 
 ---
 
-## Services systemd (noms officiels)
-
-| Service | Rôle |
-|---------|------|
-| `gunicorn-yayematy` | Application Django (HTTP) |
-| `celery-yayematy` | Worker — scraping, NLP, tâches async |
-| `celerybeat-yayematy` | Planification (Cron Celery) |
-
-### Commandes utiles
+## Commande `collectstatic` — détail
 
 ```bash
-# Redémarrer
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  source venv/bin/activate
+  python manage.py collectstatic --noinput
+'
+```
+
+- **Source** : dossier `static/` (dans Git)
+- **Destination** : `staticfiles/` (`STATIC_ROOT`)
+- **Servi par** : Nginx sur `/static/` — **pas** Gunicorn
+
+Exemple de sortie normale :
+
+```
+2 static files copied to '.../staticfiles', 143 unmodified.
+```
+
+En local (`runserver`), **`collectstatic` n’est pas nécessaire**.
+
+---
+
+## Services systemd
+
+| Service | Rôle | Fichier dans le dépôt |
+|---------|------|------------------------|
+| `gunicorn-yayematy` | Django (HTTP via socket Unix) | `deploy/systemd/gunicorn-yayematy.service` |
+| `celery-yayematy` | Worker — scraping, NLP, tâches async | `deploy/systemd/celery-yayematy.service` |
+| `celerybeat-yayematy` | Planification (horaires Celery) | `deploy/systemd/celerybeat-yayematy.service` |
+
+### Redémarrer
+
+```bash
 sudo systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
+```
 
-# Statut
-sudo systemctl status gunicorn-yayematy
+### Statut
 
-# Logs en direct
+```bash
+sudo systemctl status gunicorn-yayematy --no-pager
+sudo systemctl status celery-yayematy --no-pager
+sudo systemctl status celerybeat-yayematy --no-pager
+```
+
+### Logs en direct
+
+```bash
 sudo journalctl -u gunicorn-yayematy -f
 sudo journalctl -u celery-yayematy -f
 sudo journalctl -u celerybeat-yayematy -f
 ```
 
-Fichiers unités dans le dépôt : `deploy/systemd/`.
+### Test HTTP
+
+```bash
+curl -I https://analyse.yayematy.com/
+# Attendu : HTTP/1.1 200 OK
+```
+
+### Test Celery
+
+```bash
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  source venv/bin/activate
+  python manage.py check_infrastructure --celery-task
+'
+```
 
 ---
 
-## Architecture des fichiers statiques
+## Problèmes fréquents et solutions
+
+### 1. `fatal: detected dubious ownership in repository`
+
+**Cause :** `git pull` lancé en **root** sur un dossier appartenant à `colobanes`.
+
+**Solution :** toujours utiliser `sudo -u colobanes bash -lc '...'`.
+
+Ne pas utiliser `git config --global safe.directory` sauf cas exceptionnel.
+
+---
+
+### 2. `This account is currently not available` (`su - colobanes`)
+
+**Cause :** shell de l’utilisateur = `/usr/sbin/nologin`.
+
+**Fix (une fois, en root) :**
+
+```bash
+usermod -s /bin/bash colobanes
+```
+
+Ensuite `su - colobanes` fonctionne. **`sudo -u colobanes bash`** fonctionne déjà sans ce fix.
+
+---
+
+### 3. `Your local changes would be overwritten by merge` (`settings.py`)
+
+**Cause :** `settings.py` modifié à la main sur le VPS lors du premier déploiement.
+
+**Vérifier les différences :**
+
+```bash
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  git diff yayematy_project/settings.py
+'
+```
+
+Si le diff ne contient que `STATIC_ROOT` et le bloc HTTPS → **déjà dans Git**, on peut abandonner la version locale :
+
+```bash
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  git checkout -- yayematy_project/settings.py
+  git pull
+'
+```
+
+**Sauvegarde avant abandon (optionnel) :**
+
+```bash
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  cp yayematy_project/settings.py /tmp/settings.py.vps.bak
+  git checkout -- yayematy_project/settings.py
+  git pull
+'
+```
+
+Toute config prod → **`.env`**, jamais `settings.py` sur le serveur.
+
+---
+
+### 4. `No migrations to apply` + `models have changes not yet reflected in a migration`
+
+**Cause :** le code local (PC) a des changements de modèles sans fichier de migration commité.
+
+**Sur le PC (pas le VPS) :**
+
+```powershell
+py manage.py makemigrations intelligence
+git add intelligence/migrations/
+git commit -m "Add migrations for model changes"
+git push origin main
+```
+
+**Puis sur le VPS :**
+
+```bash
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  git pull
+  source venv/bin/activate
+  python manage.py migrate
+'
+sudo systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
+```
+
+Si le message apparaît mais le site fonctionne, ce n’est **pas bloquant** pour un déploiement CSS/templates.
+
+---
+
+### 5. Fichiers avec mauvais propriétaire (`root` au lieu de `colobanes`)
+
+```bash
+chown -R colobanes:colobanes /home/colobanes/analyse.yayematy.com
+```
+
+---
+
+### 6. CSS ne change pas en production
+
+1. `collectstatic` exécuté sur le VPS ?
+2. Ctrl+F5 dans le navigateur
+3. Vérifier la version dans l’URL (`auth.css?v=4`)
+
+---
+
+### 7. Page blanche / 502 / 405 déconnexion
+
+```bash
+sudo journalctl -u gunicorn-yayematy -n 50
+sudo systemctl restart gunicorn-yayematy
+```
+
+La déconnexion doit être en **POST** (déjà corrigé dans le template sidebar).
+
+---
+
+## Fichiers `.env` production (rappel)
+
+Ne **jamais** commiter `.env`. Sur le VPS :
+
+```bash
+nano /home/colobanes/analyse.yayematy.com/.env
+```
+
+Variables essentielles (voir `.env.production.example`) :
+
+```env
+DEBUG=False
+ALLOWED_HOSTS=analyse.yayematy.com,173.249.41.61
+SECRET_KEY=votre-cle-secrete
+DB_HOST=127.0.0.1
+DB_NAME=...
+DB_USER=...
+DB_PASSWORD=...
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0
+NLP_CLASSIFIER_ENABLED=True
+```
+
+Après modification de `.env` :
+
+```bash
+sudo systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
+```
+
+---
+
+## Checklist post-déploiement
+
+- [ ] `git pull` sans erreur (via `sudo -u colobanes`)
+- [ ] `python manage.py migrate` (si nouvelles migrations)
+- [ ] `python manage.py collectstatic --noinput`
+- [ ] `systemctl restart` gunicorn + celery + beat
+- [ ] `systemctl status` → **active (running)**
+- [ ] `curl -I https://analyse.yayematy.com/` → **200 OK**
+- [ ] Site OK dans le navigateur (Ctrl+F5)
+- [ ] `check_infrastructure --celery-task` → OK (optionnel)
+
+---
+
+## Exemple de déploiement réussi (juillet 2026)
+
+```bash
+# 1. Abandon des modifs locales settings.py + pull
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  git checkout -- yayematy_project/settings.py
+  git pull
+'
+
+# 2. Migrate + static
+sudo -u colobanes bash -lc '
+  cd /home/colobanes/analyse.yayematy.com
+  source venv/bin/activate
+  python manage.py migrate
+  python manage.py collectstatic --noinput
+'
+
+# 3. Restart services
+sudo systemctl restart gunicorn-yayematy celery-yayematy celerybeat-yayematy
+
+# 4. Vérification
+sudo systemctl status gunicorn-yayematy --no-pager
+curl -I https://analyse.yayematy.com/
+```
+
+Résultat attendu :
 
 ```
-Projet
-├── static/           ← sources (développement + dépôt Git)
-└── staticfiles/      ← destination production (généré par collectstatic)
-
-Navigateur
-  → GET /static/css/auth.css?v=4
-  → Nginx lit staticfiles/css/auth.css
-  → Gunicorn n’intervient pas
+Fast-forward
+...
+2 static files copied to '.../staticfiles', 143 unmodified.
+● gunicorn-yayematy.service - Active: active (running)
+HTTP/1.1 200 OK
 ```
-
-En **local** (`runserver`), Django sert directement `static/` : **`collectstatic` n’est pas nécessaire** en développement.
 
 ---
 
 ## En local (Windows) — rappel
 
 ```powershell
-cd "C:\chemin\vers\yaye maty"
+cd "C:\Users\jomas\Desktop\yaye maty"
 .\venv\Scripts\Activate.ps1
 py manage.py runserver
 ```
@@ -205,49 +423,29 @@ Worker Celery local :
 .\scripts\run_celery_worker.ps1
 ```
 
-Après modification de code Python local, **redémarrez le worker Celery** (pas `collectstatic`).
+Après modification Python local → **redémarrer le worker Celery** (pas `collectstatic`).
 
 ---
 
-## Checklist post-déploiement
+## Architecture fichiers statiques
 
-- [ ] `git pull` sans erreur
-- [ ] `python manage.py migrate` (si migrations)
-- [ ] `python manage.py collectstatic --noinput`
-- [ ] `systemctl restart` des 3 services (si code Python ou `.env`)
-- [ ] Site accessible : `https://analyse.yayematy.com/`
-- [ ] CSS à jour (Ctrl+F5)
-- [ ] `python manage.py check_infrastructure --celery-task` → OK
-
----
-
-## Dépannage rapide
-
-### Les CSS ne changent pas en production
-
-1. Vérifier que `collectstatic` a bien été exécuté sur le VPS.
-2. Vider le cache navigateur (Ctrl+F5).
-3. Vérifier que Nginx sert bien `/static/` depuis `staticfiles/` (voir `DEPLOYMENT.md`, phase Nginx).
-
-### Page blanche ou erreur 502
-
-```bash
-sudo journalctl -u gunicorn-yayematy -n 50
-sudo systemctl restart gunicorn-yayematy
 ```
+Projet
+├── static/           ← sources (Git)
+└── staticfiles/      ← généré par collectstatic (Nginx)
 
-### Tâches Celery ne partent plus
-
-```bash
-sudo systemctl restart celery-yayematy celerybeat-yayematy
-python manage.py check_infrastructure --celery-task
-sudo journalctl -u celery-yayematy -n 50
+Navigateur → GET /static/css/auth.css
+          → Nginx → staticfiles/css/auth.css
+          → Gunicorn n'intervient pas
 ```
 
 ---
 
 ## Voir aussi
 
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** — installation initiale complète du VPS
-- **`deploy/systemd/`** — fichiers service Gunicorn / Celery
-- **`deploy/nginx/`** — configuration Nginx / Webuzo
+| Fichier | Contenu |
+|---------|---------|
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | Installation initiale complète VPS |
+| **`.env.production.example`** | Modèle variables d'environnement |
+| **`deploy/systemd/`** | Services Gunicorn / Celery |
+| **`deploy/nginx/`** | Config Nginx / Webuzo |
