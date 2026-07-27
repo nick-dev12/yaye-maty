@@ -240,7 +240,8 @@
 }
 
 .nav-item,
-.nav-group-item {
+.nav-group-item,
+.sidebar-logout-form button.nav-item {
     display: flex;
     align-items: center;
     gap: 0.85rem;
@@ -336,6 +337,26 @@
 
 .nav-item--logout {
     color: var(--color-gris);
+}
+
+.sidebar-logout-form {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar-logout-form button.nav-item {
+    width: 100%;
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.sidebar-logout-form button.nav-item:hover {
+    color: var(--color-noir);
+    background: rgba(26, 26, 26, 0.04);
 }
 
 .sidebar-collapse-btn {

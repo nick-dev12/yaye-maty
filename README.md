@@ -23,6 +23,8 @@ python manage.py runserver
 
 Guide complet étape par étape : **[DEPLOYMENT.md](DEPLOYMENT.md)**
 
+**Mises à jour après déploiement** (collectstatic, redémarrage Gunicorn/Celery) : **[README-DEPLOIEMENT.md](README-DEPLOIEMENT.md)**
+
 Inclut : Gunicorn, Nginx/Webuzo, PostgreSQL, Redis, Celery, Playwright, SSL et dépannage.
 
 Fichiers prêts à copier : dossier `deploy/` et `.env.production.example`.

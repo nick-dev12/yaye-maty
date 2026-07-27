@@ -26,6 +26,6 @@ urlpatterns = [
     path('tableau-de-bord/', views.dashboard_view, name='dashboard'),
     path('parametres/', views.settings_view, name='settings'),
     path('intelligence/', include('intelligence.urls')),
-    path('deconnexion/', auth_views.LogoutView.as_view(), name='logout'),
+    path('deconnexion/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     path('admin/', admin.site.urls),
 ]

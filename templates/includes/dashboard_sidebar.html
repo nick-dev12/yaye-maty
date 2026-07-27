@@ -100,10 +100,13 @@
     </div>
 
     <div class="sidebar-footer">
-        <a href="{% url 'logout' %}" class="nav-item nav-item--logout" data-nav-label="deconnexion">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M7 17H4a1 1 0 01-1-1V4a1 1 0 011-1h3M13 14l4-4m0 0l-4-4m4 4H7"/></svg>
-            <span class="nav-item-label">Déconnexion</span>
-        </a>
+        <form method="post" action="{% url 'logout' %}" class="sidebar-logout-form">
+            {% csrf_token %}
+            <button type="submit" class="nav-item nav-item--logout" data-nav-label="deconnexion">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M7 17H4a1 1 0 01-1-1V4a1 1 0 011-1h3M13 14l4-4m0 0l-4-4m4 4H7"/></svg>
+                <span class="nav-item-label">Déconnexion</span>
+            </button>
+        </form>
         <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Réduire le menu" aria-pressed="false">
             <svg class="sidebar-collapse-icon sidebar-collapse-icon--expand" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M8 5l-5 5 5 5M13 5l5 5-5 5"/></svg>
             <svg class="sidebar-collapse-icon sidebar-collapse-icon--collapse" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M12 5l5 5-5 5M7 5l-5 5 5 5"/></svg>
