@@ -34,6 +34,45 @@ Guide pratique pour **déployer et mettre à jour** le site sur le VPS : Git, fi
 
 ---
 
+## Script automatique (recommandé)
+
+Un script bash exécute **tout le déploiement** en une commande :
+
+```bash
+# Sur le VPS (en root, après git push depuis le PC)
+sudo bash /home/colobanes/analyse.yayematy.com/deploy/deploy.sh
+```
+
+### Options utiles
+
+```bash
+# CSS / JS seulement (pull + collectstatic, sans restart)
+sudo bash deploy/deploy.sh --fast
+
+# Abandonner settings.py modifié localement puis déployer
+sudo bash deploy/deploy.sh --reset-settings
+
+# Sans réinstaller les paquets pip
+sudo bash deploy/deploy.sh --skip-pip
+
+# Aide complète
+sudo bash deploy/deploy.sh --help
+```
+
+### Rendre le script exécutable (une fois)
+
+```bash
+chmod +x /home/colobanes/analyse.yayematy.com/deploy/deploy.sh
+# Puis :
+sudo /home/colobanes/analyse.yayematy.com/deploy/deploy.sh
+```
+
+Le script enchaîne : **git pull** → **pip install** → **migrate** → **collectstatic** → **restart** Gunicorn + Celery + Beat → **vérifications** (HTTP, Celery).
+
+Fichier source : **`deploy/deploy.sh`**
+
+---
+
 ## Workflow complet (PC → GitHub → VPS)
 
 ### 1. Sur votre PC (Windows)
@@ -54,7 +93,13 @@ ssh root@173.249.41.61
 
 ### 3. Commande bloc — déploiement standard (recommandé)
 
-Copier-coller **en root** :
+**Option A — script automatique :**
+
+```bash
+sudo bash /home/colobanes/analyse.yayematy.com/deploy/deploy.sh
+```
+
+**Option B — commandes manuelles** (copier-coller en root) :
 
 ```bash
 sudo -u colobanes bash -lc '
@@ -447,5 +492,6 @@ Navigateur → GET /static/css/auth.css
 |---------|---------|
 | **[DEPLOYMENT.md](DEPLOYMENT.md)** | Installation initiale complète VPS |
 | **`.env.production.example`** | Modèle variables d'environnement |
+| **`deploy/deploy.sh`** | Script de déploiement automatique |
 | **`deploy/systemd/`** | Services Gunicorn / Celery |
 | **`deploy/nginx/`** | Config Nginx / Webuzo |
