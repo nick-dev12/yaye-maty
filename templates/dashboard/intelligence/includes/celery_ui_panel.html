@@ -7,8 +7,9 @@
         <div>
             <h2 id="collecte-celery-title" class="collecte-celery-title">Services Celery (local)</h2>
             <p class="collecte-celery-sub">
-                Démarrez le worker et le planificateur sans ouvrir le terminal.
-                Une fenêtre s’ouvre pour afficher les logs — laissez-la ouverte pendant vos collectes.
+                Pour les <strong>tests manuels</strong> : démarrez uniquement le <strong>Worker</strong>
+                (Beat optionnel — il remplit la file Redis et peut bloquer le pool solo).
+                Une fenêtre logs s’ouvre : laissez-la ouverte.
             </p>
         </div>
         <button type="button" class="collecte-celery-refresh" id="collecte-celery-refresh" aria-label="Actualiser l'état Celery">

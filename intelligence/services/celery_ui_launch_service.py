@@ -15,12 +15,17 @@ from pathlib import Path
 
 from django.conf import settings
 
-from intelligence.services.celery_health_service import celery_workers_online
+from intelligence.services.celery_health_service import (
+    celery_workers_online,
+    clear_stale_unacked,
+    purge_celery_queue,
+)
 
 logger = logging.getLogger(__name__)
 
 STATE_DIR_NAME = '.celery_ui'
 STATE_FILE_NAME = 'processes.json'
+WORKER_READY_WAIT_SECONDS = 20.0
 
 
 class CeleryUiLaunchError(Exception):
@@ -90,11 +95,21 @@ class CeleryUiLaunchService:
                     'message': message,
                     'status': cls.get_status(),
                 }
-            return cls._start_process(
+            # Tâches Beat orphelines / unacked bloquent le pool solo au démarrage.
+            purged = purge_celery_queue()
+            clear_stale_unacked()
+            result = cls._start_process(
                 component=component,
                 args=cls._worker_command(),
                 label='Worker Celery',
+                wait_worker_ready=True,
             )
+            if purged:
+                result['message'] = (
+                    f'{result.get("message", "")} '
+                    f'File Redis nettoyée ({purged} tâche(s) orpheline(s)).'
+                ).strip()
+            return result
 
         state = cls._load_state()
         beat_pid = state.get(cls.COMPONENT_BEAT, {}).get('pid')
@@ -144,7 +159,14 @@ class CeleryUiLaunchService:
         }
 
     @classmethod
-    def _start_process(cls, *, component: str, args: list[str], label: str) -> dict:
+    def _start_process(
+        cls,
+        *,
+        component: str,
+        args: list[str],
+        label: str,
+        wait_worker_ready: bool = False,
+    ) -> dict:
         cls._ensure_redis()
         creationflags = 0
         if sys.platform == 'win32':
@@ -161,16 +183,51 @@ class CeleryUiLaunchService:
             raise CeleryUiLaunchError(f'Impossible de lancer {label} : {exc}') from exc
 
         cls._save_component(component, process.pid)
+
+        ready_note = ''
+        if wait_worker_ready and component == cls.COMPONENT_WORKER:
+            ready, ready_msg = cls._wait_until_worker_ready(process.pid)
+            if not ready:
+                if not cls._pid_alive(process.pid):
+                    cls._clear_component(component)
+                    raise CeleryUiLaunchError(
+                        'Le worker a démarré puis s’est arrêté immédiatement. '
+                        'Vérifiez la fenêtre terminal Celery (erreur Python / Redis).'
+                    )
+                ready_note = (
+                    f' Processus vivant (PID {process.pid}) mais pas encore joignable '
+                    f'au ping — {ready_msg}'
+                )
+            else:
+                ready_note = f' {ready_msg}'
+
         return {
             'ok': True,
             'already_running': False,
             'message': (
                 f'{label} démarré — une fenêtre terminal s’ouvre (PID {process.pid}). '
                 'Laissez-la ouverte pendant vos collectes.'
+                f'{ready_note}'
             ),
             'pid': process.pid,
             'status': cls.get_status(),
         }
+
+    @classmethod
+    def _wait_until_worker_ready(cls, pid: int) -> tuple[bool, str]:
+        import time
+
+        deadline = time.monotonic() + WORKER_READY_WAIT_SECONDS
+        last_msg = 'en attente…'
+        while time.monotonic() < deadline:
+            if not cls._pid_alive(pid):
+                return False, 'processus terminé'
+            online, message = celery_workers_online(timeout=0.8)
+            last_msg = message
+            if online:
+                return True, message
+            time.sleep(0.7)
+        return False, last_msg
 
     @classmethod
     def _worker_command(cls) -> list[str]:

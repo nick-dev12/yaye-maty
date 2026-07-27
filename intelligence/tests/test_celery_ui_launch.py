@@ -24,10 +24,13 @@ class CeleryUiLaunchApiTests(TestCase):
         self.assertContains(response, 'Services Celery (local)')
         self.assertContains(response, 'Démarrer worker')
 
+    @patch('intelligence.services.celery_ui_launch_service.CeleryUiLaunchService._wait_until_worker_ready', return_value=(True, 'Worker(s) : test'))
+    @patch('intelligence.services.celery_ui_launch_service.clear_stale_unacked', return_value=0)
+    @patch('intelligence.services.celery_ui_launch_service.purge_celery_queue', return_value=0)
     @patch('intelligence.services.celery_ui_launch_service.celery_workers_online', return_value=(False, 'offline'))
     @patch('intelligence.services.celery_ui_launch_service.subprocess.Popen')
     @patch('intelligence.services.celery_ui_launch_service.CeleryUiLaunchService._ensure_redis')
-    def test_start_worker_api(self, _redis, popen_mock, _ping):
+    def test_start_worker_api(self, _redis, popen_mock, _ping, _purge, _unacked, _wait):
         process = MagicMock()
         process.pid = 4242
         popen_mock.return_value = process

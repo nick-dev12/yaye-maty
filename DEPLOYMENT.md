@@ -205,6 +205,22 @@ Résultat : `analyse.yayematy.com` → votre VPS.
 4. **Associez** l'utilisateur à la base avec tous les privilèges
 5. Notez le **mot de passe**
 
+> **Chemins config Webuzo (≠ installation apt)**  
+> Webuzo installe PostgreSQL sous `/usr/local/apps/postgresql*/` — pas sous `/etc/postgresql/`.  
+> Pour trouver les vrais fichiers sur le VPS :
+> ```bash
+> sudo bash /home/colobanes/analyse.yayematy.com/deploy/find-postgres-config.sh
+> ```
+> Fichiers à modifier manuellement si besoin :
+> - `postgresql.conf` → `listen_addresses = '*'`
+> - `pg_hba.conf` → ligne `host colobanes_yaye colobanes_jomas 0.0.0.0/0 scram-sha-256`
+>
+> Ou automatique (toutes les IP) :
+> ```bash
+> sudo bash deploy/configure-postgres-remote.sh all
+> ```
+> Puis redémarrer PostgreSQL dans **Webuzo → Admin → Services → PostgreSQL**.
+
 ### Test connexion
 
 ```bash
