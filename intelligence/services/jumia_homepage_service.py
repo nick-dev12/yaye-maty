@@ -36,6 +36,7 @@ class JumiaHomepageService:
         cls,
         scraper: JumiaScraper | None = None,
         *,
+        keywords: list[MarketSearchKeyword] | None = None,
         progress: ProgressCallback | None = None,
         should_cancel: ShouldCancelCallback | None = None,
         test_mode: bool = False,
@@ -51,13 +52,22 @@ class JumiaHomepageService:
                 'products_created': 0,
             }
 
-        from intelligence.services.active_keyword_service import ActiveKeywordService
-        from intelligence.services.jumia_collection_service import JumiaCollectionService
+        own_scraper = scraper is None
 
-        max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
-        keywords = list(
-            ActiveKeywordService.list_for_jumia(limit=max_kw if max_kw > 0 else 0)
-        )
+        if keywords is None:
+            from intelligence.services.active_keyword_service import ActiveKeywordService
+            from intelligence.services.django_orm_safe import run_orm_safe
+
+            max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
+            limit = max_kw if max_kw > 0 else 0
+
+            def _load_keywords() -> list[MarketSearchKeyword]:
+                return list(ActiveKeywordService.list_for_jumia(limit=limit))
+
+            keywords = _load_keywords() if own_scraper else run_orm_safe(_load_keywords)
+        else:
+            keywords = list(keywords)
+
         if not keywords:
             return {
                 'success': False,
@@ -66,7 +76,6 @@ class JumiaHomepageService:
                 'products_created': 0,
             }
 
-        own_scraper = scraper is None
         scraper = scraper or JumiaScraper(
             delay_min=float(config.get('JUMIA_DELAY_MIN') or 1.5),
             delay_max=float(config.get('JUMIA_DELAY_MAX') or 3.5),
@@ -74,7 +83,15 @@ class JumiaHomepageService:
             use_playwright_fallback=bool(config.get('JUMIA_USE_PLAYWRIGHT', True)),
         )
 
-        known_skus, known_urls = JumiaDedupService.load_known_sets(test_mode=test_mode)
+        if own_scraper:
+            known_skus, known_urls = JumiaDedupService.load_known_sets(test_mode=test_mode)
+        else:
+            from intelligence.services.django_orm_safe import run_orm_safe
+
+            known_skus, known_urls = run_orm_safe(
+                JumiaDedupService.load_known_sets,
+                test_mode=test_mode,
+            )
         hits_created = 0
         products_created = 0
         products_skipped = 0

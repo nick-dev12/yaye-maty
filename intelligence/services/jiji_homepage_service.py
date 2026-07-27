@@ -35,6 +35,7 @@ class JijiHomepageService:
         cls,
         scraper: JijiScraper | None = None,
         *,
+        keywords: list[MarketSearchKeyword] | None = None,
         progress: ProgressCallback | None = None,
         should_cancel: ShouldCancelCallback | None = None,
         test_mode: bool = False,
@@ -50,13 +51,22 @@ class JijiHomepageService:
                 'listings_created': 0,
             }
 
-        from intelligence.services.active_keyword_service import ActiveKeywordService
-        from intelligence.services.jiji_collection_service import JijiCollectionService
+        own_scraper = scraper is None
 
-        max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
-        keywords = list(
-            ActiveKeywordService.list_for_jiji(limit=max_kw if max_kw > 0 else 0)
-        )
+        if keywords is None:
+            from intelligence.services.active_keyword_service import ActiveKeywordService
+            from intelligence.services.django_orm_safe import run_orm_safe
+
+            max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
+            limit = max_kw if max_kw > 0 else 0
+
+            def _load_keywords() -> list[MarketSearchKeyword]:
+                return list(ActiveKeywordService.list_for_jiji(limit=limit))
+
+            keywords = _load_keywords() if own_scraper else run_orm_safe(_load_keywords)
+        else:
+            keywords = list(keywords)
+
         if not keywords:
             return {
                 'success': False,
@@ -65,7 +75,6 @@ class JijiHomepageService:
                 'listings_created': 0,
             }
 
-        own_scraper = scraper is None
         scraper = scraper or JijiScraper(
             delay_min=float(config.get('JIJI_DELAY_MIN') or 1.5),
             delay_max=float(config.get('JIJI_DELAY_MAX') or 3.5),
@@ -74,7 +83,15 @@ class JijiHomepageService:
             reveal_contacts=bool(config.get('JIJI_REVEAL_CONTACTS', False)),
         )
 
-        known_ids, known_urls = JijiDedupService.load_known_sets(test_mode=test_mode)
+        if own_scraper:
+            known_ids, known_urls = JijiDedupService.load_known_sets(test_mode=test_mode)
+        else:
+            from intelligence.services.django_orm_safe import run_orm_safe
+
+            known_ids, known_urls = run_orm_safe(
+                JijiDedupService.load_known_sets,
+                test_mode=test_mode,
+            )
         hits_created = listings_created = listings_skipped = 0
         errors: list[str] = []
 

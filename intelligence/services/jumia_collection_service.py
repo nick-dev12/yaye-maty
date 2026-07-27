@@ -176,9 +176,10 @@ class JumiaCollectionService:
                     next_offset = start_page + max_pages
                     if next_offset > max_scan_pages:
                         next_offset = 1
-                    MarketSearchKeyword.objects.filter(pk=kw.pk).update(
-                        last_scraped_at=timezone.now(),
-                        listing_page_offset=next_offset,
+                    cls._run_orm_safe(
+                        cls._update_keyword_scrape_state,
+                        kw.pk,
+                        next_offset,
                     )
 
                 keyword_summaries.append({
@@ -201,6 +202,7 @@ class JumiaCollectionService:
 
                 homepage_result = JumiaHomepageService.run(
                     scraper,
+                    keywords=keywords,
                     progress=progress,
                     should_cancel=should_cancel,
                     test_mode=test_mode,
@@ -272,6 +274,13 @@ class JumiaCollectionService:
             cls._run_orm_safe(JumiaMarketSignalService.refresh_all)
         except Exception:
             logger.exception('Recalcul signaux marché Jumia échoué')
+
+    @staticmethod
+    def _update_keyword_scrape_state(keyword_pk: int, next_offset: int) -> None:
+        MarketSearchKeyword.objects.filter(pk=keyword_pk).update(
+            last_scraped_at=timezone.now(),
+            listing_page_offset=next_offset,
+        )
 
     @staticmethod
     def _product_limit_for_keyword(kw, *, session_cap: int = 0) -> int:
