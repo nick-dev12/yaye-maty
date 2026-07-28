@@ -205,15 +205,10 @@ Résultat : `analyse.yayematy.com` → votre VPS.
 4. **Associez** l'utilisateur à la base avec tous les privilèges
 5. Notez le **mot de passe**
 
-> **Chemins config Webuzo (≠ installation apt)**  
-> Webuzo installe PostgreSQL sous `/usr/local/apps/postgresql*/` — pas sous `/etc/postgresql/`.  
-> Pour trouver les vrais fichiers sur le VPS :
-> ```bash
-> sudo bash /home/colobanes/analyse.yayematy.com/deploy/find-postgres-config.sh
-> ```
-> Fichiers à modifier manuellement si besoin :
-> - `postgresql.conf` → `listen_addresses = '*'`
-> - `pg_hba.conf` → ligne `host colobanes_yaye colobanes_jomas 0.0.0.0/0 scram-sha-256`
+> **Chemins config Webuzo (pgsql17 sur ce VPS)**  
+> Fichiers à modifier :
+> - `/var/lib/pgsql/data/postgresql.conf` → `listen_addresses = '*'`
+> - `/var/lib/pgsql/data/pg_hba.conf` → ligne distante (voir ci-dessous)
 >
 > Ou automatique (toutes les IP) :
 > ```bash
@@ -1038,7 +1033,21 @@ python manage.py verify_social_session --platform facebook
 
 ### Webuzo régénère webuzoVH.conf
 
-Conserver `/usr/local/apps/nginx/etc/conf.d/webuzoVH.conf.bak` et réappliquer les 2 blocs `location /` Gunicorn pour `analyse.yayematy.com`.
+**Automatique (recommandé)** — timer systemd toutes les 3 min :
+
+```bash
+sudo bash /home/colobanes/analyse.yayematy.com/deploy/install-webuzo-nginx-guard.sh
+systemctl status webuzo-nginx-guard.timer
+```
+
+**Manuel** si besoin :
+
+```bash
+sudo bash deploy/fix-webuzo-nginx-yayematy.sh
+sudo bash deploy/fix-webuzo-nginx-yayematy.sh --restore   # depuis .bak
+```
+
+Le `.bak` = copie de `webuzoVH.conf` quand le site fonctionne. Référence Git : `deploy/nginx/webuzoVH.conf`.
 
 ### Chaîne NLP ne tourne pas
 

@@ -1,0 +1,13 @@
+[Unit]
+Description=YAYEMATY — vérifie proxy Gunicorn analyse.yayematy.com (anti-régénération Webuzo)
+After=network.target
+
+[Service]
+Type=oneshot
+Environment=PROJECT_DIR=/home/colobanes/analyse.yayematy.com
+ExecStart=/bin/bash /home/colobanes/analyse.yayematy.com/deploy/fix-webuzo-nginx-yayematy.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

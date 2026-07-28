@@ -59,10 +59,12 @@ discover_pg_config() {
   fi
 
   local search_paths=(
+    /var/lib/pgsql/data
+    /usr/local/apps/pgsql*/var/data
+    /usr/local/apps/pgsql*/data
     /usr/local/apps/postgresql*/var/data
     /usr/local/apps/postgresql*/data
     /usr/local/pgsql*/data
-    /var/lib/pgsql/data
     /var/lib/pgsql/*/data
     /etc/postgresql/*/main
   )

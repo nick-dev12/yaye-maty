@@ -48,10 +48,11 @@ fi
 # 3) Chemins Webuzo / EMPS + Debian / RHEL
 echo "Recherche fichiers pg_hba.conf …"
 mapfile -t CANDIDATES < <(
-  find /usr/local/apps/postgresql* \
+  find /var/lib/pgsql/data \
+       /var/lib/pgsql \
+       /usr/local/apps/pgsql* \
+       /usr/local/apps/postgresql* \
        /usr/local/pgsql* \
-       /var/lib/pgsql* \
-       /var/pgsql* \
        /etc/postgresql \
        -name pg_hba.conf 2>/dev/null | sort -u
 )
@@ -71,4 +72,4 @@ for HBA in "${CANDIDATES[@]}"; do
 done
 
 echo ""
-echo "Webuzo : chemins fréquents sous /usr/local/apps/postgresql*/var/data/"
+echo "Webuzo pgsql17 : /var/lib/pgsql/data/postgresql.conf et pg_hba.conf"
