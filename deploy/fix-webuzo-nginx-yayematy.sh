@@ -23,8 +23,11 @@ needs_patch() {
   [[ -f "$NGINX_CONF" ]] || return 0
   grep -q 'server_name[[:space:]]\+analyse\.yayematy\.com' "$NGINX_CONF" || return 1
   # Les 2 blocs analyse (80 + 443) doivent pointer vers Gunicorn
+  # Note: grep -c renvoie 0 + exit 1 si aucun match — ne pas faire ``|| echo 0``
   local count
-  count=$(grep -c 'proxy_pass http://unix:/home/colobanes/analyse.yayematy.com/gunicorn.sock' "$NGINX_CONF" 2>/dev/null || echo 0)
+  count=$(grep -c 'proxy_pass http://unix:/home/colobanes/analyse.yayematy.com/gunicorn.sock' "$NGINX_CONF" 2>/dev/null || true)
+  count=$(echo "$count" | tr -d '[:space:]')
+  count=${count:-0}
   [[ "$count" -lt 2 ]]
 }
 
