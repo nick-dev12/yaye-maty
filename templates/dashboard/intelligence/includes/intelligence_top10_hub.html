@@ -6,7 +6,9 @@
             <h2 id="top10-hub-title" class="ir10-hub-title">Top 10 — ce qui buzz sur le marché</h2>
             <p class="ir10-hub-sub">Six classements simples pour savoir quoi sourcer, ce qui est recherché et ce qui attire l'attention.</p>
         </div>
-        <a href="{% url 'intelligence:collecte' %}" class="ir-btn ir-btn--primary">Lancer une collecte</a>
+        <div class="ir10-hub-actions">
+            <a href="{% url 'intelligence:import_master' %}" class="ir-btn ir-btn--primary">Import Master →</a>
+        </div>
     </header>
 
     <details class="ir10-glossary">

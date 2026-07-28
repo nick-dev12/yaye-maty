@@ -7,6 +7,7 @@ from intelligence.controllers import (
     CollectionControlController,
     CollectionTestController,
     DomainsPageController,
+    ImportMasterPageController,
     IntelligencePageController,
 )
 from intelligence.controllers.social_api_controller import SocialApiController
@@ -28,6 +29,12 @@ def intelligence_index_view(request):
 def intelligence_archives_view(request):
     """Page Archives — même UI que Intelligence, données historiques."""
     return IntelligencePageController(request).archives()
+
+
+@login_required
+def import_master_view(request):
+    """Page Import Master — opportunités d'importation Acheter/Surveiller/Éviter."""
+    return ImportMasterPageController(request).index()
 
 
 @login_required

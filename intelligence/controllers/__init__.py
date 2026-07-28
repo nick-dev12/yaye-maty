@@ -4,9 +4,11 @@ from .collection_test_controller import CollectionTestController
 from .domain_discovery_controller import DomainDiscoveryController
 from .google_trends_controller import GoogleTrendsController
 from .domains_page_controller import DomainsPageController
+from .import_master_page_controller import ImportMasterPageController
 from .intelligence_page_controller import IntelligencePageController
 
 __all__ = [
+    'ImportMasterPageController',
     'ArchivesPageController',
     'CollectionControlController',
     'CollectionTestController',

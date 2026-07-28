@@ -1,4 +1,5 @@
 from .discovered_query import DiscoveredQuery
+from .import_opportunity import ImportOpportunity
 from .jiji_homepage_hit import JijiHomepageHit
 from .jiji_listing import JijiListing
 from .jiji_price_snapshot import JijiPriceSnapshot
@@ -36,6 +37,7 @@ __all__ = [
     'MarketDomain',
     'DiscoveryConfig',
     'MarketSearchKeyword',
+    'ImportOpportunity',
     'SocialPost',
     'SocialComment',
     'SocialScrapeTarget',

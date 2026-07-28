@@ -1,0 +1,274 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Import Master — YAYEMATY MARKET{% endblock %}
+{% block body_class %}intel-layout import-master-page-body{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/import-master.css' %}?v=1">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="main-content import-master-page">
+
+    <header class="im-topbar">
+        <div class="im-topbar-copy">
+            <h1 class="im-topbar-title">Import Master</h1>
+            <p class="im-topbar-sub">Meilleures opportunités d'importation du jour — décisions guidées par la donnée</p>
+        </div>
+        <div class="im-topbar-actions">
+            <a href="{% url 'intelligence:index' %}" class="im-btn im-btn--outline">Intelligence marché</a>
+            <form method="post" action="{% url 'intelligence:import_master' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="recalculer">
+                <button type="submit" class="im-btn im-btn--primary">Recalculer maintenant</button>
+            </form>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="im-messages">
+        {% for message in messages %}
+        <div class="im-alert im-alert--{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <section class="im-hero" aria-label="Synthèse du jour">
+        <div class="im-hero-copy">
+            <p class="im-kicker">
+                {% if im_snapshot_date %}
+                Opportunités du {{ im_snapshot_date|date:"j F Y" }}{% if not im_is_today %} — dernier calcul disponible{% endif %}
+                {% else %}
+                Aucun calcul disponible
+                {% endif %}
+            </p>
+            <h2 class="im-hero-title">Que faut-il importer ?</h2>
+            <p class="im-hero-sub">{{ im_summary_line }}</p>
+        </div>
+        <div class="im-kpi-row">
+            <article class="im-kpi im-kpi--buy">
+                <p class="im-kpi-value">{{ im_counts.buy }}</p>
+                <p class="im-kpi-label">Acheter</p>
+                <p class="im-kpi-hint">Importer en priorité</p>
+            </article>
+            <article class="im-kpi im-kpi--watch">
+                <p class="im-kpi-value">{{ im_counts.watch }}</p>
+                <p class="im-kpi-label">Surveiller</p>
+                <p class="im-kpi-hint">Attendre confirmation</p>
+            </article>
+            <article class="im-kpi im-kpi--avoid">
+                <p class="im-kpi-value">{{ im_counts.avoid }}</p>
+                <p class="im-kpi-label">Éviter</p>
+                <p class="im-kpi-hint">Ne pas importer</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="im-section" id="im-opportunites" aria-labelledby="im-opp-title">
+        <header class="im-section-head">
+            <div>
+                <h3 id="im-opp-title" class="im-section-title">Opportunités du jour</h3>
+                <p class="im-section-sub">Un mot-clé Paramètres = une opportunité analysée sur 4 axes : demande, tendance, concurrence, prix</p>
+            </div>
+        </header>
+
+        {% if im_has_data %}
+        <div class="im-opp-grid">
+            {% for opp in im_opportunities %}
+            <article class="im-opp im-opp--{{ opp.decision_tone }}">
+                <header class="im-opp-head">
+                    <span class="im-opp-rank">#{{ opp.rank }}</span>
+                    <div class="im-opp-titles">
+                        <h4 class="im-opp-name">{{ opp.product_name }}</h4>
+                        <p class="im-opp-keyword">Mot-clé « {{ opp.keyword }} »</p>
+                    </div>
+                    <span class="im-badge im-badge--{{ opp.decision_tone }}" title="{{ opp.decision_hint }}">{{ opp.decision_label }}</span>
+                </header>
+
+                <div class="im-opp-score">
+                    <div class="im-gauge" role="img" aria-label="Score {{ opp.score }} sur 100">
+                        <div class="im-gauge-track">
+                            <span class="im-gauge-fill im-gauge-fill--{{ opp.decision_tone }}" style="width: {{ opp.score }}%"></span>
+                        </div>
+                        <span class="im-gauge-value">{{ opp.score }}<small>/100</small></span>
+                    </div>
+                </div>
+
+                <ul class="im-subscores">
+                    {% for sub in opp.subscores %}
+                    <li title="{{ sub.hint }}">
+                        <span class="im-subscore-label">{{ sub.label }}</span>
+                        <span class="im-subscore-track"><span class="im-subscore-bar" style="width: {{ sub.value }}%"></span></span>
+                        <span class="im-subscore-value">{{ sub.value }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                {% if opp.reasons %}
+                <ul class="im-reasons">
+                    {% for reason in opp.reasons|slice:":4" %}
+                    <li>{{ reason }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                <footer class="im-opp-foot">
+                    {% if opp.price_avg %}
+                    <span class="im-chip" title="Prix moyen constaté Jumia/Jiji">Prix moy. {{ opp.price_avg|floatformat:0 }} FCFA</span>
+                    {% endif %}
+                    {% if opp.suggested_price %}
+                    <span class="im-chip im-chip--bleu" title="Prix de vente conseillé">Vendre ~ {{ opp.suggested_price|floatformat:0 }} FCFA</span>
+                    {% endif %}
+                    {% if opp.stock_alert == 'critical' %}
+                    <span class="im-chip im-chip--orange">Rupture Jumia</span>
+                    {% elif opp.stock_alert == 'watch' %}
+                    <span class="im-chip im-chip--jaune">Stock fragile</span>
+                    {% endif %}
+                    <span class="im-chip im-chip--gris">{{ opp.jumia_sellers }} vendeur(s) · {{ opp.jiji_listings }} annonce(s)</span>
+                </footer>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="im-empty">
+            <p class="im-empty-title">Pas encore d'opportunités calculées</p>
+            <p class="im-empty-sub">
+                Activez des mots-clés dans <a href="{% url 'settings' %}?section=recherche">Paramètres</a>,
+                lancez une collecte, puis cliquez sur « Recalculer maintenant ».
+            </p>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if im_trending %}
+    <section class="im-section" id="im-tendances" aria-labelledby="im-trend-title">
+        <header class="im-section-head">
+            <div>
+                <h3 id="im-trend-title" class="im-section-title">Produits tendance</h3>
+                <p class="im-section-sub">Mots-clés dont la recherche Google et le momentum réseaux montent</p>
+            </div>
+        </header>
+        <div class="im-trend-grid">
+            {% for opp in im_trending %}
+            <article class="im-trend-card">
+                <span class="im-trend-flame" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c1 3-2 4-2 7a2 2 0 104 0c0-1 .5-2 1-2.5C14.5 8 16 9.8 16 12a6 6 0 11-12 0c0-4 4-6 6-10z"/></svg>
+                </span>
+                <div class="im-trend-copy">
+                    <strong>{{ opp.product_name }}</strong>
+                    <span>Tendance {{ opp.trend_score }}/100 · Demande {{ opp.demand_score }}/100</span>
+                </div>
+                <span class="im-badge im-badge--{{ opp.decision_tone }}">{{ opp.decision_label }}</span>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="im-section" id="im-veille" aria-labelledby="im-watch-title">
+        <header class="im-section-head">
+            <div>
+                <h3 id="im-watch-title" class="im-section-title">Veille concurrentielle</h3>
+                <p class="im-section-sub">Qui vend déjà sur Jumia et Jiji — et à quel prix se positionner</p>
+            </div>
+        </header>
+
+        {% if im_competitor_watch %}
+        <div class="im-watch-grid">
+            {% for block in im_competitor_watch %}
+            <article class="im-watch-card">
+                <header class="im-watch-head">
+                    <h4 class="im-watch-keyword">{{ block.keyword }}</h4>
+                    <span class="im-badge im-badge--{{ block.pressure_tone }}">{{ block.pressure_label }}</span>
+                </header>
+                <div class="im-watch-stats">
+                    <div>
+                        <span class="im-watch-value">{{ block.jumia.sellers_count }}</span>
+                        <span class="im-watch-label">vendeur(s) Jumia</span>
+                    </div>
+                    <div>
+                        <span class="im-watch-value">{{ block.jiji.listings_count }}</span>
+                        <span class="im-watch-label">annonce(s) Jiji</span>
+                    </div>
+                    <div>
+                        <span class="im-watch-value">{{ block.jiji.new_this_week }}</span>
+                        <span class="im-watch-label">nouvelles cette semaine</span>
+                    </div>
+                </div>
+                <div class="im-watch-prices">
+                    {% if block.floor_price_xof %}
+                    <span class="im-chip im-chip--gris">Prix plancher {{ block.floor_price_xof|floatformat:0 }} FCFA</span>
+                    {% endif %}
+                    {% if block.suggested_price_xof %}
+                    <span class="im-chip im-chip--bleu">Prix conseillé {{ block.suggested_price_xof|floatformat:0 }} FCFA</span>
+                    {% endif %}
+                </div>
+                {% if block.jumia.top_sellers %}
+                <ul class="im-seller-list">
+                    {% for seller in block.jumia.top_sellers|slice:":3" %}
+                    <li>
+                        <strong>{{ seller.seller_name|truncatechars:28 }}</strong>
+                        <span>{{ seller.products }} produit(s){% if seller.avg_price %} · ~{{ seller.avg_price|floatformat:0 }} FCFA{% endif %}{% if seller.avg_rating %} · ★ {{ seller.avg_rating|floatformat:1 }}{% endif %}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% if block.jiji.regions %}
+                <p class="im-watch-regions">
+                    Zones actives :
+                    {% for region in block.jiji.regions %}{{ region.location_region }} ({{ region.listings }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                </p>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="im-empty-inline">Aucune donnée concurrentielle — collectez Jumia et Jiji sur vos mots-clés actifs.</p>
+        {% endif %}
+    </section>
+
+    <section class="im-section" id="im-prix" aria-labelledby="im-price-title">
+        <header class="im-section-head">
+            <div>
+                <h3 id="im-price-title" class="im-section-title">Comparaison des prix</h3>
+                <p class="im-section-sub">Neuf local (Jiji) vs catalogue Jumia — repérer les écarts exploitables</p>
+            </div>
+        </header>
+        {% if im_price_comparison %}
+        <div class="im-table-wrap">
+            <table class="im-table">
+                <thead>
+                    <tr>
+                        <th>Produit / mot-clé</th>
+                        <th>Prix moyen Jiji</th>
+                        <th>Prix min Jiji</th>
+                        <th>Prix moyen Jumia</th>
+                        <th>Écart</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in im_price_comparison %}
+                    <tr>
+                        <td class="im-table-product">{{ row.product_label }}</td>
+                        <td>{% if row.jiji_avg_price %}{{ row.jiji_avg_price|floatformat:0 }} FCFA{% else %}—{% endif %}</td>
+                        <td>{% if row.jiji_min_price %}{{ row.jiji_min_price|floatformat:0 }} FCFA{% else %}—{% endif %}</td>
+                        <td>{% if row.jumia_avg_price %}{{ row.jumia_avg_price|floatformat:0 }} FCFA{% else %}—{% endif %}</td>
+                        <td>
+                            {% if row.gap_percent != None %}
+                            <span class="im-gap im-gap--{{ row.tone }}">−{{ row.gap_percent }}%</span>
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="im-empty-inline">Pas encore d'écart de prix mesurable — les comparaisons apparaissent dès que Jumia et Jiji couvrent les mêmes mots-clés.</p>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block activity_panel %}{% endblock %}

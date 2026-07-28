@@ -7,6 +7,7 @@ app_name = 'intelligence'
 urlpatterns = [
     path('', views.intelligence_index_view, name='index'),
     path('archives/', views.intelligence_archives_view, name='archives'),
+    path('import-master/', views.import_master_view, name='import_master'),
     path('domaines/', views.intelligence_domains_view, name='domaines'),
     path('collecte/', views.collecte_view, name='collecte'),
     path('collecte/test/', views.collecte_test_view, name='collecte_test'),

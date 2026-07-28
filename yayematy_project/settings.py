@@ -90,8 +90,15 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
+        # Même base pour les tests — pas de test_colobanes_yaye (voir test_runner.py)
+        'TEST': {
+            'NAME': os.getenv('DB_NAME', 'yayematy_db'),
+        },
     }
 }
+
+# Tests sur la base .env (VPS) — sans CREATEDB ni seconde base
+TEST_RUNNER = 'yayematy_project.test_runner.VpsExistingDatabaseTestRunner'
 
 
 # Password validation
@@ -261,6 +268,11 @@ CELERY_BEAT_SCHEDULE = {
     'generate-top-purchase-recommendations-daily': {
         'task': 'intelligence.generate_top_purchase_recommendations',
         'schedule': crontab(hour=4, minute=30),
+        'kwargs': {'window_days': 7},
+    },
+    'generate-import-opportunities-daily': {
+        'task': 'intelligence.generate_import_opportunities',
+        'schedule': crontab(hour=5, minute=15),
         'kwargs': {'window_days': 7},
     },
 }

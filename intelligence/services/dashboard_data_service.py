@@ -58,12 +58,15 @@ class DashboardDataService:
         posts_chart_widget = cls.get_posts_chart_widget()
         demand_themes_widget = cls.get_demand_themes_widget()
         recent_posts = cls.get_recent_posts(limit=6)
+        from intelligence.services.import_master_display_service import ImportMasterDisplayService
         from intelligence.services.intelligence_report_service import IntelligenceReportService
 
         market_report = IntelligenceReportService.build_report()
+        import_master_preview = ImportMasterDisplayService.get_home_preview(limit=3)
 
         return {
             'market_report': market_report,
+            'import_master_preview': import_master_preview,
             'notification_count': stats['pending_analysis'],
             'posts_total': stats['posts_total'],
             'summary_line': cls._build_home_summary(stats, market, data_window),

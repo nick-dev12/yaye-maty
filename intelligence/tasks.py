@@ -328,3 +328,18 @@ def generate_top_purchase_recommendations(window_days: int = 7) -> dict:
     result['backfill'] = backfill
     logger.info('Top 10 achats recalculé : %s', result)
     return result
+
+
+@shared_task(name='intelligence.generate_import_opportunities', time_limit=1800)
+def generate_import_opportunities(window_days: int = 7) -> dict:
+    """
+    Synthèse quotidienne Import Master — opportunités Acheter / Surveiller / Éviter.
+
+    Score par mot-clé actif : demande sociale + tendance Google +
+    concurrence Jumia/Jiji + positionnement prix.
+    """
+    from intelligence.services.import_scoring_service import ImportScoringService
+
+    result = ImportScoringService.refresh_opportunities(window_days=window_days)
+    logger.info('Import Master recalculé : %s', result)
+    return result

@@ -1,4 +1,30 @@
-{% comment %}Aperçu signaux — renvoie vers Intelligence / Top 10{% endcomment %}
+{% comment %}Aperçu signaux — renvoie vers Intelligence / Top 10 + Import Master{% endcomment %}
+{% if import_master_preview %}
+<section class="yd-section yd-section--signals" aria-labelledby="yd-import-title">
+    <header class="yd-section-head">
+        <div>
+            <h2 id="yd-import-title" class="yd-section-title">Import Master — à importer aujourd'hui</h2>
+            <p class="yd-section-sub">Meilleures opportunités d'importation calculées sur vos mots-clés actifs.</p>
+        </div>
+        <a href="{% url 'intelligence:import_master' %}" class="yd-link yd-link--strong">Toutes les opportunités →</a>
+    </header>
+    <div class="yd-signals-grid">
+        {% for opp in import_master_preview %}
+        <a href="{% url 'intelligence:import_master' %}" class="yd-signal-card yd-signal-card--{{ opp.decision_tone }}">
+            <span class="yd-signal-card-label">{{ opp.decision_label }} · Score {{ opp.score }}/100</span>
+            <strong class="yd-signal-card-title">{{ opp.product_name }}</strong>
+            {% if opp.suggested_price %}
+            <span class="yd-signal-card-metric">Vendre ~ {{ opp.suggested_price|floatformat:0 }} FCFA</span>
+            {% elif opp.price_avg %}
+            <span class="yd-signal-card-metric">Prix moy. {{ opp.price_avg|floatformat:0 }} FCFA</span>
+            {% endif %}
+            <p class="yd-signal-card-why">{{ opp.reasons.0|default:opp.decision_hint|truncatechars:90 }}</p>
+            <span class="yd-signal-card-cta">Voir Import Master →</span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 <section class="yd-section yd-section--signals" aria-labelledby="yd-signals-title">
     <header class="yd-section-head">
         <div>
