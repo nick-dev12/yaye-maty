@@ -244,7 +244,8 @@ COLLECTION_SCHEDULE = {
 # Si COLLECTION_CAMPAIGN_DAYS > 0, cette valeur est ignorée au profit de la campagne.
 INTELLIGENCE_LIVE_WINDOW_DAYS = int(os.getenv('INTELLIGENCE_LIVE_WINDOW_DAYS', '3'))
 
-CELERY_BEAT_SCHEDULE = {
+# Planification Celery Beat — vide si COLLECTION_ENABLED=False (collectes 100 % manuelles)
+_COLLECTION_BEAT_SCHEDULE = {
     'google-trends-daily': {
         'task': 'intelligence.scraper_google_trends',
         'schedule': crontab(hour=3, minute=0),
@@ -276,6 +277,12 @@ CELERY_BEAT_SCHEDULE = {
         'kwargs': {'window_days': 7},
     },
 }
+
+CELERY_BEAT_SCHEDULE = (
+    _COLLECTION_BEAT_SCHEDULE
+    if COLLECTION_SCHEDULE['ENABLED']
+    else {}
+)
 
 # NLP CamemBERT zero-shot — VPS si NLP_CLASSIFIER_ENABLED=True, sinon lexical seul
 NLP_CLASSIFIER = {

@@ -42,6 +42,16 @@ class CollectionScheduleActiveTests(SimpleTestCase):
         self.assertFalse(active)
         self.assertIn('terminée', reason)
 
+    @patch.dict(
+        'yayematy_project.settings.COLLECTION_SCHEDULE',
+        {'ENABLED': False, 'CAMPAIGN_START': '', 'CAMPAIGN_DURATION_DAYS': 0},
+        clear=False,
+    )
+    def test_disabled_stops_scheduled_sessions(self):
+        active, reason = is_collection_schedule_active()
+        self.assertFalse(active)
+        self.assertIn('COLLECTION_ENABLED=False', reason)
+
 
 class SocialDedupServiceTests(TestCase):
     def test_filter_new_urls_skips_known_tiktok(self):
