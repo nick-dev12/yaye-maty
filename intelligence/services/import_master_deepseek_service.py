@@ -325,9 +325,10 @@ class ImportMasterDeepSeekService:
             response_format={'type': 'json_object'},
             max_tokens=min(int(cfg.get('MAX_TOKENS', 8192)), 8192),
             timeout=float(cfg.get('TIMEOUT_SECONDS', 120)),
+            extra_body=DeepSeekAnalysisService._chat_extra_body(cfg),
         )
         raw = (response.choices[0].message.content or '').strip()
-        parsed = json.loads(raw)
+        parsed = DeepSeekAnalysisService._parse_json_response(raw)
         return cls.normalize_result(parsed, snapshots)
 
     @classmethod

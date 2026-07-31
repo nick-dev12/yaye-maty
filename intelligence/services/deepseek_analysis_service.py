@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -125,6 +126,33 @@ class DeepSeekAnalysisService:
         return bool(cfg.get('ENABLED') and cfg.get('API_KEY'))
 
     @classmethod
+    def _chat_extra_body(cls, cfg: dict) -> dict:
+        """
+        DeepSeek V4 active le « thinking » par défaut : le JSON peut arriver vide
+        dans message.content → JSONDecodeError. Désactivé pour les réponses structurées.
+        """
+        if cfg.get('THINKING_ENABLED'):
+            return {}
+        model = str(cfg.get('MODEL', 'deepseek-v4-flash')).lower()
+        if 'v4' in model or model in ('deepseek-chat', 'deepseek-reasoner'):
+            return {'thinking': {'type': 'disabled'}}
+        return {}
+
+    @classmethod
+    def _parse_json_response(cls, raw: str) -> dict:
+        """Parse le JSON DeepSeek (strip markdown, erreur claire si vide)."""
+        text = (raw or '').strip()
+        if not text:
+            raise ValueError(
+                'Réponse DeepSeek vide — vérifiez DEEPSEEK_API_KEY, le modèle '
+                'deepseek-v4-flash et le redémarrage Celery.'
+            )
+        if text.startswith('```'):
+            text = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE)
+            text = re.sub(r'\s*```$', '', text)
+        return json.loads(text)
+
+    @classmethod
     def fetch_web_context(
         cls,
         query: str,
@@ -225,9 +253,10 @@ class DeepSeekAnalysisService:
             response_format={'type': 'json_object'},
             max_tokens=int(cfg.get('MAX_TOKENS', 8192)),
             timeout=float(cfg.get('TIMEOUT_SECONDS', 120)),
+            extra_body=cls._chat_extra_body(cfg),
         )
         raw = (response.choices[0].message.content or '').strip()
-        parsed = json.loads(raw)
+        parsed = cls._parse_json_response(raw)
         return cls.ensure_top10(
             cls.validate_result(parsed),
             payload=payload,
@@ -494,9 +523,7 @@ class DeepSeekAnalysisService:
                 name,
                 note=note,
                 recommandation=cls._recommendation_for_note(note),
-                synthese=cls._default_synthese(name, note, rank) if not error else (
-                    f'{error[:120]} {cls._default_synthese(name, note, rank)}'
-                )[:SYNTH_MAX_LEN],
+                synthese=cls._default_synthese(name, note, rank),
                 sources=['jumia', 'jiji', 'google_trends'],
             )
 

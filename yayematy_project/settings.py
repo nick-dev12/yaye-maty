@@ -301,6 +301,9 @@ DEEPSEEK = {
         'https://api.deepseek.com/anthropic',
     ),
     'ENABLED': os.getenv('DEEPSEEK_ANALYSIS_ENABLED', 'True').lower() in ('true', '1', 'yes'),
+    'THINKING_ENABLED': os.getenv('DEEPSEEK_THINKING_ENABLED', 'False').lower() in (
+        'true', '1', 'yes',
+    ),
     'MAX_TOKENS': int(os.getenv('DEEPSEEK_MAX_TOKENS', '8192')),
     'TIMEOUT_SECONDS': float(os.getenv('DEEPSEEK_TIMEOUT_SECONDS', '120')),
 }
