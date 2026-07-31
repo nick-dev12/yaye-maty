@@ -13,7 +13,7 @@ class MarketDomainForm(forms.ModelForm):
         fields = ['label']
         widgets = {
             'label': forms.TextInput(attrs={
-                'placeholder': 'Ex. Agriculture et sylviculture',
+                'placeholder': 'Ex. appareils électronique, Téléphones et accessoires',
                 'autocomplete': 'off',
             }),
         }
@@ -22,8 +22,9 @@ class MarketDomainForm(forms.ModelForm):
         }
         help_texts = {
             'label': (
-                'Saisissez un libellé proche d\'une catégorie Google Trends. '
-                'L\'ID catégorie et les mots-clés de départ sont détectés automatiquement.'
+                'Nom libre (ex. « appareils électronique », « Teste »). '
+                'Si une catégorie Google Trends correspond, elle est liée automatiquement ; '
+                'sinon le domaine reste personnalisé (Trends sans filtre catégorie).'
             ),
         }
 
@@ -32,17 +33,12 @@ class MarketDomainForm(forms.ModelForm):
         if not label:
             raise forms.ValidationError('Le nom du domaine est obligatoire.')
 
-        resolved = GoogleTrendsCategoryService.resolve_category(label)
-        if resolved is None:
-            raise forms.ValidationError(
-                'Catégorie Google Trends introuvable pour ce nom. '
-                'Essayez un libellé proche d\'une catégorie officielle '
-                '(ex. « Agriculture et sylviculture », « Élevage de bétail »).'
-            )
-
-        cat_id, category_name = resolved
+        cat_id, category_name, google_matched = (
+            GoogleTrendsCategoryService.resolve_for_label(label)
+        )
         self._resolved_cat_id = cat_id
         self._resolved_category_name = category_name
+        self._google_matched = google_matched
         self._resolved_seed_keywords = GoogleTrendsCategoryService.generate_seed_keywords(label)
         return label
 
@@ -57,6 +53,10 @@ class MarketDomainForm(forms.ModelForm):
     @property
     def resolved_category_name(self) -> str:
         return getattr(self, '_resolved_category_name', '')
+
+    @property
+    def google_category_matched(self) -> bool:
+        return getattr(self, '_google_matched', False)
 
 
 class DiscoveryConfigForm(forms.Form):

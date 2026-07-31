@@ -47,10 +47,13 @@ class DomainsPageController:
             return self._render_page(domain_form=form, show_add_form=True, anchor='gestion')
 
         domain = form.save()
-        category_name = form.resolved_category_name or f'cat. {domain.cat_id}'
+        if form.google_category_matched:
+            detail = f'Google Trends : {form.resolved_category_name}'
+        else:
+            detail = 'domaine personnalisé (sans catégorie Google Trends)'
         messages.success(
             self.request,
-            f'Domaine « {domain.label} » ajouté (Google Trends : {category_name}).',
+            f'Domaine « {domain.label} » ajouté ({detail}).',
         )
         return self._redirect('gestion')
 

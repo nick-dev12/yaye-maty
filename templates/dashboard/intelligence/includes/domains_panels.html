@@ -62,7 +62,7 @@
                     <span class="domains-registry-dot" aria-hidden="true"></span>
                     <div>
                         <strong class="domains-registry-name">{{ domain.label }}</strong>
-                        <span class="domains-registry-meta">Cat. {{ domain.cat_id }} · {{ domain.seed_count }} seed(s)</span>
+                        <span class="domains-registry-meta">{% if domain.cat_id %}Cat. {{ domain.cat_id }}{% else %}Personnalisé{% endif %} · {{ domain.seed_count }} seed(s)</span>
                     </div>
                 </div>
                 <form method="post" class="domains-registry-delete" onsubmit="return confirm('Supprimer ce domaine ?');">

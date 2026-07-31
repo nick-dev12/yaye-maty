@@ -14,9 +14,52 @@ from pytrends.request import TrendReq
 
 logger = logging.getLogger(__name__)
 
+# pytrends : cat=0 → toutes catégories (domaine libre YAYEMATY)
+CUSTOM_CATEGORY_ID = 0
+
+# Secours si l'API Google Trends est indisponible (429 VPS, réseau…)
+FALLBACK_CATEGORIES: tuple[tuple[int, str], ...] = (
+    (43, 'Agriculture et sylviculture'),
+    (44, 'Arts et divertissement'),
+    (45, 'Automobiles et véhicules'),
+    (12, 'Business et industrie'),
+    (5, 'Informatique et électronique'),
+    (958, 'Maison et jardin'),
+    (47, 'Mode et style de vie'),
+    (71, 'Santé'),
+    (8, 'Jeux'),
+    (13, 'Emploi et formation'),
+    (16, 'Actualités'),
+    (299, 'Shopping'),
+    (533, 'Sports'),
+    (67, 'Voyage'),
+    (1177, 'Élevage de bétail'),
+    (936, 'Téléphones et accessoires'),
+)
+
 
 class GoogleTrendsCategoryService:
     """Associe un nom de domaine à l'ID catégorie Google Trends."""
+
+    @classmethod
+    def resolve_for_label(cls, label: str) -> tuple[int, str, bool]:
+        """
+        Résout un libellé domaine YAYEMATY.
+
+        Returns:
+            (cat_id, nom_affiché, google_matched)
+            Si aucune catégorie Google ne correspond → cat_id=0, domaine libre.
+        """
+        clean = (label or '').strip()
+        if not clean:
+            return CUSTOM_CATEGORY_ID, '', False
+
+        resolved = cls.resolve_category(clean)
+        if resolved:
+            cat_id, name = resolved
+            return cat_id, name, True
+
+        return CUSTOM_CATEGORY_ID, clean, False
 
     @classmethod
     def resolve_category(cls, label: str) -> tuple[int, str] | None:
@@ -105,15 +148,22 @@ class GoogleTrendsCategoryService:
     @classmethod
     @lru_cache(maxsize=1)
     def _get_flat_categories(cls) -> tuple[tuple[int, str], ...]:
+        flat: list[tuple[int, str]] = []
         try:
             pytrends = TrendReq(hl='fr-FR', tz=0)
             tree = pytrends.categories()
-            flat: list[tuple[int, str]] = []
             cls._flatten_tree(tree, flat)
-            return tuple(flat)
         except Exception as exc:
-            logger.exception('Impossible de charger les catégories Google Trends : %s', exc)
-            return tuple()
+            logger.warning('Catégories Google Trends API indisponibles : %s', exc)
+
+        if not flat:
+            return FALLBACK_CATEGORIES
+
+        seen = {cat_id for cat_id, _ in flat}
+        for cat_id, name in FALLBACK_CATEGORIES:
+            if cat_id not in seen:
+                flat.append((cat_id, name))
+        return tuple(flat)
 
     @classmethod
     def _flatten_tree(cls, node, output: list[tuple[int, str]]) -> None:
