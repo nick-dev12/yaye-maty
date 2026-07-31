@@ -7,7 +7,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'css/trade-archives.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/trade-archives.css' %}?v=2">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -26,6 +26,14 @@
         </div>
         <a href="{% url 'intelligence:index' %}" class="ti-header-link">Nouvelle analyse →</a>
     </header>
+
+    {% if messages %}
+    <div class="ti-arch-messages" role="status">
+        {% for message in messages %}
+        <p class="ti-arch-alert ti-arch-alert--{{ message.tags|default:'info' }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <section class="ti-arch-meta" aria-label="Capacité archives">
         <p>
@@ -62,6 +70,14 @@
             </div>
             <div class="ti-arch-card-actions">
                 <a href="{{ card.view_url }}" class="ti-arch-btn">Voir l’analyse</a>
+                <form method="post"
+                      class="ti-arch-delete-form"
+                      onsubmit="return confirm('Supprimer cette archive ? Cette action est définitive.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_archive">
+                    <input type="hidden" name="session_id" value="{{ card.id }}">
+                    <button type="submit" class="ti-arch-btn ti-arch-btn--danger">Supprimer</button>
+                </form>
                 <p class="ti-arch-meta-line">{{ card.duration_minutes }} mn · {{ card.sources|join:", "|default:"—" }}</p>
             </div>
         </article>

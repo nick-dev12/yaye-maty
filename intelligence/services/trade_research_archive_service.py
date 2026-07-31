@@ -44,6 +44,12 @@ class TradeResearchArchiveService:
         )
 
     @classmethod
+    def delete_session(cls, session_id: int) -> bool:
+        """Supprime une session d'archive. Retourne True si une ligne a été supprimée."""
+        deleted, _details = MarketResearchSession.objects.filter(pk=session_id).delete()
+        return deleted > 0
+
+    @classmethod
     def session_card(cls, session: MarketResearchSession) -> dict:
         """Résumé UI d'une session d'archive."""
         analysis = session.analysis_result or {}

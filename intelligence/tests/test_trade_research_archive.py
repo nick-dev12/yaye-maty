@@ -70,6 +70,12 @@ class TradeResearchArchiveServiceTests(TestCase):
         ]
         self.assertEqual(sessions[0].keyword, f'{self.PREFIX}2')
 
+    def test_delete_session(self):
+        session = self._make_session(99)
+        self.assertTrue(TradeResearchArchiveService.delete_session(session.pk))
+        self.assertFalse(MarketResearchSession.objects.filter(pk=session.pk).exists())
+        self.assertFalse(TradeResearchArchiveService.delete_session(session.pk))
+
 
 class ArchivesPageTests(TestCase):
     def setUp(self):
@@ -110,3 +116,16 @@ class ArchivesPageTests(TestCase):
         self.assertContains(response, 'robe')
         self.assertContains(response, 'Robe wax')
         self.assertContains(response, '/intelligence/?session=')
+        self.assertContains(response, 'Supprimer')
+
+    def test_delete_archive_removes_session(self):
+        session = MarketResearchSession.objects.get(keyword='robe')
+        response = self.client.post(
+            reverse('intelligence:archives'),
+            {'action': 'delete_archive', 'session_id': session.pk},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(MarketResearchSession.objects.filter(pk=session.pk).exists())
+
+        follow = self.client.get(reverse('intelligence:archives'))
+        self.assertNotContains(follow, 'Robe wax')
