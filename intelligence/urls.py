@@ -6,10 +6,22 @@ app_name = 'intelligence'
 
 urlpatterns = [
     path('', views.intelligence_index_view, name='index'),
+    path('api/recherche/lancer/', views.trade_api_lancer_view, name='trade_api_lancer'),
+    path('api/recherche/arreter/', views.trade_api_arreter_view, name='trade_api_arreter'),
+    path(
+        'api/recherche/statut/<str:task_id>/',
+        views.trade_api_statut_view,
+        name='trade_api_statut',
+    ),
     path('archives/', views.intelligence_archives_view, name='archives'),
     path('import-master/', views.import_master_view, name='import_master'),
+    path(
+        'import-master/api/domaines/statut/',
+        views.import_master_domain_status_view,
+        name='import_master_domain_status',
+    ),
     path('domaines/', views.intelligence_domains_view, name='domaines'),
-    path('collecte/', views.collecte_view, name='collecte'),
+    path('collecte/', views.collecte_redirect_view, name='collecte'),
     path('collecte/test/', views.collecte_test_view, name='collecte_test'),
     path('collecte/test/donnees/', views.collecte_test_donnees_view, name='collecte_test_donnees'),
     path('collecte/api/lancer/', views.collecte_api_lancer_view, name='collecte_api_lancer'),

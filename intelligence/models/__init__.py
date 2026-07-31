@@ -1,5 +1,6 @@
 from .discovered_query import DiscoveredQuery
 from .import_opportunity import ImportOpportunity
+from .import_master_domain_analysis import ImportMasterDomainAnalysis
 from .jiji_homepage_hit import JijiHomepageHit
 from .jiji_listing import JijiListing
 from .jiji_price_snapshot import JijiPriceSnapshot
@@ -8,6 +9,7 @@ from .jumia_price_snapshot import JumiaPriceSnapshot
 from .jumia_product import JumiaProduct
 from .jumia_review import JumiaReview
 from .market_domain import DiscoveryConfig, MarketDomain
+from .market_research_session import MarketResearchSession
 from .market_search_keyword import MarketSearchKeyword
 from .product_market_signal import ProductMarketSignal
 from .social_comment import SocialComment
@@ -38,6 +40,8 @@ __all__ = [
     'DiscoveryConfig',
     'MarketSearchKeyword',
     'ImportOpportunity',
+    'ImportMasterDomainAnalysis',
+    'MarketResearchSession',
     'SocialPost',
     'SocialComment',
     'SocialScrapeTarget',

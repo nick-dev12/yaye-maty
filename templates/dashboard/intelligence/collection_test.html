@@ -1,64 +1,126 @@
 {% extends "dashboard/base_dashboard.html" %}
 {% load static %}
 
-{% block title %}Session de test — YAYEMATY MARKET{% endblock %}
-{% block body_class %}intel-layout collecte-layout collecte-test-layout{% endblock %}
+{% block title %}Session de test — Trade Intelligence{% endblock %}
+{% block body_class %}intel-layout{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/collection-control.css' %}?v=12">
+<link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=8">
+<link rel="stylesheet" href="{% static 'css/collection-control.css' %}?v=14">
 {% endblock %}
 
 {% block dashboard_content %}
-<div class="main-content intelligence-page collecte-page collecte-test-page"
-     id="collecte-app"
-     data-url-lancer="{% url 'intelligence:collecte_api_lancer' %}"
-     data-url-statut="{% url 'intelligence:collecte_api_statut' task_id='00000000-0000-0000-0000-000000000000' %}"
-     data-url-arreter="{% url 'intelligence:collecte_api_arreter' %}"
-     data-url-reset="{% url 'intelligence:collecte_api_reset_session' %}"
-     data-url-intelligence="{% url 'intelligence:collecte_test_donnees' %}"
-     data-job-keyword="keyword"
-     data-session-minutes="{{ test_context.session_minutes|default:20 }}"
-     data-active-test="{% if active_tasks.test %}{{ active_tasks.test.task_id }}{% endif %}"
-     data-active-prod="">
+<div class="ti-app" id="trade-intelligence-app"
+     data-url-lancer="{% url 'intelligence:trade_api_lancer' %}"
+     data-url-arreter="{% url 'intelligence:trade_api_arreter' %}"
+     data-url-statut="{% url 'intelligence:trade_api_statut' task_id='TASK_ID' %}"
+     data-domains='{{ domains_json|escapejs }}'
+     data-test-mode="1"
+     {% if active_task %}data-active-task="{{ active_task.task_id }}" data-session-id="{{ active_task.session_id }}" data-duration="{{ active_task.duration_minutes }}"{% endif %}>
 
-    {% csrf_token %}
-
-    <header class="intel-topbar collecte-topbar">
-        <div class="collecte-topbar-copy">
-            <p class="collecte-hero-label">Diagnostic immédiat</p>
-            <h1 class="intel-topbar-title">Session de test</h1>
-            <p class="collecte-hero-desc">
-                Limites réduites, délais courts, arrêt possible à tout moment puis analyse hybride automatique.
-                Consultez les résultats sur la page Données test après chaque session.
-            </p>
-        </div>
-        <div class="intel-topbar-actions">
-            <a href="{% url 'intelligence:collecte_test_donnees' %}" class="intel-topbar-chip">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 15V5m4 10V9m4 6V7m4 8V4"/></svg>
-                Données test
-            </a>
-            <a href="{% url 'intelligence:collecte' %}" class="intel-topbar-chip">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5l-5 5 5 5"/></svg>
-                Collecte prod.
-            </a>
-            <div class="intel-user-chip">
-                <span class="intel-user-avatar">{{ user.username|slice:":1"|upper }}</span>
-                <span class="intel-user-meta">
-                    <span class="intel-user-name">{{ user.username }}</span>
-                    <span class="intel-user-role">Analyste marché</span>
-                </span>
+    <header class="ti-header">
+        <div class="ti-header-brand">
+            <span class="ti-header-logo" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 4v4l3 2M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
+            </span>
+            <div>
+                <p class="ti-header-kicker">Diagnostic scraping</p>
+                <h1 class="ti-header-title">SESSION TEST</h1>
             </div>
         </div>
+        <a href="{% url 'intelligence:index' %}" class="ti-header-link">Trade Intelligence</a>
     </header>
 
     {% include "dashboard/intelligence/includes/celery_ui_panel.html" %}
 
-    {% include "dashboard/intelligence/includes/collection_test_section.html" %}
+    <section class="ti-filters" aria-label="Paramètres de test">
+        <div class="ti-filters-row">
+            <label class="ti-field">
+                <span class="ti-field-label">DOMAINE</span>
+                <select id="ti-domain" class="ti-select" aria-label="Domaine">
+                    <option value="">— Choisir —</option>
+                    {% for d in domains %}
+                    <option value="{{ d.slug }}" {% if selected_domain_slug == d.slug %}selected{% endif %}>{{ d.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="ti-field">
+                <span class="ti-field-label">DURÉE</span>
+                <select id="ti-duration" class="ti-select">
+                    {% for opt in duration_options %}
+                    <option value="{{ opt.value }}" {% if selected_duration == opt.value or not selected_duration and opt.value == 10 %}selected{% endif %}>{{ opt.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <div class="ti-actions">
+                <button type="button" class="ti-btn-stop" id="ti-stop-btn" hidden>Arrêter et analyser</button>
+            </div>
+        </div>
+
+        <p class="ti-test-intro">Lancez un test par source. Facebook n’est plus inclus. Les résultats passent par l’analyse IA après collecte ou arrêt.</p>
+
+        <div class="ti-source-grid" id="ti-source-grid">
+            {% for src in source_buttons %}
+            <button type="button" class="ti-source-btn" data-source="{{ src.id }}" id="ti-src-{{ src.id }}">
+                <strong>{{ src.label }}</strong>
+                <span>{{ src.desc }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="ti-progress" id="ti-progress" hidden>
+        <div class="ti-progress-bar" id="ti-progress-bar" style="width: 0%"></div>
+        <p class="ti-progress-msg" id="ti-progress-msg">Initialisation…</p>
+        <p class="ti-timer" id="ti-timer"></p>
+    </div>
+
+    <section class="ti-table-section">
+        <h2 class="ti-table-title">RÉSULTAT DERNIÈRE SESSION</h2>
+        <div class="ti-table-wrap">
+            <table class="ti-table">
+                <thead>
+                    <tr>
+                        <th>RANG</th>
+                        <th>PRODUIT</th>
+                        <th>NOTE</th>
+                        <th>RECO</th>
+                        <th>SYNTHÈSE</th>
+                    </tr>
+                </thead>
+                <tbody id="ti-table-body">
+                    {% if has_results %}
+                        {% for item in analysis.top_investissement %}
+                        <tr>
+                            <td data-label="Rang">{{ item.rang }}</td>
+                            <td data-label="Produit">{{ item.produit }}</td>
+                            <td data-label="Note">{{ item.note }}</td>
+                            <td data-label="Recommandation">{{ item.recommandation }}</td>
+                            <td class="ti-synth" data-label="Analyse du marché">{{ item.synthese }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="ti-empty">Aucun produit dans le résultat.</td></tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="5" class="ti-empty">Choisissez domaine + mot-clé + durée, puis un bouton source.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if has_results %}
+    <script type="application/json" id="ti-analysis-data">{{ analysis_json|safe }}</script>
+    {% endif %}
+    {# Bouton analyse masqué : les sources lancent directement #}
+    <button type="button" id="ti-analyze-btn" hidden></button>
 </div>
 {% endblock %}
 
 {% block activity_panel %}{% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/collection-control.js' %}?v=12"></script>
+<script src="{% static 'js/trade-intelligence.js' %}?v=8"></script>
+<script src="{% static 'js/trade-session-test.js' %}?v=4"></script>
+<script src="{% static 'js/collection-control.js' %}?v=14"></script>
 {% endblock %}

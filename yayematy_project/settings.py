@@ -291,6 +291,29 @@ NLP_CLASSIFIER = {
     'CONFIDENCE_THRESHOLD': float(os.getenv('NLP_CONFIDENCE_THRESHOLD', '0.55')),
 }
 
+# DeepSeek — Trade Intelligence (analyse marché + recherche web)
+DEEPSEEK = {
+    'API_KEY': os.getenv('DEEPSEEK_API_KEY', ''),
+    'MODEL': os.getenv('DEEPSEEK_MODEL', 'deepseek-v4-flash'),
+    'BASE_URL': os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
+    'ANTHROPIC_BASE_URL': os.getenv(
+        'DEEPSEEK_ANTHROPIC_BASE_URL',
+        'https://api.deepseek.com/anthropic',
+    ),
+    'ENABLED': os.getenv('DEEPSEEK_ANALYSIS_ENABLED', 'True').lower() in ('true', '1', 'yes'),
+    'MAX_TOKENS': int(os.getenv('DEEPSEEK_MAX_TOKENS', '8192')),
+    'TIMEOUT_SECONDS': float(os.getenv('DEEPSEEK_TIMEOUT_SECONDS', '120')),
+}
+
+# Trade Intelligence — limites collecte ad-hoc par session
+# Trade Intelligence — 0 = illimité (seule la durée borne la collecte)
+TRADE_RESEARCH = {
+    'MAX_PRODUCTS': int(os.getenv('TRADE_RESEARCH_MAX_PRODUCTS', '0')),
+    'MAX_LISTINGS': int(os.getenv('TRADE_RESEARCH_MAX_LISTINGS', '0')),
+    'MAX_SOCIAL_POSTS': int(os.getenv('TRADE_RESEARCH_MAX_SOCIAL', '0')),
+    'MAX_REVIEWS': int(os.getenv('TRADE_RESEARCH_MAX_REVIEWS', '20')),
+}
+
 # Production derrière Nginx + HTTPS (voir DEPLOYMENT.md)
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

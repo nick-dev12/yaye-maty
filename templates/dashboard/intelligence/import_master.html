@@ -1,26 +1,43 @@
 {% extends "dashboard/base_dashboard.html" %}
 {% load static %}
 
-{% block title %}Import Master — YAYEMATY MARKET{% endblock %}
+{% block title %}Import Master — Rapport d'analyse{% endblock %}
 {% block body_class %}intel-layout import-master-page-body{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/import-master.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/import-master.css' %}?v=5">
 {% endblock %}
 
 {% block dashboard_content %}
-<div class="main-content import-master-page">
+<div class="main-content import-master-page im-report"
+     id="im-domaines"
+     data-status-url="{% url 'intelligence:import_master_domain_status' %}"
+     data-running="{% if im_domain_running %}1{% else %}0{% endif %}">
 
-    <header class="im-topbar">
-        <div class="im-topbar-copy">
-            <h1 class="im-topbar-title">Import Master</h1>
-            <p class="im-topbar-sub">Meilleures opportunités d'importation du jour — décisions guidées par la donnée</p>
+    <header class="im-report-top">
+        <div class="im-report-top-copy">
+            <p class="im-kicker">Rapport d’analyse · multi-domaines</p>
+            <h1 class="im-report-title">Import Master</h1>
+            <p class="im-report-sub">
+                Comparaison des <strong>2 dernières analyses Trade Intelligence</strong> par domaine
+                (données ≤ 90 jours), meilleures opportunités web
+                et prix potentiels (Alibaba, AliExpress, Amazon).
+            </p>
         </div>
-        <div class="im-topbar-actions">
-            <a href="{% url 'intelligence:index' %}" class="im-btn im-btn--outline">Intelligence marché</a>
+        <div class="im-report-actions">
+            <a href="{% url 'intelligence:index' %}" class="im-btn im-btn--outline">Trade Intelligence</a>
+            {% if im_domain_running %}
             <form method="post" action="{% url 'intelligence:import_master' %}">
                 {% csrf_token %}
-                <input type="hidden" name="action" value="recalculer">
-                <button type="submit" class="im-btn im-btn--primary">Recalculer maintenant</button>
+                <input type="hidden" name="action" value="arreter_analyse">
+                <button type="submit" class="im-btn im-btn--stop">Arrêter l’analyse</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'intelligence:import_master' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="analyser_domaines">
+                <button type="submit" class="im-btn im-btn--primary" {% if im_domain_running %}disabled{% endif %}>
+                    {% if im_domain_running %}Analyse en cours…{% else %}Lancer l’analyse comparative{% endif %}
+                </button>
             </form>
         </div>
     </header>
@@ -33,242 +50,271 @@
     </div>
     {% endif %}
 
-    <section class="im-hero" aria-label="Synthèse du jour">
-        <div class="im-hero-copy">
-            <p class="im-kicker">
-                {% if im_snapshot_date %}
-                Opportunités du {{ im_snapshot_date|date:"j F Y" }}{% if not im_is_today %} — dernier calcul disponible{% endif %}
-                {% else %}
-                Aucun calcul disponible
-                {% endif %}
-            </p>
-            <h2 class="im-hero-title">Que faut-il importer ?</h2>
-            <p class="im-hero-sub">{{ im_summary_line }}</p>
+    {% if im_domain_running and im_domain_analysis %}
+    <div class="im-domain-progress" id="im-domain-progress">
+        <div class="im-domain-progress-bar" style="width: {{ im_domain_analysis.progress_percent|default:5 }}%"></div>
+        <p class="im-domain-progress-msg">{{ im_domain_analysis.progress_message|default:"Analyse en cours…" }}</p>
+    </div>
+    {% endif %}
+
+    {% if im_domain_has_result %}
+    {% with r=im_domain_result %}
+
+    <section class="im-exec" aria-labelledby="im-exec-title">
+        <div class="im-exec-main">
+            <p class="im-kicker" id="im-exec-title">Synthèse exécutive</p>
+            <p class="im-exec-headline">{{ r.resume }}</p>
+            {% if im_domain_analysis.completed_at %}
+            {% with dc=r.domains_count|default:im_domains_available %}
+            <p class="im-meta-line">Rapport du {{ im_domain_analysis.completed_at|date:"j F Y · H:i" }} · {{ dc }} domaine{{ dc|pluralize }}</p>
+            {% endwith %}
+            {% endif %}
         </div>
-        <div class="im-kpi-row">
+        <div class="im-exec-kpis">
             <article class="im-kpi im-kpi--buy">
-                <p class="im-kpi-value">{{ im_counts.buy }}</p>
-                <p class="im-kpi-label">Acheter</p>
-                <p class="im-kpi-hint">Importer en priorité</p>
+                <p class="im-kpi-value">{{ im_reco_counts.buy }}</p>
+                <p class="im-kpi-label">Recommandés</p>
             </article>
             <article class="im-kpi im-kpi--watch">
-                <p class="im-kpi-value">{{ im_counts.watch }}</p>
-                <p class="im-kpi-label">Surveiller</p>
-                <p class="im-kpi-hint">Attendre confirmation</p>
+                <p class="im-kpi-value">{{ im_reco_counts.watch }}</p>
+                <p class="im-kpi-label">Moyens</p>
             </article>
             <article class="im-kpi im-kpi--avoid">
-                <p class="im-kpi-value">{{ im_counts.avoid }}</p>
-                <p class="im-kpi-label">Éviter</p>
-                <p class="im-kpi-hint">Ne pas importer</p>
+                <p class="im-kpi-value">{{ im_reco_counts.avoid }}</p>
+                <p class="im-kpi-label">À éviter</p>
             </article>
         </div>
     </section>
 
-    <section class="im-section" id="im-opportunites" aria-labelledby="im-opp-title">
-        <header class="im-section-head">
-            <div>
-                <h3 id="im-opp-title" class="im-section-title">Opportunités du jour</h3>
-                <p class="im-section-sub">Un mot-clé Paramètres = une opportunité analysée sur 4 axes : demande, tendance, concurrence, prix</p>
-            </div>
+    {% if r.meilleures_opportunites %}
+    <section class="im-block" aria-labelledby="im-opp-web-title">
+        <header class="im-block-head">
+            <h2 id="im-opp-web-title">Meilleures opportunités</h2>
+            <p>Opportunités priorisées à partir des Top domaines + recherche web</p>
         </header>
-
-        {% if im_has_data %}
-        <div class="im-opp-grid">
-            {% for opp in im_opportunities %}
-            <article class="im-opp im-opp--{{ opp.decision_tone }}">
-                <header class="im-opp-head">
-                    <span class="im-opp-rank">#{{ opp.rank }}</span>
-                    <div class="im-opp-titles">
-                        <h4 class="im-opp-name">{{ opp.product_name }}</h4>
-                        <p class="im-opp-keyword">Mot-clé « {{ opp.keyword }} »</p>
-                    </div>
-                    <span class="im-badge im-badge--{{ opp.decision_tone }}" title="{{ opp.decision_hint }}">{{ opp.decision_label }}</span>
-                </header>
-
-                <div class="im-opp-score">
-                    <div class="im-gauge" role="img" aria-label="Score {{ opp.score }} sur 100">
-                        <div class="im-gauge-track">
-                            <span class="im-gauge-fill im-gauge-fill--{{ opp.decision_tone }}" style="width: {{ opp.score }}%"></span>
+        <div class="im-opp-stack">
+            {% for o in r.meilleures_opportunites %}
+            <article class="im-opp-detail">
+                <div class="im-opp-detail-rank">#{{ o.rang }}</div>
+                <div class="im-opp-detail-body">
+                    <header class="im-opp-detail-head">
+                        <div>
+                            <h3>{{ o.titre|default:o.produit }}</h3>
+                            <p class="im-opp-meta">{{ o.domaine }}{% if o.produit and o.titre and o.produit != o.titre %} · {{ o.produit }}{% endif %}</p>
                         </div>
-                        <span class="im-gauge-value">{{ opp.score }}<small>/100</small></span>
+                        <div class="im-opp-detail-side">
+                            <span class="im-note-pill {% if o.note >= 7.5 %}is-high{% elif o.note >= 5 %}is-mid{% else %}is-low{% endif %}">{{ o.note }}/10</span>
+                            <span class="im-badge {% if 'éviter' in o.recommandation|lower %}im-badge--gris{% elif 'moyen' in o.recommandation|lower or 'affaire' in o.recommandation|lower %}im-badge--jaune{% else %}im-badge--orange{% endif %}">{{ o.recommandation }}</span>
+                        </div>
+                    </header>
+                    {% if o.commentaire %}
+                    <div class="im-analyst-note im-analyst-note--inline">
+                        <span class="im-analyst-label">Commentaire</span>
+                        <p>{{ o.commentaire }}</p>
                     </div>
+                    {% endif %}
+                    {% if o.action %}
+                    <p class="im-action-line"><strong>Action :</strong> {{ o.action }}</p>
+                    {% endif %}
                 </div>
-
-                <ul class="im-subscores">
-                    {% for sub in opp.subscores %}
-                    <li title="{{ sub.hint }}">
-                        <span class="im-subscore-label">{{ sub.label }}</span>
-                        <span class="im-subscore-track"><span class="im-subscore-bar" style="width: {{ sub.value }}%"></span></span>
-                        <span class="im-subscore-value">{{ sub.value }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-
-                {% if opp.reasons %}
-                <ul class="im-reasons">
-                    {% for reason in opp.reasons|slice:":4" %}
-                    <li>{{ reason }}</li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
-
-                <footer class="im-opp-foot">
-                    {% if opp.price_avg %}
-                    <span class="im-chip" title="Prix moyen constaté Jumia/Jiji">Prix moy. {{ opp.price_avg|floatformat:0 }} FCFA</span>
-                    {% endif %}
-                    {% if opp.suggested_price %}
-                    <span class="im-chip im-chip--bleu" title="Prix de vente conseillé">Vendre ~ {{ opp.suggested_price|floatformat:0 }} FCFA</span>
-                    {% endif %}
-                    {% if opp.stock_alert == 'critical' %}
-                    <span class="im-chip im-chip--orange">Rupture Jumia</span>
-                    {% elif opp.stock_alert == 'watch' %}
-                    <span class="im-chip im-chip--jaune">Stock fragile</span>
-                    {% endif %}
-                    <span class="im-chip im-chip--gris">{{ opp.jumia_sellers }} vendeur(s) · {{ opp.jiji_listings }} annonce(s)</span>
-                </footer>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="im-empty">
-            <p class="im-empty-title">Pas encore d'opportunités calculées</p>
-            <p class="im-empty-sub">
-                Activez des mots-clés dans <a href="{% url 'settings' %}?section=recherche">Paramètres</a>,
-                lancez une collecte, puis cliquez sur « Recalculer maintenant ».
-            </p>
-        </div>
-        {% endif %}
-    </section>
-
-    {% if im_trending %}
-    <section class="im-section" id="im-tendances" aria-labelledby="im-trend-title">
-        <header class="im-section-head">
-            <div>
-                <h3 id="im-trend-title" class="im-section-title">Produits tendance</h3>
-                <p class="im-section-sub">Mots-clés dont la recherche Google et le momentum réseaux montent</p>
-            </div>
-        </header>
-        <div class="im-trend-grid">
-            {% for opp in im_trending %}
-            <article class="im-trend-card">
-                <span class="im-trend-flame" aria-hidden="true">
-                    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c1 3-2 4-2 7a2 2 0 104 0c0-1 .5-2 1-2.5C14.5 8 16 9.8 16 12a6 6 0 11-12 0c0-4 4-6 6-10z"/></svg>
-                </span>
-                <div class="im-trend-copy">
-                    <strong>{{ opp.product_name }}</strong>
-                    <span>Tendance {{ opp.trend_score }}/100 · Demande {{ opp.demand_score }}/100</span>
-                </div>
-                <span class="im-badge im-badge--{{ opp.decision_tone }}">{{ opp.decision_label }}</span>
             </article>
             {% endfor %}
         </div>
     </section>
     {% endif %}
 
-    <section class="im-section" id="im-veille" aria-labelledby="im-watch-title">
-        <header class="im-section-head">
-            <div>
-                <h3 id="im-watch-title" class="im-section-title">Veille concurrentielle</h3>
-                <p class="im-section-sub">Qui vend déjà sur Jumia et Jiji — et à quel prix se positionner</p>
-            </div>
+    {% if r.classement_domaines %}
+    <section class="im-block" aria-labelledby="im-dom-rank-title">
+        <header class="im-block-head">
+            <h2 id="im-dom-rank-title">Classement des domaines</h2>
+            <p>Comparaison des analyses Trade Intelligence déjà passées</p>
         </header>
-
-        {% if im_competitor_watch %}
-        <div class="im-watch-grid">
-            {% for block in im_competitor_watch %}
-            <article class="im-watch-card">
-                <header class="im-watch-head">
-                    <h4 class="im-watch-keyword">{{ block.keyword }}</h4>
-                    <span class="im-badge im-badge--{{ block.pressure_tone }}">{{ block.pressure_label }}</span>
+        <div class="im-domain-detail-list">
+            {% for row in r.classement_domaines %}
+            <article class="im-domain-detail">
+                <header class="im-domain-detail-head">
+                    <span class="im-opp-rank">#{{ row.rang }}</span>
+                    <h3>{{ row.domaine }}</h3>
+                    <span class="im-note-pill {% if row.note_globale >= 7.5 %}is-high{% elif row.note_globale >= 5 %}is-mid{% else %}is-low{% endif %}">{{ row.note_globale }}/10</span>
+                    <span class="im-badge {% if 'éviter' in row.recommandation|lower %}im-badge--gris{% elif 'moyen' in row.recommandation|lower or 'affaire' in row.recommandation|lower %}im-badge--jaune{% else %}im-badge--orange{% endif %}">{{ row.recommandation }}</span>
                 </header>
-                <div class="im-watch-stats">
-                    <div>
-                        <span class="im-watch-value">{{ block.jumia.sellers_count }}</span>
-                        <span class="im-watch-label">vendeur(s) Jumia</span>
-                    </div>
-                    <div>
-                        <span class="im-watch-value">{{ block.jiji.listings_count }}</span>
-                        <span class="im-watch-label">annonce(s) Jiji</span>
-                    </div>
-                    <div>
-                        <span class="im-watch-value">{{ block.jiji.new_this_week }}</span>
-                        <span class="im-watch-label">nouvelles cette semaine</span>
-                    </div>
-                </div>
-                <div class="im-watch-prices">
-                    {% if block.floor_price_xof %}
-                    <span class="im-chip im-chip--gris">Prix plancher {{ block.floor_price_xof|floatformat:0 }} FCFA</span>
-                    {% endif %}
-                    {% if block.suggested_price_xof %}
-                    <span class="im-chip im-chip--bleu">Prix conseillé {{ block.suggested_price_xof|floatformat:0 }} FCFA</span>
-                    {% endif %}
-                </div>
-                {% if block.jumia.top_sellers %}
-                <ul class="im-seller-list">
-                    {% for seller in block.jumia.top_sellers|slice:":3" %}
-                    <li>
-                        <strong>{{ seller.seller_name|truncatechars:28 }}</strong>
-                        <span>{{ seller.products }} produit(s){% if seller.avg_price %} · ~{{ seller.avg_price|floatformat:0 }} FCFA{% endif %}{% if seller.avg_rating %} · ★ {{ seller.avg_rating|floatformat:1 }}{% endif %}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
+                {% if row.synthese %}
+                <p class="im-domain-synth">{{ row.synthese }}</p>
                 {% endif %}
-                {% if block.jiji.regions %}
-                <p class="im-watch-regions">
-                    Zones actives :
-                    {% for region in block.jiji.regions %}{{ region.location_region }} ({{ region.listings }}){% if not forloop.last %}, {% endif %}{% endfor %}
-                </p>
+                {% if row.commentaire_analyste %}
+                <div class="im-analyst-note im-analyst-note--inline">
+                    <span class="im-analyst-label">Commentaire d’analyste</span>
+                    <p>{{ row.commentaire_analyste }}</p>
+                </div>
+                {% endif %}
+                <div class="im-domain-cols">
+                    {% if row.points_forts %}
+                    <div>
+                        <h4>Points forts</h4>
+                        <ul>{% for p in row.points_forts %}<li>{{ p }}</li>{% endfor %}</ul>
+                    </div>
+                    {% endif %}
+                    {% if row.risques %}
+                    <div>
+                        <h4>Risques</h4>
+                        <ul>{% for p in row.risques %}<li>{{ p }}</li>{% endfor %}</ul>
+                    </div>
+                    {% endif %}
+                    {% if row.opportunites_cles %}
+                    <div>
+                        <h4>Opportunités clés</h4>
+                        <ul>{% for p in row.opportunites_cles %}<li>{{ p }}</li>{% endfor %}</ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if r.comparaison %}
+    <section class="im-block" aria-labelledby="im-vs-title">
+        <header class="im-block-head">
+            <h2 id="im-vs-title">Face-à-face entre domaines</h2>
+            <p>Lectures comparatives pour arbitrer le capital d’import</p>
+        </header>
+        <div class="im-vs-stack">
+            {% for c in r.comparaison %}
+            <article class="im-vs-card">
+                <p class="im-vs-pair"><strong>{{ c.domaine_a }}</strong> <span>vs</span> <strong>{{ c.domaine_b }}</strong></p>
+                {% if c.critere %}<p class="im-vs-critere">Critère : {{ c.critere }}</p>{% endif %}
+                <p class="im-vs-verdict">{{ c.verdict }}</p>
+                {% if c.commentaire %}
+                <div class="im-analyst-note im-analyst-note--inline">
+                    <span class="im-analyst-label">Commentaire</span>
+                    <p>{{ c.commentaire }}</p>
+                </div>
                 {% endif %}
             </article>
             {% endfor %}
         </div>
-        {% else %}
-        <p class="im-empty-inline">Aucune donnée concurrentielle — collectez Jumia et Jiji sur vos mots-clés actifs.</p>
-        {% endif %}
     </section>
+    {% endif %}
 
-    <section class="im-section" id="im-prix" aria-labelledby="im-price-title">
-        <header class="im-section-head">
-            <div>
-                <h3 id="im-price-title" class="im-section-title">Comparaison des prix</h3>
-                <p class="im-section-sub">Neuf local (Jiji) vs catalogue Jumia — repérer les écarts exploitables</p>
-            </div>
+    {% if r.produits_import %}
+    <section class="im-block" aria-labelledby="im-prod-title">
+        <header class="im-block-head">
+            <h2 id="im-prod-title">Top produits à importer — prix potentiels</h2>
+            <p>Tous domaines confondus · Alibaba · AliExpress · Amazon · marché SN</p>
         </header>
-        {% if im_price_comparison %}
-        <div class="im-table-wrap">
-            <table class="im-table">
-                <thead>
-                    <tr>
-                        <th>Produit / mot-clé</th>
-                        <th>Prix moyen Jiji</th>
-                        <th>Prix min Jiji</th>
-                        <th>Prix moyen Jumia</th>
-                        <th>Écart</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in im_price_comparison %}
-                    <tr>
-                        <td class="im-table-product">{{ row.product_label }}</td>
-                        <td>{% if row.jiji_avg_price %}{{ row.jiji_avg_price|floatformat:0 }} FCFA{% else %}—{% endif %}</td>
-                        <td>{% if row.jiji_min_price %}{{ row.jiji_min_price|floatformat:0 }} FCFA{% else %}—{% endif %}</td>
-                        <td>{% if row.jumia_avg_price %}{{ row.jumia_avg_price|floatformat:0 }} FCFA{% else %}—{% endif %}</td>
-                        <td>
-                            {% if row.gap_percent != None %}
-                            <span class="im-gap im-gap--{{ row.tone }}">−{{ row.gap_percent }}%</span>
-                            {% else %}—{% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="im-prod-stack">
+            {% for p in r.produits_import %}
+            <article class="im-prod-card">
+                <header class="im-prod-head">
+                    <span class="im-opp-rank">#{{ p.rang }}</span>
+                    <div class="im-prod-titles">
+                        <h3>{{ p.produit }}</h3>
+                        <p>{{ p.domaine }}</p>
+                    </div>
+                    <span class="im-note-pill {% if p.note >= 7.5 %}is-high{% elif p.note >= 5 %}is-mid{% else %}is-low{% endif %}">{{ p.note }}/10</span>
+                    <span class="im-badge {% if 'éviter' in p.recommandation|lower %}im-badge--gris{% elif 'moyen' in p.recommandation|lower or 'affaire' in p.recommandation|lower %}im-badge--jaune{% else %}im-badge--orange{% endif %}">{{ p.recommandation }}</span>
+                </header>
+
+                {% if p.synthese or p.commentaire_analyste %}
+                <div class="im-analyst-note im-analyst-note--inline">
+                    <span class="im-analyst-label">Analyse</span>
+                    <p>{{ p.commentaire_analyste|default:p.synthese }}</p>
+                </div>
+                {% endif %}
+
+                <div class="im-price-grid">
+                    <div class="im-price-cell">
+                        <span>Marché SN</span>
+                        <strong>{{ p.prix_sn_xof|default:"—" }}</strong>
+                    </div>
+                    <div class="im-price-cell">
+                        <span>Alibaba</span>
+                        <strong>{{ p.prix_alibaba_usd|default:"—" }}</strong>
+                    </div>
+                    <div class="im-price-cell">
+                        <span>AliExpress</span>
+                        <strong>{{ p.prix_aliexpress_usd|default:"—" }}</strong>
+                    </div>
+                    <div class="im-price-cell">
+                        <span>Amazon</span>
+                        <strong>{{ p.prix_amazon_usd|default:"—" }}</strong>
+                    </div>
+                    <div class="im-price-cell im-price-cell--accent">
+                        <span>Achat potentiel</span>
+                        <strong>{{ p.prix_potentiel_achat_xof|default:"—" }}</strong>
+                    </div>
+                    <div class="im-price-cell im-price-cell--accent">
+                        <span>Marge estimée</span>
+                        <strong>{{ p.marge_estimee_xof|default:"—" }}</strong>
+                    </div>
+                </div>
+
+                {% if p.commentaire_prix %}
+                <div class="im-analyst-note im-analyst-note--price">
+                    <span class="im-analyst-label">Commentaire prix</span>
+                    <p>{{ p.commentaire_prix }}</p>
+                </div>
+                {% endif %}
+
+                {% if p.sources_prix %}
+                <p class="im-sources">Sources : {% for s in p.sources_prix %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+                {% endif %}
+            </article>
+            {% endfor %}
         </div>
+    </section>
+    {% endif %}
+
+    {% if r.alertes %}
+    <section class="im-block im-block--alerts" aria-labelledby="im-alert-title">
+        <header class="im-block-head">
+            <h2 id="im-alert-title">Points de vigilance</h2>
+        </header>
+        <ul class="im-domain-alerts">
+            {% for a in r.alertes %}<li>{{ a }}</li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% endwith %}
+    {% else %}
+    <section class="im-empty-report">
+        <h2>Aucun rapport disponible</h2>
+        {% if im_domains_available %}
+        <p>
+            {{ im_domains_available }} domaine{{ im_domains_available|pluralize }}
+            · {{ im_sessions_available|default:im_domains_available }} analyse{{ im_sessions_available|default:im_domains_available|pluralize }} récente{{ im_sessions_available|default:im_domains_available|pluralize }}
+            (2 max. par domaine). Lancez l’analyse comparative pour comparer les tendances,
+            détecter les meilleures opportunités et estimer les prix Alibaba / AliExpress / Amazon.
+        </p>
         {% else %}
-        <p class="im-empty-inline">Pas encore d'écart de prix mesurable — les comparaisons apparaissent dès que Jumia et Jiji couvrent les mêmes mots-clés.</p>
+        <p>
+            Aucune session Trade Intelligence terminée.
+            Analysez d’abord un ou plusieurs domaines, puis revenez ici pour le rapport d’import.
+        </p>
+        <a href="{% url 'intelligence:index' %}" class="im-btn im-btn--primary">Aller à Trade Intelligence</a>
+        {% endif %}
+        {% if im_domain_snapshots %}
+        <div class="im-ready-domains">
+            <h3>Domaines prêts à comparer</h3>
+            <ul>
+                {% for s in im_domain_snapshots %}
+                <li>
+                    <strong>{{ s.domaine }}</strong>
+                    <span>{{ s.sessions_count|default:1 }} analyse{{ s.sessions_count|default:1|pluralize }} · {{ s.top_produits|length }} produit{{ s.top_produits|length|pluralize }} Top</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
         {% endif %}
     </section>
-
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block activity_panel %}{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/import-master.js' %}?v=2"></script>
+{% endblock %}

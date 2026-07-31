@@ -1,0 +1,119 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Profil — YAYEMATY MARKET{% endblock %}
+{% block body_class %}profile-body{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}?v=1">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="main-content profile-page">
+    <section class="profile-hero">
+        <div class="profile-hero-main">
+            <div class="profile-avatar" aria-hidden="true">{{ display_name|slice:":1"|upper }}</div>
+            <div>
+                <span class="profile-badge">Mon compte</span>
+                <h1>{{ display_name }}</h1>
+                <p class="profile-hero-meta">{{ user_role }} · Membre depuis {{ member_since }}</p>
+            </div>
+        </div>
+        <div class="profile-hero-stats">
+            <div class="profile-stat-pill profile-stat-pill--bleu">
+                <span class="profile-stat-value">{{ user.email|default:"—" }}</span>
+                <span class="profile-stat-label">E-mail</span>
+            </div>
+            <div class="profile-stat-pill profile-stat-pill--orange">
+                <span class="profile-stat-value">{{ user.username }}</span>
+                <span class="profile-stat-label">Identifiant</span>
+            </div>
+        </div>
+    </section>
+
+    {% if messages %}
+    <div class="profile-messages">
+        {% for message in messages %}
+        <div class="profile-alert profile-alert--{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="profile-layout">
+        <section class="profile-card" aria-labelledby="profile-info-title">
+            <div class="profile-card-header">
+                <h2 id="profile-info-title">Informations personnelles</h2>
+                <p>Modifiez votre nom, votre e-mail et votre identifiant de connexion.</p>
+            </div>
+
+            <form method="post" class="profile-form" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="profile">
+
+                <div class="profile-form-row">
+                    <div class="profile-form-group">
+                        <label for="{{ profile_form.first_name.id_for_label }}">{{ profile_form.first_name.label }}</label>
+                        {{ profile_form.first_name }}
+                        {% if profile_form.first_name.errors %}
+                        <span class="profile-field-error">{{ profile_form.first_name.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="profile-form-group">
+                        <label for="{{ profile_form.last_name.id_for_label }}">{{ profile_form.last_name.label }}</label>
+                        {{ profile_form.last_name }}
+                        {% if profile_form.last_name.errors %}
+                        <span class="profile-field-error">{{ profile_form.last_name.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="profile-form-group">
+                    <label for="{{ profile_form.email.id_for_label }}">{{ profile_form.email.label }}</label>
+                    {{ profile_form.email }}
+                    {% if profile_form.email.errors %}
+                    <span class="profile-field-error">{{ profile_form.email.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="profile-form-group">
+                    <label for="{{ profile_form.username.id_for_label }}">{{ profile_form.username.label }}</label>
+                    {{ profile_form.username }}
+                    {% if profile_form.username.errors %}
+                    <span class="profile-field-error">{{ profile_form.username.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="profile-form-actions">
+                    <button type="submit" class="profile-btn profile-btn--primary">Enregistrer les modifications</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="profile-card" aria-labelledby="profile-password-title">
+            <div class="profile-card-header">
+                <h2 id="profile-password-title">Sécurité</h2>
+                <p>Changez votre mot de passe pour sécuriser votre accès au tableau de bord.</p>
+            </div>
+
+            <form method="post" class="profile-form" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="password">
+
+                {% for field in password_form %}
+                <div class="profile-form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <span class="profile-field-error">{{ field.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="profile-form-actions">
+                    <button type="submit" class="profile-btn profile-btn--dark">Mettre à jour le mot de passe</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}

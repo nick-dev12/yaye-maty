@@ -343,3 +343,138 @@ def generate_import_opportunities(window_days: int = 7) -> dict:
     result = ImportScoringService.refresh_opportunities(window_days=window_days)
     logger.info('Import Master recalculé : %s', result)
     return result
+
+
+@shared_task(bind=True, name='intelligence.run_import_master_domain_analysis', time_limit=900, soft_time_limit=840)
+def run_import_master_domain_analysis(self, analysis_id: int) -> dict:
+    """Import Master — comparaison multi-domaines DeepSeek + prix sourcing."""
+    from intelligence.models import ImportMasterDomainAnalysis
+    from intelligence.services.collection_cancel_service import CollectionCancelService
+    from intelligence.services.import_master_deepseek_service import ImportMasterDeepSeekService
+
+    analysis = ImportMasterDomainAnalysis.objects.filter(pk=analysis_id).first()
+    if not analysis:
+        return {'success': False, 'error': 'Analyse introuvable'}
+
+    # Déjà arrêtée avant démarrage worker
+    if analysis.status == ImportMasterDomainAnalysis.Status.STOPPED:
+        return {'success': False, 'error': 'stopped', 'analysis_id': analysis_id}
+
+    task_id = self.request.id or ''
+    CollectionCancelService.clear(task_id)
+    analysis.status = ImportMasterDomainAnalysis.Status.RUNNING
+    analysis.celery_task_id = task_id
+    analysis.progress_message = 'Démarrage analyse…'
+    analysis.save(update_fields=['status', 'celery_task_id', 'progress_message'])
+
+    def progress(pct: int, msg: str) -> None:
+        if CollectionCancelService.is_cancelled(task_id):
+            raise RuntimeError('Analyse annulée par l’utilisateur.')
+        self.update_state(
+            state='PROGRESS',
+            meta={'pourcentage': pct, 'message': msg, 'analysis_id': analysis_id},
+        )
+
+    def should_cancel() -> bool:
+        return CollectionCancelService.is_cancelled(task_id)
+
+    try:
+        result = ImportMasterDeepSeekService.run_analysis(
+            progress=progress,
+            analysis_id=analysis_id,
+            should_cancel=should_cancel,
+        )
+        # Si stoppé pendant l’exécution
+        refreshed = ImportMasterDomainAnalysis.objects.filter(pk=analysis_id).first()
+        if refreshed and refreshed.status == ImportMasterDomainAnalysis.Status.STOPPED:
+            return {'success': False, 'error': 'stopped', 'analysis_id': analysis_id}
+        return {
+            'success': True,
+            'analysis_id': analysis_id,
+            'domains_count': result.get('domains_count', 0),
+        }
+    except Exception as exc:
+        from django.utils import timezone
+
+        msg = str(exc)
+        stopped = 'annul' in msg.lower() or should_cancel()
+        ImportMasterDomainAnalysis.objects.filter(pk=analysis_id).exclude(
+            status=ImportMasterDomainAnalysis.Status.STOPPED,
+        ).update(
+            status=(
+                ImportMasterDomainAnalysis.Status.STOPPED
+                if stopped
+                else ImportMasterDomainAnalysis.Status.FAILED
+            ),
+            error_message=msg[:2000],
+            progress_percent=0,
+            progress_message=msg[:300],
+            completed_at=timezone.now(),
+        )
+        if not stopped:
+            logger.exception('Import Master domain analysis failed')
+        return {
+            'success': False,
+            'error': msg,
+            'analysis_id': analysis_id,
+            'stopped': stopped,
+        }
+    finally:
+        CollectionCancelService.clear(task_id)
+
+
+@shared_task(bind=True, name='intelligence.run_market_research_session', time_limit=18600, soft_time_limit=18000)
+def run_market_research_session(self, session_id: int) -> dict:
+    """Trade Intelligence — collecte bornée par durée + analyse DeepSeek."""
+    from intelligence.models import MarketResearchSession
+    from intelligence.services.collection_abort import reset_abort_hook, set_abort_hook
+    from intelligence.services.collection_cancel_service import CollectionCancelService
+    from intelligence.services.market_research_orchestrator import MarketResearchOrchestrator
+
+    task_id = self.request.id or ''
+    CollectionCancelService.clear(task_id)
+
+    def progress(pourcentage: int, message: str, phase: str = 'collecte') -> None:
+        if not task_id:
+            return
+        try:
+            self.update_state(
+                state='PROGRESS',
+                meta={
+                    'pourcentage': pourcentage,
+                    'message': message,
+                    'phase': phase,
+                    'session_id': session_id,
+                },
+            )
+        except Exception:
+            pass
+
+    def should_cancel() -> bool:
+        return CollectionCancelService.is_cancelled(task_id)
+
+    abort_token = set_abort_hook(should_cancel)
+    result: dict = {'success': False, 'error': 'Session interrompue.'}
+
+    try:
+        session = MarketResearchSession.objects.filter(pk=session_id).only('duration_minutes').first()
+        if session and task_id and session.celery_task_id != task_id:
+            session.celery_task_id = task_id
+            session.save(update_fields=['celery_task_id'])
+
+        result = MarketResearchOrchestrator.run_session(
+            session_id,
+            progress=progress,
+            should_cancel=should_cancel,
+        )
+    finally:
+        reset_abort_hook(abort_token)
+        CollectionCancelService.clear(task_id)
+
+    return {
+        'pourcentage': 100 if result.get('success') else 0,
+        'message': result.get('error') or 'Analyse terminée.',
+        'phase': 'done' if result.get('success') else 'failed',
+        'session_id': session_id,
+        'details': result,
+    }

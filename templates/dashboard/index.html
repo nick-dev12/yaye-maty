@@ -5,7 +5,7 @@
 {% block body_class %}dashboard-home{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-home.css' %}?v=15">
+<link rel="stylesheet" href="{% static 'css/dashboard-home.css' %}?v=17">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -28,13 +28,13 @@
                 <svg class="th-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M10 3a5 5 0 00-5 5v3l-1.5 2.5h13L15 11V8a5 5 0 00-5-5z"/><path stroke-linecap="round" d="M8.5 16a1.5 1.5 0 003 0"/></svg>
                 {% if notification_count %}<span class="th-notif-badge">{{ notification_count }}</span>{% endif %}
             </button>
-            <div class="th-profile">
+            <a href="{% url 'profile' %}" class="th-profile" aria-label="Mon profil">
                 <div class="th-profile-avatar">{{ display_name|slice:":1"|upper }}</div>
                 <div class="th-profile-text">
                     <span class="th-profile-name">{{ display_name }}</span>
                     <span class="th-profile-role">{{ user_role }}</span>
                 </div>
-            </div>
+            </a>
         </div>
     </header>
 
@@ -43,7 +43,7 @@
             <div class="yd-hero-glow" aria-hidden="true"></div>
             <div class="yd-hero-inner">
                 <div class="yd-hero-copy">
-                    <p class="yd-kicker">Lecture marché · mots-clés Paramètres</p>
+                    <p class="yd-kicker">Trade Intelligence · domaines · Top 15</p>
                     <h1 class="yd-title">{{ greeting }}, {{ first_name }}</h1>
                     <p class="yd-sub">{{ summary_line }}</p>
                     <div class="yd-hero-meta">
@@ -51,16 +51,76 @@
                             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path stroke-linecap="round" d="M8 4v4l2.5 1.5"/></svg>
                             {{ data_window.last_update_label }}
                         </span>
+                        {% if trade_intelligence.domains_count %}
+                        <span class="yd-hero-chip">{{ trade_intelligence.domains_count }} domaine{{ trade_intelligence.domains_count|pluralize }} analysé{{ trade_intelligence.domains_count|pluralize }}</span>
+                        {% endif %}
                         {% if notification_count %}
                         <span class="yd-hero-chip yd-hero-chip--alert">{{ notification_count }} analyse(s) en attente</span>
                         {% endif %}
                     </div>
                 </div>
                 <div class="yd-head-actions">
-                    <a href="{{ social_demand.settings_url }}" class="th-btn th-btn--ghost">Mots-clés Paramètres</a>
-                    <a href="{% url 'intelligence:index' %}" class="th-btn th-btn--primary">Intelligence marché</a>
+                    <a href="{{ trade_intelligence.import_url }}" class="th-btn th-btn--ghost">Import Master</a>
+                    <a href="{{ trade_intelligence.intel_url }}" class="th-btn th-btn--primary">Analyser un domaine</a>
                 </div>
             </div>
+        </section>
+
+        <section class="yd-section yd-section--ti" aria-labelledby="yd-ti-title">
+            <header class="yd-section-head">
+                <div>
+                    <h2 id="yd-ti-title" class="yd-section-title">Trade Intelligence — domaines</h2>
+                    <p class="yd-section-sub">Derniers Top produits par domaine (analyse IA) — décisions d’investissement</p>
+                </div>
+                <a href="{{ trade_intelligence.intel_url }}" class="yd-link yd-link--strong">Ouvrir →</a>
+            </header>
+
+            {% if trade_intelligence.has_data %}
+            <div class="yd-ti-grid">
+                {% for block in trade_intelligence.domains %}
+                <article class="yd-ti-card">
+                    <header class="yd-ti-card-head">
+                        <div>
+                            <h3 class="yd-ti-domain">{{ block.domain_label }}</h3>
+                            {% if block.keyword %}<p class="yd-ti-kw">Mot-clé « {{ block.keyword }} »</p>{% endif %}
+                        </div>
+                        {% if block.completed_at %}
+                        <time class="yd-ti-time" datetime="{{ block.completed_at|date:'c' }}">{{ block.completed_at|date:"j M H:i" }}</time>
+                        {% endif %}
+                    </header>
+                    <div class="yd-ti-pick">
+                        <p class="yd-ti-pick-label">Top pick</p>
+                        <p class="yd-ti-pick-name">{{ block.top_pick.produit }}</p>
+                        <div class="yd-ti-pick-meta">
+                            {% if block.top_pick.note != None %}
+                            <span class="yd-ti-note {% if block.top_pick.note >= 7.5 %}is-high{% elif block.top_pick.note >= 5 %}is-mid{% else %}is-low{% endif %}">{{ block.top_pick.note }}/10</span>
+                            {% endif %}
+                            <span class="yd-ti-reco">{{ block.top_pick.recommandation }}</span>
+                        </div>
+                        {% if block.top_pick.synthese %}
+                        <p class="yd-ti-synth">{{ block.top_pick.synthese }}</p>
+                        {% endif %}
+                    </div>
+                    {% if block.top_preview %}
+                    <ol class="yd-ti-list">
+                        {% for item in block.top_preview %}
+                        <li>
+                            <span class="yd-ti-rank">#{{ item.rang }}</span>
+                            <span class="yd-ti-prod" title="{{ item.produit }}">{{ item.produit|truncatechars:36 }}</span>
+                            <span class="yd-ti-mini-note">{{ item.note }}</span>
+                        </li>
+                        {% endfor %}
+                    </ol>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="yd-ti-empty">
+                <p>Aucune analyse domaine terminée. Lancez une session sur Trade Intelligence.</p>
+                <a href="{{ trade_intelligence.intel_url }}" class="th-btn th-btn--primary">Lancer une analyse</a>
+            </div>
+            {% endif %}
         </section>
 
         <section class="yd-section yd-section--kpis" aria-labelledby="yd-kpi-title">

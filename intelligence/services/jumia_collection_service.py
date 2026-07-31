@@ -39,6 +39,41 @@ class JumiaCollectionService:
         Returns:
             dict success/message/nouvelles_donnees + détails produits/avis.
         """
+        from intelligence.services.active_keyword_service import ActiveKeywordService
+
+        config = get_effective_collection_config(test_mode=test_mode)
+        max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
+        keywords = list(
+            ActiveKeywordService.list_for_jumia(limit=max_kw if max_kw > 0 else 0)
+        )
+        if not keywords:
+            return {
+                'success': False,
+                'message': 'Aucun mot-clé marketplace actif dans Paramètres → Mots-clés marketplace.',
+                'nouvelles_donnees': 0,
+                'products_created': 0,
+                'products_updated': 0,
+                'reviews_created': 0,
+                'snapshots_created': 0,
+            }
+        return cls.run_for_keywords(
+            keywords,
+            progress=progress,
+            should_cancel=should_cancel,
+            test_mode=test_mode,
+        )
+
+    @classmethod
+    def run_for_keywords(
+        cls,
+        keywords: list,
+        *,
+        progress: ProgressCallback | None = None,
+        should_cancel: ShouldCancelCallback | None = None,
+        test_mode: bool = False,
+        skip_homepage: bool = False,
+    ) -> dict:
+        """Collecte Jumia pour une liste de mots-clés (y compris éphémères Trade Intelligence)."""
         config = get_effective_collection_config(test_mode=test_mode)
         max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
         # Test : plafond session TikTok. Prod : plafond optionnel JUMIA (0 = illimité hors max_videos)
@@ -55,17 +90,12 @@ class JumiaCollectionService:
         max_scan_pages = int(config.get('JUMIA_MAX_LISTING_SCAN_PAGES') or 9)
         homepage_enabled = bool(config.get('JUMIA_HOMEPAGE_RADAR_ENABLED', True))
 
-        from intelligence.services.active_keyword_service import ActiveKeywordService
         from intelligence.services.jumia_dedup_service import JumiaDedupService
-
-        keywords = list(
-            ActiveKeywordService.list_for_jumia(limit=max_kw if max_kw > 0 else 0)
-        )
 
         if not keywords:
             return {
                 'success': False,
-                'message': 'Aucun mot-clé marketplace actif dans Paramètres → Mots-clés marketplace.',
+                'message': 'Aucun mot-clé à traiter pour Jumia.',
                 'nouvelles_donnees': 0,
                 'products_created': 0,
                 'products_updated': 0,
@@ -172,7 +202,7 @@ class JumiaCollectionService:
                         logger.exception('Produit Jumia échoué %s', card.get('url'))
                         errors.append(f"{card.get('name', '?')[:40]}: {exc}")
 
-                if not test_mode:
+                if not test_mode and getattr(kw, 'pk', None):
                     next_offset = start_page + max_pages
                     if next_offset > max_scan_pages:
                         next_offset = 1
@@ -196,7 +226,7 @@ class JumiaCollectionService:
                 })
 
             homepage_result: dict = {}
-            if homepage_enabled and not (should_cancel and should_cancel()):
+            if homepage_enabled and not skip_homepage and not (should_cancel and should_cancel()):
                 cls._report(progress, 76, 'Jumia — radar page d\'accueil…')
                 from intelligence.services.jumia_homepage_service import JumiaHomepageService
 
@@ -444,4 +474,9 @@ class JumiaCollectionService:
         try:
             progress(max(0, min(100, pct)), message, 'collecte')
         except TypeError:
-            progress(max(0, min(100, pct)), message)
+            try:
+                progress(max(0, min(100, pct)), message)
+            except Exception:
+                pass
+        except Exception:
+            pass

@@ -1,140 +1,185 @@
-{% extends "dashboard/base_dashboard.html" %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 
-{% block title %}{% if page_mode == 'archives' %}Archives Intelligence{% else %}Intelligence de marché{% endif %} — YAYEMATY MARKET{% endblock %}
+{% block title %}SENEGAL TRADE INTELLIGENCE — YAYEMATY{% endblock %}
+
 {% block body_class %}intel-layout{% endblock %}
+
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/intelligence-archives.css' %}?v=3">
-<link rel="stylesheet" href="{% static 'css/intelligence-reading.css' %}?v=1">
-<link rel="stylesheet" href="{% static 'css/collection-control.css' %}?v=8">
-<link rel="stylesheet" href="{% static 'css/intelligence-report.css' %}?v=1">
-<link rel="stylesheet" href="{% static 'css/dashboard-home.css' %}?v=13">
+<link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=9">
 {% endblock %}
 
 {% block dashboard_content %}
-<div class="main-content intelligence-page">
+<div class="ti-app" id="trade-intelligence-app"
+     data-url-lancer="{% url 'intelligence:trade_api_lancer' %}"
+     data-url-arreter="{% url 'intelligence:trade_api_arreter' %}"
+     data-url-statut="{% url 'intelligence:trade_api_statut' task_id='TASK_ID' %}"
+     data-domains='{{ domains_json|escapejs }}'
+     {% if active_task %}data-active-task="{{ active_task.task_id }}" data-session-id="{{ active_task.session_id }}" data-remaining="{{ active_task.remaining_seconds|default:'' }}" data-duration="{{ active_task.duration_minutes }}"{% endif %}>
 
-    <header class="intel-topbar">
-        <h1 class="intel-topbar-title">{% if page_mode == 'archives' %}Archives Intelligence{% else %}Intelligence marché{% endif %}</h1>
-        <div class="intel-search">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-                <circle cx="9" cy="9" r="5.5"/><path stroke-linecap="round" d="M13.5 13.5L17 17"/>
-            </svg>
-            <input type="search" placeholder="Rechercher requête, domaine, publication…" aria-label="Recherche">
+    <header class="ti-header">
+        <div class="ti-header-brand">
+            <span class="ti-header-logo" aria-hidden="true">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.12)"/>
+                    <path d="M10 28V16M16 28V12M22 28V18M28 28V10" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+                    <circle cx="29" cy="11" r="5.5" stroke="#F0B429" stroke-width="1.6"/>
+                    <text x="26.2" y="12.8" fill="#fff" font-size="5.2" font-weight="700">SN</text>
+                </svg>
+            </span>
+            <h1 class="ti-header-title">SENEGAL TRADE INTELLIGENCE</h1>
         </div>
-        <div class="intel-topbar-actions">
-            {% if page_mode == 'archives' %}
-            <a href="{% url 'intelligence:index' %}" class="intel-topbar-chip">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5l-5 5 5 5"/></svg>
-                Flux actuel
-            </a>
-            {% else %}
-            <a href="{% url 'intelligence:archives' %}" class="intel-topbar-chip">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h12v4H4V4zm0 6h8v6H4v-6zm10 0h2v6h-2v-6z"/></svg>
-                Archives
-            </a>
-            {% endif %}
-            <a href="{% url 'intelligence:domaines' %}" class="intel-topbar-chip">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M3 5h14M6 10h8M9 15h5"/></svg>
-                Export résumé
-            </a>
-            <button type="button" class="intel-icon-btn" aria-label="Notifications">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" d="M10 2.8a4.5 4.5 0 014.5 4.5v2.2l1.2 2.4H4.3l1.2-2.4V7.3A4.5 4.5 0 0110 2.8zM8 15.5a2 2 0 004 0"/></svg>
-            </button>
-            <button type="button" class="intel-icon-btn" aria-label="Messages">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5h12v8H8l-3 2.2V5.5z"/></svg>
-            </button>
-            <div class="intel-user-chip">
-                <span class="intel-user-avatar">{{ user.username|slice:":1"|upper }}</span>
-                <span class="intel-user-meta">
-                    <span class="intel-user-name">{{ user.username }}</span>
-                    <span class="intel-user-role">Analyste marché</span>
-                </span>
-                <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 4.5L6 8l3-3.5"/></svg>
-            </div>
-        </div>
+        <a href="{% url 'intelligence:domaines' %}#gestion" class="ti-header-link">Gérer les domaines</a>
     </header>
 
-    {% if messages %}
-    <div class="intel-messages">
-        {% for message in messages %}
-        <div class="intel-alert intel-alert--{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if data_window %}
-    <section class="intel-live-banner{% if page_mode == 'archives' %} intel-live-banner--archives{% endif %}" aria-label="Fenêtre de données">
-        <div class="intel-live-banner-main">
-            {% if page_mode == 'live' %}
-            <span class="intel-live-dot" aria-hidden="true"></span>
-            {% else %}
-            <span class="intel-live-dot intel-live-dot--archive" aria-hidden="true"></span>
-            {% endif %}
-            <div>
-                <p class="intel-live-title">
-                    {% if page_mode == 'live' %}
-                    {{ data_window.label }} — flux en direct
-                    {% else %}
-                    {{ data_window.label }}
-                    {% endif %}
-                </p>
-                <p class="intel-live-meta">
-                    {% if page_mode == 'live' %}
-                    Dernière mise à jour : {{ data_window.last_update_label }}
-                    {% else %}
-                    {{ data_window.total_posts }} publication(s) · {{ data_window.total_discovered }} requête(s) Trends
-                    {% if data_window.last_update_label != 'Aucune donnée archivée' %} · Dernière collecte {{ data_window.last_update_label }}{% endif %}
-                    {% endif %}
-                </p>
+    <section class="ti-toolbar" aria-label="Filtres de recherche">
+        <div class="ti-toolbar-left">
+            <label class="ti-field">
+                <span class="ti-field-label">DOMAINE</span>
+                <select id="ti-domain" class="ti-select" aria-label="Domaine">
+                    <option value="">— Choisir —</option>
+                    {% for d in domains %}
+                    <option value="{{ d.slug }}" {% if selected_domain_slug == d.slug or session and session.domain_slug == d.slug %}selected{% endif %}>{{ d.label }}</option>
+                    {% endfor %}
+                </select>
+                {% if not domains %}
+                <small class="ti-field-hint">Aucun domaine — <a href="{% url 'intelligence:domaines' %}#gestion">ajoutez-en ici</a></small>
+                {% endif %}
+            </label>
+            <label class="ti-field">
+                <span class="ti-field-label">DURÉE</span>
+                <select id="ti-duration" class="ti-select" aria-label="Durée">
+                    {% for opt in duration_options %}
+                    <option value="{{ opt.value }}" {% if selected_duration == opt.value or not selected_duration and opt.value == 20 %}selected{% endif %}>{{ opt.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <div class="ti-actions">
+                <button type="button" class="ti-btn-analyze" id="ti-analyze-btn">Analyser le marché</button>
+                <button type="button" class="ti-btn-stop" id="ti-stop-btn" hidden>Arrêter et analyser</button>
             </div>
         </div>
-        {% if page_mode == 'archives' %}
-        <form method="get" action="{% url 'intelligence:archives' %}" class="intel-archive-filters">
-            <label class="intel-archive-field">
-                <span class="sr-only">Date de début</span>
-                <input type="date" name="date_debut" value="{{ archive_filters.date_start|default:'' }}" class="intel-archive-input" aria-label="Du">
-            </label>
-            <label class="intel-archive-field">
-                <span class="sr-only">Date de fin</span>
-                <input type="date" name="date_fin" value="{{ archive_filters.date_end|default:'' }}" class="intel-archive-input" aria-label="Au">
-            </label>
-            <button type="submit" class="intel-archive-btn">Filtrer</button>
-            {% if archive_filters.date_start or archive_filters.date_end %}
-            <a href="{% url 'intelligence:archives' %}" class="intel-live-link">Tout l'historique</a>
-            {% endif %}
-        </form>
-        {% else %}
-        <a href="{% url 'intelligence:archives' %}" class="intel-live-link">Consulter les archives historiques →</a>
-        {% endif %}
+
+        <nav class="ti-tabs" role="tablist" aria-label="Vues d'analyse">
+            {% for tab in tabs %}
+            <button type="button"
+                    class="ti-tab{% if forloop.first %} is-active{% endif %}"
+                    role="tab"
+                    data-tab="{{ tab.key }}"
+                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                {{ tab.label }}
+            </button>
+            {% endfor %}
+        </nav>
     </section>
-    {% endif %}
 
-    {% include "dashboard/intelligence/includes/intelligence_report_nav.html" %}
+    <div class="ti-progress" id="ti-progress" hidden>
+        <div class="ti-progress-bar" id="ti-progress-bar" style="width: 0%"></div>
+        <p class="ti-progress-msg" id="ti-progress-msg">Initialisation…</p>
+        <p class="ti-timer" id="ti-timer"></p>
+    </div>
 
-    {% include "dashboard/intelligence/includes/intelligence_reading_layout.html" %}
-
-    {% include "dashboard/intelligence/includes/intelligence_top10_hub.html" %}
-
-    <section class="intel-details-anchor" id="intel-expert" aria-label="Analyses détaillées">
-        <header class="intel-details-head">
-            <div>
-                <p class="yd-kicker">Mode analyste</p>
-                <h2 class="intel-section-title">Données brutes et tableaux</h2>
-                <p class="intel-section-sub">Pour approfondir — Trends, publications, Jumia et Jiji en détail.</p>
+    <section class="ti-highlights" id="ti-highlights" {% if not has_results %}hidden{% endif %}>
+        <article class="ti-highlight-card">
+            <p class="ti-highlight-label">
+                <span class="ti-highlight-ico" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 15V5m4 10V8m4 7V6m4 9V4"/><circle cx="15.5" cy="5.5" r="2.5"/></svg>
+                </span>
+                TOP PICK (n°1)
+            </p>
+            <h3 class="ti-highlight-product" id="ti-hl-top-product">{{ highlights.top_pick.produit|default:"—" }}</h3>
+            <div class="ti-highlight-meta">
+                <span class="ti-score {% if highlights.top_pick.note >= 7.5 %}ti-score--high{% elif highlights.top_pick.note >= 5 %}ti-score--mid{% else %}ti-score--low{% endif %}" id="ti-hl-top-score">{% if highlights.top_pick.note != None %}{{ highlights.top_pick.note }} / 10{% else %}—{% endif %}</span>
+                <span class="ti-badge ti-badge--buy" id="ti-hl-top-reco">{{ highlights.top_pick.recommandation|default:"—" }}</span>
             </div>
-        </header>
-
-        {% include "dashboard/intelligence/includes/intelligence_dashboard_body.html" %}
-        {% include "dashboard/intelligence/includes/jumia_test_section.html" %}
-        {% include "dashboard/intelligence/includes/jiji_test_section.html" %}
+        </article>
+        <article class="ti-highlight-card">
+            <p class="ti-highlight-label">
+                <span class="ti-highlight-ico" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3 14l5-5 3 3 6-7"/><path stroke-linecap="round" d="M14 5h3v3"/></svg>
+                </span>
+                PLUS FORTE CROISSANCE
+            </p>
+            <h3 class="ti-highlight-product" id="ti-hl-growth-product">{{ highlights.forte_croissance.produit|default:"—" }}</h3>
+            <div class="ti-highlight-meta">
+                <span class="ti-score {% if highlights.forte_croissance.note >= 7.5 %}ti-score--high{% elif highlights.forte_croissance.note >= 5 %}ti-score--mid{% else %}ti-score--low{% endif %}" id="ti-hl-growth-score">{% if highlights.forte_croissance.note != None %}{{ highlights.forte_croissance.note }} / 10{% else %}—{% endif %}</span>
+                <span class="ti-badge ti-badge--watch" id="ti-hl-growth-reco">{{ highlights.forte_croissance.recommandation|default:"—" }}</span>
+            </div>
+        </article>
+        <article class="ti-highlight-card">
+            <p class="ti-highlight-label">
+                <span class="ti-highlight-ico" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" d="M4 16V8m4 8V5m4 11V9m4 7V4"/></svg>
+                </span>
+                MEILLEURE MARGE / VITESSE
+            </p>
+            <h3 class="ti-highlight-product" id="ti-hl-margin-product">{{ highlights.meilleure_marge.produit|default:"—" }}</h3>
+            <div class="ti-highlight-meta">
+                <span class="ti-score {% if highlights.meilleure_marge.note >= 7.5 %}ti-score--high{% elif highlights.meilleure_marge.note >= 5 %}ti-score--mid{% else %}ti-score--low{% endif %}" id="ti-hl-margin-score">{% if highlights.meilleure_marge.note != None %}{{ highlights.meilleure_marge.note }} / 10{% else %}—{% endif %}</span>
+                <span class="ti-badge ti-badge--buy" id="ti-hl-margin-reco">{{ highlights.meilleure_marge.recommandation|default:"—" }}</span>
+            </div>
+        </article>
     </section>
 
-    {% include "dashboard/intelligence/includes/marketplace_links_modal.html" %}
+    <section class="ti-table-section">
+        <h2 class="ti-table-title">TOP 15 PRODUITS D'INVESTISSEMENT</h2>
+        <div class="ti-table-wrap">
+            <table class="ti-table" id="ti-results-table">
+                <thead>
+                    <tr>
+                        <th>RANG</th>
+                        <th>PRODUIT / MODÈLE</th>
+                        <th>NOTE INVESTISSEMENT (/10)</th>
+                        <th>RECOMMANDATION</th>
+                        <th>Analyse du marché</th>
+                    </tr>
+                </thead>
+                <tbody id="ti-table-body">
+                    {% if has_results %}
+                        {% for tab in tabs %}
+                            {% if tab.key == 'top_investissement' %}
+                                {% for item in tab.items %}
+                                <tr>
+                                    <td data-label="Rang">{{ item.rang }}</td>
+                                    <td data-label="Produit / modèle">
+                                        <div class="ti-product-cell">
+                                            <span class="ti-product-thumb" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 8.25h15l-1.1 10.1a1.8 1.8 0 01-1.8 1.6H7.4a1.8 1.8 0 01-1.8-1.6L4.5 8.25z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25V6.6A3.75 3.75 0 0112 2.85 3.75 3.75 0 0115.75 6.6v1.65"/>
+                                                </svg>
+                                            </span>
+                                            <span>{{ item.produit }}</span>
+                                        </div>
+                                    </td>
+                                    <td data-label="Note investissement (/10)"><span class="ti-score {% if item.note >= 7.5 %}ti-score--high{% elif item.note >= 5 %}ti-score--mid{% else %}ti-score--low{% endif %}">{{ item.note }}</span></td>
+                                    <td data-label="Recommandation"><span class="ti-badge {% if 'éviter' in item.recommandation|lower or 'eviter' in item.recommandation|lower %}ti-badge--avoid{% elif 'moyen' in item.recommandation|lower or 'affaire' in item.recommandation|lower %}ti-badge--watch{% else %}ti-badge--buy{% endif %}">{{ item.recommandation }}</span></td>
+                                    <td class="ti-synth" data-label="Analyse du marché">{{ item.synthese }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="ti-empty">Aucun résultat.</td></tr>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <tr id="ti-empty-row">
+                            <td colspan="5" class="ti-empty">
+                                Sélectionnez un domaine et une durée, puis lancez « Analyser le marché ».
+                                <br><small>Collecte + analyse IA jusqu’à la fin du temps, puis Top 15.</small>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if has_results %}
+    <script type="application/json" id="ti-analysis-data">{{ analysis_json|safe }}</script>
+    {% endif %}
 </div>
-<script src="{% static 'js/intelligence.js' %}?v=4"></script>
-<script src="{% static 'js/intelligence-report.js' %}?v=1"></script>
-<script src="{% static 'js/intelligence-marketplace-modal.js' %}?v=1"></script>
 {% endblock %}
 
-{% block activity_panel %}{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/trade-intelligence.js' %}?v=8"></script>
+{% endblock %}

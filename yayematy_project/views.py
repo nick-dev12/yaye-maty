@@ -10,7 +10,7 @@ Architecture MVC adaptée à Django :
 
 from django.contrib.auth.decorators import login_required
 
-from yayematy_project.controllers import AuthController, DashboardController, SettingsPageController
+from yayematy_project.controllers import AuthController, DashboardController, ProfileController
 
 
 def register_view(request):
@@ -26,5 +26,12 @@ def dashboard_view(request):
 
 @login_required
 def settings_view(request):
-    """Point d'entrée HTTP — page Paramètres."""
-    return SettingsPageController(request).index()
+    """Ancienne page Paramètres — redirige vers Trade Intelligence."""
+    from django.shortcuts import redirect
+    return redirect('intelligence:index')
+
+
+@login_required
+def profile_view(request):
+    """Point d'entrée HTTP — profil utilisateur."""
+    return ProfileController(request).index()

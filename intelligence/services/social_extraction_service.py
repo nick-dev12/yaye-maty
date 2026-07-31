@@ -200,7 +200,7 @@ class SocialExtractionService:
                 extracted=extracted,
                 skip_if_exists=skip_existing,
             )
-            if not CollectionModelRouter().is_test:
+            if keyword.pk and not CollectionModelRouter().is_test:
                 keyword.last_scraped_at = timezone.now()
                 keyword.save(update_fields=['last_scraped_at', 'updated_at'])
             return stats

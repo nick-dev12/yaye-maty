@@ -40,25 +40,13 @@
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path stroke-linecap="round" d="M10 6v4h3"/></svg>
                 <span class="nav-item-label">Domaines</span>
             </a>
-            <a href="{% url 'intelligence:collecte' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'collecte' %} active{% endif %}" data-nav-label="collecte manuelle">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M16 16v-5h-5M16 4l-4 4M4 16l4-4"/></svg>
-                <span class="nav-item-label">Collecte manuelle</span>
-            </a>
             <a href="{% url 'intelligence:collecte_test' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'collecte_test' %} active{% endif %}" data-nav-label="session test collecte">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4v4l3 2M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
                 <span class="nav-item-label">Session test</span>
             </a>
-            <a href="{% url 'intelligence:collecte_test_donnees' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'collecte_test_donnees' %} active{% endif %}" data-nav-label="donnees test intelligence">
+            <a href="{% url 'intelligence:index' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'index' %} active{% endif %}" data-nav-label="trade intelligence">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 15V5m4 10V9m4 6V7m4 8V4"/></svg>
-                <span class="nav-item-label">Données test</span>
-            </a>
-            <a href="#" class="nav-item" data-nav-label="boutique">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h10l-1 10H6L5 8zm2-4h6l1 4H6l1-4z"/></svg>
-                <span class="nav-item-label">Boutique</span>
-            </a>
-            <a href="{% url 'intelligence:index' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'index' %} active{% endif %}" data-nav-label="intelligence">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 15V5m4 10V9m4 6V7m4 8V4"/></svg>
-                <span class="nav-item-label">Intelligence</span>
+                <span class="nav-item-label">Trade Intelligence</span>
             </a>
             <a href="{% url 'intelligence:import_master' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'import_master' %} active{% endif %}" data-nav-label="import master opportunites">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 14l4-4 3 3 7-7M13 6h4v4"/></svg>
@@ -68,37 +56,13 @@
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h12v4H4V4zm0 6h8v6H4v-6zm10 0h2v6h-2v-6z"/></svg>
                 <span class="nav-item-label">Archives</span>
             </a>
-            <a href="{% url 'settings' %}" class="nav-item{% if request.resolver_match.url_name == 'settings' %} active{% endif %}" data-nav-label="parametres">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="2.5"/><path stroke-linecap="round" d="M10 3.5v1.2M10 15.3v1.2M3.5 10h1.2M15.3 10h1.2M5.4 5.4l.85.85M13.75 13.75l.85.85M5.4 14.6l.85-.85M13.75 6.25l.85-.85"/></svg>
-                <span class="nav-item-label">Paramètres</span>
+            <a href="https://yayematy.com" class="nav-item" data-nav-label="boutique yayematy">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h12l-1 10H5L4 7z"/><path stroke-linecap="round" d="M8 7V5a2 2 0 014 0v2"/></svg>
+                <span class="nav-item-label">Boutique</span>
             </a>
-
-            <p class="sidebar-section-title sidebar-section-title--group">Group</p>
-
-            <a href="{% url 'intelligence:index' %}#top10-hub" class="nav-group-item" data-nav-label="top 10 achats">
-                <span class="nav-group-dot nav-group-dot--green"></span>
-                <span class="nav-item-label">Top 10 achats</span>
-                <svg class="nav-group-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 5l6 5-6 5"/></svg>
-            </a>
-            <a href="{% url 'intelligence:index' %}#publications" class="nav-group-item" data-nav-label="publications reseaux">
-                <span class="nav-group-dot nav-group-dot--blue"></span>
-                <span class="nav-item-label">Publications</span>
-                <svg class="nav-group-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 5l6 5-6 5"/></svg>
-            </a>
-            <a href="#" class="nav-group-item" data-nav-label="analytique">
-                <span class="nav-group-dot nav-group-dot--red"></span>
-                <span class="nav-item-label">Analytique</span>
-                <svg class="nav-group-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 5l6 5-6 5"/></svg>
-            </a>
-            <a href="#" class="nav-group-item" data-nav-label="performance">
-                <span class="nav-group-dot nav-group-dot--gold"></span>
-                <span class="nav-item-label">Performance</span>
-                <svg class="nav-group-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 5l6 5-6 5"/></svg>
-            </a>
-            <a href="#" class="nav-group-item" data-nav-label="activite">
-                <span class="nav-group-dot nav-group-dot--orange"></span>
-                <span class="nav-item-label">Activité</span>
-                <svg class="nav-group-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 5l6 5-6 5"/></svg>
+            <a href="{% url 'profile' %}" class="nav-item{% if request.resolver_match.url_name == 'profile' %} active{% endif %}" data-nav-label="profil compte">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="7" r="3.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+                <span class="nav-item-label">Profil</span>
             </a>
         </nav>
     </div>

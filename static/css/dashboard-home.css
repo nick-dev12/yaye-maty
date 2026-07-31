@@ -150,6 +150,13 @@
     gap: 0.625rem;
     padding-left: 0.5rem;
     border-left: 1px solid var(--color-border-light);
+    text-decoration: none;
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.th-profile:hover {
+    background: rgba(var(--color-orange-rgb), 0.06);
 }
 
 .th-profile-avatar {
@@ -2110,5 +2117,165 @@
     .yd-panel-head {
         flex-direction: column;
         align-items: flex-start;
+    }
+}
+
+/* -- Trade Intelligence home -- */
+.yd-section--ti {
+    background: var(--color-blanc);
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem;
+    border: 1px solid rgba(var(--color-gris-rgb), 0.18);
+    box-shadow: 0 8px 24px rgba(26, 26, 26, 0.04);
+}
+
+.yd-ti-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.yd-ti-card {
+    border: 1px solid rgba(var(--color-bleu-rgb), 0.18);
+    border-radius: 14px;
+    padding: 1rem;
+    background: linear-gradient(180deg, #f8fbfe 0%, #fff 55%);
+}
+
+.yd-ti-card-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.yd-ti-domain {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--color-noir);
+}
+
+.yd-ti-kw {
+    margin: 0.2rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-gris);
+}
+
+.yd-ti-time {
+    font-size: 0.7rem;
+    color: var(--color-gris);
+    white-space: nowrap;
+}
+
+.yd-ti-pick-label {
+    margin: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-bleu);
+}
+
+.yd-ti-pick-name {
+    margin: 0.25rem 0 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-noir);
+}
+
+.yd-ti-pick-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-bottom: 0.45rem;
+}
+
+.yd-ti-note {
+    font-weight: 800;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 8px;
+    background: rgba(var(--color-gris-rgb), 0.12);
+}
+
+.yd-ti-note.is-high { background: rgba(34, 160, 83, 0.14); color: #1b8a45; }
+.yd-ti-note.is-mid { background: rgba(var(--color-jaune-rgb), 0.28); color: #8a6500; }
+.yd-ti-note.is-low { background: rgba(220, 53, 69, 0.12); color: #c0392b; }
+
+.yd-ti-reco {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-noir);
+}
+
+.yd-ti-synth {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--color-gris);
+}
+
+.yd-ti-list {
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.yd-ti-list li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.45rem;
+    align-items: center;
+    font-size: 0.78rem;
+}
+
+.yd-ti-rank {
+    color: var(--color-bleu);
+    font-weight: 700;
+}
+
+.yd-ti-prod {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.yd-ti-mini-note {
+    font-weight: 700;
+    color: var(--color-noir);
+}
+
+.yd-ti-empty {
+    margin-top: 1rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: #f5f7fa;
+    text-align: center;
+    color: var(--color-gris);
+}
+
+.yd-ti-empty .th-btn {
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .yd-section--ti {
+        padding: 1rem;
+    }
+
+    .yd-ti-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .yd-section-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
 }

@@ -290,7 +290,10 @@ class SearchTopDownService:
             )
             from intelligence.services.collection_model_router import CollectionModelRouter
 
-            if not CollectionModelRouter().is_test:
+            if (
+                not CollectionModelRouter().is_test
+                and keyword.pk is not None
+            ):
                 keyword.last_scraped_at = timezone.now()
                 keyword.save(update_fields=['last_scraped_at', 'updated_at'])
             return stats

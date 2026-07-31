@@ -28,12 +28,18 @@ class CollectionCancelService:
 
     @classmethod
     def request_cancel(cls, task_id: str) -> None:
+        if not task_id:
+            return
         cls._client().setex(f'{_CANCEL_PREFIX}{task_id}', _TTL_SECONDS, '1')
 
     @classmethod
     def is_cancelled(cls, task_id: str) -> bool:
+        if not task_id:
+            return False
         return cls._client().exists(f'{_CANCEL_PREFIX}{task_id}') == 1
 
     @classmethod
     def clear(cls, task_id: str) -> None:
+        if not task_id:
+            return
         cls._client().delete(f'{_CANCEL_PREFIX}{task_id}')

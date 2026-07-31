@@ -67,6 +67,7 @@ class DashboardDataService:
         return {
             'market_report': market_report,
             'import_master_preview': import_master_preview,
+            'trade_intelligence': cls.get_trade_intelligence_home(),
             'notification_count': stats['pending_analysis'],
             'posts_total': stats['posts_total'],
             'summary_line': cls._build_home_summary(stats, market, data_window),
@@ -91,6 +92,75 @@ class DashboardDataService:
             'market_signals': social_demand['strong_demand'],
             'timeline': cls.get_timeline(limit=3),
             'reminders': cls.get_reminders(stats),
+        }
+
+    @classmethod
+    def get_trade_intelligence_home(cls) -> dict:
+        """Bloc accueil — dernières sessions Trade Intelligence (Top 15 / domaines)."""
+        from intelligence.models import MarketResearchSession
+        from intelligence.services.deepseek_analysis_service import (
+            DeepSeekAnalysisService,
+        )
+
+        done = (
+            MarketResearchSession.Status.DONE,
+            MarketResearchSession.Status.STOPPED,
+        )
+        sessions = list(
+            MarketResearchSession.objects.filter(
+                status__in=done,
+                analysis_result__isnull=False,
+            ).order_by('-completed_at', '-id')[:8]
+        )
+        # Une carte par domaine (dernière session)
+        by_domain: dict[str, dict] = {}
+        for session in sessions:
+            slug = session.domain_slug or session.domain_label
+            if slug in by_domain:
+                continue
+            analysis = session.analysis_result or {}
+            if not isinstance(analysis, dict):
+                continue
+            top = list(analysis.get('top_investissement') or [])[:5]
+            highlights = analysis.get('highlights') or {}
+            top_pick = highlights.get('top_pick') or (top[0] if top else {})
+            by_domain[slug] = {
+                'domain_label': session.domain_label,
+                'domain_slug': session.domain_slug,
+                'keyword': session.keyword or '',
+                'session_id': session.pk,
+                'completed_at': session.completed_at,
+                'top_pick': {
+                    'produit': (top_pick or {}).get('produit') or '—',
+                    'note': (top_pick or {}).get('note'),
+                    'recommandation': DeepSeekAnalysisService._recommendation_for_note(
+                        float((top_pick or {}).get('note') or 0),
+                        str((top_pick or {}).get('recommandation') or ''),
+                    ),
+                    'synthese': ((top_pick or {}).get('synthese') or '')[:220],
+                },
+                'top_preview': [
+                    {
+                        'rang': item.get('rang'),
+                        'produit': item.get('produit'),
+                        'note': item.get('note'),
+                        'recommandation': DeepSeekAnalysisService._recommendation_for_note(
+                            float(item.get('note') or 0),
+                            str(item.get('recommandation') or ''),
+                        ),
+                    }
+                    for item in top
+                    if isinstance(item, dict)
+                ],
+            }
+
+        domains = list(by_domain.values())
+        return {
+            'has_data': bool(domains),
+            'domains': domains,
+            'domains_count': len(domains),
+            'intel_url': reverse('intelligence:index'),
+            'import_url': reverse('intelligence:import_master'),
         }
 
     @classmethod

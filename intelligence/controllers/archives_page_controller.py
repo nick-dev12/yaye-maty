@@ -1,15 +1,34 @@
 """
-Contrôleur de la page Archives Intelligence — réutilise le même tableau de bord.
+Page Archives — historique des recherches Trade Intelligence (max 40).
 """
 
-from intelligence.controllers.intelligence_page_controller import IntelligencePageController
+from __future__ import annotations
+
+from django.shortcuts import render
+from django.urls import reverse
+
+from intelligence.services.trade_research_archive_service import TradeResearchArchiveService
 
 
 class ArchivesPageController:
-    """Historique complet — même UI que /intelligence/, données différentes."""
+    """Historique des analyses marché sauvegardées."""
 
     def __init__(self, request):
         self.request = request
 
     def index(self):
-        return IntelligencePageController(self.request).archives()
+        TradeResearchArchiveService.prune_to_limit()
+        sessions = TradeResearchArchiveService.list_sessions()
+        cards = []
+        for session in sessions:
+            card = TradeResearchArchiveService.session_card(session)
+            card['view_url'] = reverse('intelligence:index') + f'?session={session.pk}'
+            cards.append(card)
+
+        context = {
+            'user': self.request.user,
+            'archive_cards': cards,
+            'archive_count': len(cards),
+            'archive_max': TradeResearchArchiveService.MAX,
+        }
+        return render(self.request, 'dashboard/intelligence/archives.html', context)

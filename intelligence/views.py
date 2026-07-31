@@ -4,11 +4,13 @@ from django.views.decorators.http import require_http_methods
 
 from intelligence.api_auth import require_api_key
 from intelligence.controllers import (
+    ArchivesPageController,
     CollectionControlController,
     CollectionTestController,
     DomainsPageController,
     ImportMasterPageController,
     IntelligencePageController,
+    TradeIntelligenceController,
 )
 from intelligence.controllers.social_api_controller import SocialApiController
 
@@ -21,20 +23,51 @@ def intelligence_domains_view(request):
 
 @login_required
 def intelligence_index_view(request):
-    """Point d'entrée HTTP — page Intelligence de marché."""
-    return IntelligencePageController(request).index()
+    """Point d'entrée HTTP — Trade Intelligence (SENEGAL TRADE INTELLIGENCE)."""
+    return TradeIntelligenceController(request).index()
+
+
+@login_required
+def trade_api_lancer_view(request):
+    return TradeIntelligenceController.api_lancer(request)
+
+
+@login_required
+def trade_api_arreter_view(request):
+    return TradeIntelligenceController.api_arreter(request)
+
+
+@login_required
+def trade_api_statut_view(request, task_id):
+    return TradeIntelligenceController.api_statut(request, task_id)
+
+
+@login_required
+def collecte_redirect_view(request):
+    """Ancienne Collecte manuelle → Trade Intelligence."""
+    from django.shortcuts import redirect
+    return redirect('intelligence:index')
 
 
 @login_required
 def intelligence_archives_view(request):
-    """Page Archives — même UI que Intelligence, données historiques."""
-    return IntelligencePageController(request).archives()
+    """Page Archives — historique des recherches Trade Intelligence (max 40)."""
+    return ArchivesPageController(request).index()
 
 
 @login_required
 def import_master_view(request):
     """Page Import Master — opportunités d'importation Acheter/Surveiller/Éviter."""
     return ImportMasterPageController(request).index()
+
+
+@login_required
+def import_master_domain_status_view(request):
+    """API statut analyse comparative domaines Import Master."""
+    from intelligence.controllers.import_master_page_controller import (
+        import_master_domain_status,
+    )
+    return import_master_domain_status(request)
 
 
 @login_required

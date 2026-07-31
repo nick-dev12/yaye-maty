@@ -24,6 +24,7 @@ urlpatterns = [
     path('', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('inscription/', views.register_view, name='register'),
     path('tableau-de-bord/', views.dashboard_view, name='dashboard'),
+    path('profil/', views.profile_view, name='profile'),
     path('parametres/', views.settings_view, name='settings'),
     path('intelligence/', include('intelligence.urls')),
     path('deconnexion/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),

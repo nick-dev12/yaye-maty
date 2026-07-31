@@ -1,0 +1,78 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Archives recherches — YAYEMATY{% endblock %}
+
+{% block body_class %}intel-layout{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/trade-archives.css' %}?v=1">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="ti-app ti-archives" id="trade-archives-app">
+    <header class="ti-header">
+        <div class="ti-header-brand">
+            <span class="ti-header-logo" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h12v4H4V4zm0 6h8v6H4v-6zm10 0h2v6h-2v-6z"/>
+                </svg>
+            </span>
+            <div>
+                <p class="ti-header-kicker">YAYEMATY · Historique</p>
+                <h1 class="ti-header-title">ARCHIVES RECHERCHES</h1>
+            </div>
+        </div>
+        <a href="{% url 'intelligence:index' %}" class="ti-header-link">Nouvelle analyse →</a>
+    </header>
+
+    <section class="ti-arch-meta" aria-label="Capacité archives">
+        <p>
+            <strong>{{ archive_count }}</strong> / {{ archive_max }} recherches sauvegardées.
+            Au-delà de {{ archive_max }}, la plus ancienne est supprimée automatiquement.
+        </p>
+    </section>
+
+    {% if archive_cards %}
+    <section class="ti-arch-list" aria-label="Historique des recherches">
+        {% for card in archive_cards %}
+        <article class="ti-arch-card ti-arch-card--{{ card.status }}">
+            <div class="ti-arch-card-main">
+                <div class="ti-arch-card-top">
+                    <span class="ti-arch-status ti-arch-status--{{ card.status }}">{{ card.status_label }}</span>
+                    <time class="ti-arch-date" datetime="{{ card.created_at|date:'c' }}">
+                        {{ card.created_at|date:"d/m/Y H:i" }}
+                    </time>
+                </div>
+                <h2 class="ti-arch-title">{{ card.domain_label }}</h2>
+                <p class="ti-arch-keyword">Mot-clé : <strong>{{ card.keyword }}</strong></p>
+                <p class="ti-arch-query">{{ card.search_query }}</p>
+                {% if card.is_done %}
+                <div class="ti-arch-pick">
+                    <span class="ti-arch-pick-label">Top pick</span>
+                    <span class="ti-arch-pick-product">{{ card.top_product }}</span>
+                    {% if card.top_note != None %}
+                    <span class="ti-score {% if card.top_note >= 7.5 %}ti-score--high{% elif card.top_note >= 5 %}ti-score--mid{% else %}ti-score--low{% endif %}">{{ card.top_note }}</span>
+                    {% endif %}
+                </div>
+                {% elif card.error_message %}
+                <p class="ti-arch-error">{{ card.error_message }}</p>
+                {% endif %}
+            </div>
+            <div class="ti-arch-card-actions">
+                <a href="{{ card.view_url }}" class="ti-arch-btn">Voir l’analyse</a>
+                <p class="ti-arch-meta-line">{{ card.duration_minutes }} mn · {{ card.sources|join:", "|default:"—" }}</p>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="ti-arch-empty">
+        <h2>Aucune recherche enregistrée</h2>
+        <p>Lancez une analyse depuis Trade Intelligence : elle apparaîtra ici automatiquement.</p>
+        <a href="{% url 'intelligence:index' %}" class="ti-btn-analyze">Analyser le marché</a>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

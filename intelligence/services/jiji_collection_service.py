@@ -36,6 +36,42 @@ class JijiCollectionService:
         should_cancel: ShouldCancelCallback | None = None,
         test_mode: bool = False,
     ) -> dict:
+        from intelligence.services.active_keyword_service import ActiveKeywordService
+
+        config = get_effective_collection_config(test_mode=test_mode)
+        max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
+        keywords = list(
+            ActiveKeywordService.list_for_jiji(limit=max_kw if max_kw > 0 else 0)
+        )
+        if not keywords:
+            return {
+                'success': False,
+                'message': 'Aucun mot-clé marketplace actif dans Paramètres → Mots-clés marketplace.',
+                'nouvelles_donnees': 0,
+                'listings_created': 0,
+                'listings_updated': 0,
+                'listings_skipped': 0,
+                'snapshots_created': 0,
+            }
+        return cls.run_for_keywords(
+            keywords,
+            progress=progress,
+            should_cancel=should_cancel,
+            test_mode=test_mode,
+        )
+
+    @classmethod
+    def run_for_keywords(
+        cls,
+        keywords: list,
+        *,
+        progress: ProgressCallback | None = None,
+        should_cancel: ShouldCancelCallback | None = None,
+        test_mode: bool = False,
+        skip_homepage: bool = False,
+        skip_nlp: bool = False,
+    ) -> dict:
+        """Collecte Jiji pour une liste de mots-clés (y compris éphémères Trade Intelligence)."""
         config = get_effective_collection_config(test_mode=test_mode)
         max_kw = int(config.get('MAX_KEYWORDS_PER_SESSION') or 0)
         if test_mode:
@@ -50,16 +86,10 @@ class JijiCollectionService:
         search_first = bool(config.get('JIJI_SEARCH_FIRST', True))
         homepage_enabled = bool(config.get('JIJI_HOMEPAGE_RADAR_ENABLED', True))
 
-        from intelligence.services.active_keyword_service import ActiveKeywordService
-
-        keywords = list(
-            ActiveKeywordService.list_for_jiji(limit=max_kw if max_kw > 0 else 0)
-        )
-
         if not keywords:
             return {
                 'success': False,
-                'message': 'Aucun mot-clé marketplace actif dans Paramètres → Mots-clés marketplace.',
+                'message': 'Aucun mot-clé à traiter pour Jiji.',
                 'nouvelles_donnees': 0,
                 'listings_created': 0,
                 'listings_updated': 0,
@@ -149,7 +179,7 @@ class JijiCollectionService:
                         logger.exception('Annonce Jiji échouée %s', card.get('url'))
                         errors.append(f"{(card.get('title') or '?')[:40]}: {exc}")
 
-                if not test_mode:
+                if not test_mode and getattr(kw, 'pk', None):
                     next_offset = start_page + 1
                     if next_offset > 20:
                         next_offset = 1
@@ -170,7 +200,7 @@ class JijiCollectionService:
                     'snapshots_created': kw_s,
                 })
 
-            if homepage_enabled and not (should_cancel and should_cancel()):
+            if homepage_enabled and not skip_homepage and not (should_cancel and should_cancel()):
                 cls._report(progress, 76, 'Jiji — radar Trending accueil…')
                 from intelligence.services.jiji_homepage_service import JijiHomepageService
 
@@ -186,7 +216,7 @@ class JijiCollectionService:
                 skipped_total += int(homepage_result.get('listings_skipped') or 0)
 
             cls._refresh_signals_safe()
-            nlp_stats = cls._analyze_nlp_safe() or {}
+            nlp_stats = {} if skip_nlp else (cls._analyze_nlp_safe() or {})
 
             nouvelles = created
             cancelled = bool(should_cancel and should_cancel())
@@ -363,5 +393,10 @@ class JijiCollectionService:
             try:
                 progress(pct, message, phase)
             except TypeError:
-                progress(pct, message)
+                try:
+                    progress(pct, message)
+                except Exception:
+                    pass
+            except Exception:
+                pass
 
