@@ -121,6 +121,31 @@ class DeepSeekAnalysisService:
         return getattr(settings, 'DEEPSEEK', {})
 
     @classmethod
+    def _char_limit(cls, key: str, default: int = 12000) -> int:
+        return max(500, int(cls._config().get(key) or default))
+
+    @classmethod
+    def get_web_max_tours(cls, *, cfg: dict | None = None) -> int:
+        """
+        Nombre de tours veille web DeepSeek — fixé par ``DEEPSEEK_WEB_MAX_TOURS`` (.env).
+        """
+        cfg = cfg or cls._config()
+        raw = cfg.get('WEB_MAX_TOURS')
+        if raw is None or raw == '':
+            tours = 3
+        else:
+            try:
+                tours = int(raw)
+            except (TypeError, ValueError):
+                tours = 3
+        return max(1, tours)
+
+    @classmethod
+    def compute_web_max_tours(cls, duration_minutes: int = 0, *, cfg: dict | None = None) -> int:
+        """Alias rétrocompat — la durée session n'influence plus le nombre de tours."""
+        return cls.get_web_max_tours(cfg=cfg)
+
+    @classmethod
     def is_enabled(cls) -> bool:
         cfg = cls._config()
         return bool(cfg.get('ENABLED') and cfg.get('API_KEY'))
@@ -163,11 +188,11 @@ class DeepSeekAnalysisService:
     @classmethod
     def build_web_search_tool(cls, cfg: dict | None = None) -> dict:
         """
-        Outil web_search DeepSeek (API Anthropic) avec filtre de sites.
+        Outil web_search DeepSeek (API Anthropic).
 
-        - allowed_domains prioritaire (si non vide)
-        - sinon blocked_domains
-        - user_location SN pour pertinence locale
+        - ``WEB_OPEN_SEARCH=True`` (défaut) : pas de ``allowed_domains`` → web ouvert ;
+          les sites ``WEB_ALLOWED_DOMAINS`` sont prioritaires via le prompt.
+        - ``WEB_OPEN_SEARCH=False`` : restriction API ``allowed_domains`` (legacy strict).
         """
         cfg = cfg or cls._config()
         tool: dict[str, Any] = {
@@ -178,11 +203,15 @@ class DeepSeekAnalysisService:
         if max_uses > 0:
             tool['max_uses'] = min(max_uses, 20)
 
-        allowed = cls.parse_web_domains(cfg.get('WEB_ALLOWED_DOMAINS') or [])
+        open_search = bool(cfg.get('WEB_OPEN_SEARCH', True))
+        preferred = cls.parse_web_domains(cfg.get('WEB_ALLOWED_DOMAINS') or [])
         blocked = cls.parse_web_domains(cfg.get('WEB_BLOCKED_DOMAINS') or [])
-        if allowed:
-            tool['allowed_domains'] = allowed
-        elif blocked:
+
+        if not open_search and preferred:
+            tool['allowed_domains'] = preferred
+        elif not open_search and blocked:
+            tool['blocked_domains'] = blocked
+        elif open_search and blocked:
             tool['blocked_domains'] = blocked
 
         country = str(cfg.get('WEB_COUNTRY') or 'SN').strip().upper()[:2]
@@ -202,14 +231,41 @@ class DeepSeekAnalysisService:
     @classmethod
     def web_watch_meta(cls, cfg: dict | None = None) -> dict:
         """Métadonnées veille web pour UI / résultat d'analyse."""
+        cfg = cfg or cls._config()
         tool = cls.build_web_search_tool(cfg)
+        preferred = cls.parse_web_domains(cfg.get('WEB_ALLOWED_DOMAINS') or [])
+        open_search = bool(cfg.get('WEB_OPEN_SEARCH', True))
         return {
             'max_uses': int(tool.get('max_uses') or 0),
-            'allowed_domains': list(tool.get('allowed_domains') or []),
+            'open_search': open_search,
+            'preferred_domains': preferred,
+            'allowed_domains': list(tool.get('allowed_domains') or preferred),
             'blocked_domains': list(tool.get('blocked_domains') or []),
             'country': (tool.get('user_location') or {}).get('country', ''),
             'city': (tool.get('user_location') or {}).get('city', ''),
         }
+
+    @classmethod
+    def _web_sites_prompt_line(cls, cfg: dict | None = None) -> str:
+        """Consigne sites pour fetch_web_context (prioritaires ± web ouvert)."""
+        cfg = cfg or cls._config()
+        preferred = cls.parse_web_domains(cfg.get('WEB_ALLOWED_DOMAINS') or [])
+        open_search = bool(cfg.get('WEB_OPEN_SEARCH', True))
+        if open_search:
+            if preferred:
+                return (
+                    f'SITES PRIORITAIRES (consulter en premier) : {", ".join(preferred)}. '
+                    'Tu peux aussi élargir la recherche sur tout le web ouvert '
+                    'pour des informations complémentaires fiables (presse, forums, '
+                    'marketplaces, réseaux sociaux, etc.).'
+                )
+            return (
+                'Recherche web ouverte — parcours libre du web pour informations '
+                'marché Sénégal fiables.'
+            )
+        if preferred:
+            return f'SITES AUTORISÉS (recherche UNIQUEMENT ici) : {", ".join(preferred)}.'
+        return 'Sites prioritaires : Jumia.sn, Jiji.sn, TikTok, Alibaba, AliExpress, Amazon.'
 
     @classmethod
     def format_web_watch_status(
@@ -232,8 +288,14 @@ class DeepSeekAnalysisService:
 
         meta = cls.web_watch_meta(cfg)
         max_uses = meta['max_uses']
-        domains = meta['allowed_domains']
-        if domains:
+        domains = meta.get('preferred_domains') or meta.get('allowed_domains') or []
+        open_search = meta.get('open_search', True)
+        if open_search:
+            if domains:
+                sites = f'web ouvert+{len(domains)}'
+            else:
+                sites = 'web ouvert'
+        elif domains:
             if len(domains) <= 2:
                 sites = ','.join(domains)
             else:
@@ -298,12 +360,7 @@ class DeepSeekAnalysisService:
         domain = (domain_label or '').strip() or 'le domaine indiqué'
         focus = (focus_hint or 'meilleurs modèles et opportunités').strip()
         web_tool = cls.build_web_search_tool(cfg)
-        allowed = web_tool.get('allowed_domains') or []
-        sites_line = (
-            f'SITES AUTORISÉS (recherche UNIQUEMENT ici) : {", ".join(allowed)}.'
-            if allowed
-            else 'Sites prioritaires : Jumia.sn, Jiji.sn, TikTok, Alibaba, AliExpress, Amazon.'
-        )
+        sites_line = cls._web_sites_prompt_line(cfg)
         domain_lock = (
             f'PÉRIMÈTRE ABSOLU : uniquement le domaine produit « {domain} » au Sénégal. '
             f'N’inclus AUCUN produit hors de « {domain} ». '
@@ -346,9 +403,10 @@ class DeepSeekAnalysisService:
                 if isinstance(block, dict) and block.get('type') == 'text':
                     parts.append(str(block.get('text') or ''))
             text = '\n'.join(parts).strip()
+            chunk_max = cls._char_limit('WEB_CHUNK_MAX_CHARS', 12000)
             if text:
-                return text[:6000]
-            return json.dumps(data)[:6000]
+                return text[:chunk_max]
+            return json.dumps(data)[:chunk_max]
         except Exception as exc:
             logger.warning('DeepSeek web search indisponible : %s', exc)
             return ''
@@ -370,13 +428,15 @@ class DeepSeekAnalysisService:
             raise RuntimeError('DEEPSEEK_API_KEY non configurée.')
 
         client = OpenAI(api_key=api_key, base_url=cfg.get('BASE_URL', 'https://api.deepseek.com'))
-        payload_json = json.dumps(payload, ensure_ascii=False, indent=2)[:12000]
+        payload_max = cls._char_limit('ANALYSIS_PAYLOAD_MAX_CHARS', 12000)
+        web_max = cls._char_limit('ANALYSIS_WEB_CONTEXT_MAX_CHARS', 12000)
+        payload_json = json.dumps(payload, ensure_ascii=False, indent=2)[:payload_max]
         user_content = USER_PROMPT_TEMPLATE.format(
             domain_label=domain_label,
             category_label=category_label,
             search_query=search_query,
             payload_json=payload_json,
-            web_context=(web_context or 'Aucun contexte web additionnel.')[:4000],
+            web_context=(web_context or 'Aucun contexte web additionnel.')[:web_max],
         )
 
         response = client.chat.completions.create(

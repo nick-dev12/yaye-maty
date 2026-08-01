@@ -11,6 +11,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Callable
 
+from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
 from django.utils.text import slugify
@@ -35,7 +36,11 @@ TRENDS_RATE_LIMIT_MAX_STRIKES = 3
 MARKETPLACE_FAIL_PAUSE_SECONDS = 5.0
 # Alias rétrocompat tests / imports
 ROUND_PAUSE_SECONDS = LANE_PAUSE_SECONDS
-WEB_CONTEXT_MAX_CHARS = 14000
+
+
+def _web_stored_context_max_chars() -> int:
+    cfg = getattr(settings, 'DEEPSEEK', {}) or {}
+    return max(500, int(cfg.get('WEB_STORED_CONTEXT_MAX_CHARS') or 12000))
 
 # Angles de recherche DeepSeek web (rotation)
 WEB_FOCUS_HINTS = (
@@ -121,12 +126,28 @@ class MarketResearchOrchestrator:
         deadline = started_mono + duration_seconds
 
         state_lock = threading.Lock()
-        collect_results: dict = {}
+        collect_results: dict = {'jumia_tours': []}
         web_chunks: list[str] = []
         lane_status: dict[str, str] = {}
         lane_rounds: dict[str, int] = {}
         marketplace_turn = {'n': 0}
+        jumia_catalog_tours = {'n': 0}
+        jiji_database_tours = {'n': 0}
         trends_rate_strikes = {'n': 0}
+        trade_cfg = getattr(settings, 'TRADE_RESEARCH', {}) or {}
+        jumia_source = str(trade_cfg.get('JUMIA_SOURCE') or 'catalog').lower()
+        jiji_source = str(trade_cfg.get('JIJI_SOURCE') or 'live').lower()
+        jumia_max_tours = (
+            max(1, int(trade_cfg.get('JUMIA_CATALOG_MAX_TOURS') or 3))
+            if jumia_source == 'catalog'
+            else 0
+        )
+        jiji_max_tours = (
+            max(1, int(trade_cfg.get('JIJI_DATABASE_MAX_TOURS') or 3))
+            if jiji_source == 'catalog'
+            else 0
+        )
+        deepseek_web_max_tours = DeepSeekAnalysisService.get_web_max_tours()
 
         def timed_out() -> bool:
             return time.monotonic() >= deadline
@@ -198,6 +219,9 @@ class MarketResearchOrchestrator:
         def _store_result(key: str, value: dict) -> None:
             with state_lock:
                 collect_results[key] = value
+                if key == 'jumia' and isinstance(value, dict):
+                    tours = collect_results.setdefault('jumia_tours', [])
+                    tours.append(value)
 
         def _run_trends_lane() -> None:
             close_old_connections()
@@ -246,7 +270,7 @@ class MarketResearchOrchestrator:
                 close_old_connections()
 
         def _run_marketplaces_lane() -> None:
-            """Jumia et Jiji en alternance pour limiter les navigateurs Playwright."""
+            """Jumia / Jiji — mode BDD (tours plafonnés) ou scrape live (durée session)."""
             close_old_connections()
             do_jumia = 'jumia' in sources
             do_jiji = 'jiji' in sources
@@ -257,32 +281,103 @@ class MarketResearchOrchestrator:
                         n = lane_rounds['marketplaces']
                         turn = marketplace_turn['n']
                         marketplace_turn['n'] = turn + 1
+                        jumia_done = (
+                            jumia_source == 'catalog'
+                            and jumia_catalog_tours['n'] >= jumia_max_tours
+                        )
+                        jiji_done = (
+                            jiji_source == 'catalog'
+                            and jiji_database_tours['n'] >= jiji_max_tours
+                        )
 
-                    if do_jumia and do_jiji:
+                    jumia_available = do_jumia and not jumia_done
+                    jiji_available = do_jiji and not jiji_done
+                    if jumia_available and jiji_available:
                         use_jumia = (turn % 2 == 0)
+                    elif jumia_available:
+                        use_jumia = True
+                    elif jiji_available:
+                        use_jumia = False
                     else:
-                        use_jumia = do_jumia
+                        with state_lock:
+                            if jumia_done and jiji_done:
+                                lane_status['marketplaces'] = 'Marketplaces BDD terminées'
+                            elif jumia_done:
+                                lane_status['marketplaces'] = (
+                                    f'Jumia catalogue terminé ({jumia_max_tours} tours)'
+                                )
+                            elif jiji_done:
+                                lane_status['marketplaces'] = (
+                                    f'Jiji BDD terminé ({jiji_max_tours} tours)'
+                                )
+                        break
 
                     try:
                         if use_jumia:
-                            with state_lock:
-                                lane_status['marketplaces'] = f'Jumia tour {n}'
-                            result = TradeResearchCollectionService.collect_jumia(
-                                query,
-                                product_category='',
-                                progress=source_progress,
-                                should_cancel=cancelled,
-                            )
+                            if jumia_source == 'catalog':
+                                with state_lock:
+                                    tour_idx = jumia_catalog_tours['n']
+                                    lane_status['marketplaces'] = (
+                                        f'Jumia catalogue tour {tour_idx + 1}/'
+                                        f'{jumia_max_tours}'
+                                    )
+                                result = TradeResearchCollectionService.collect_jumia(
+                                    query,
+                                    product_category='',
+                                    progress=source_progress,
+                                    should_cancel=cancelled,
+                                    tour_index=tour_idx,
+                                )
+                                with state_lock:
+                                    jumia_catalog_tours['n'] += 1
+                                if (
+                                    result.get('source') == 'catalog'
+                                    and not result.get('has_more')
+                                ):
+                                    with state_lock:
+                                        jumia_catalog_tours['n'] = jumia_max_tours
+                            else:
+                                with state_lock:
+                                    lane_status['marketplaces'] = f'Jumia live tour {n}'
+                                result = TradeResearchCollectionService.collect_jumia(
+                                    query,
+                                    product_category='',
+                                    progress=source_progress,
+                                    should_cancel=cancelled,
+                                    force_live=True,
+                                )
                             _store_result('jumia', result)
                         else:
-                            with state_lock:
-                                lane_status['marketplaces'] = f'Jiji tour {n}'
-                            result = TradeResearchCollectionService.collect_jiji(
-                                query,
-                                product_category='',
-                                progress=source_progress,
-                                should_cancel=cancelled,
-                            )
+                            if jiji_source == 'catalog':
+                                with state_lock:
+                                    tour_idx = jiji_database_tours['n']
+                                    lane_status['marketplaces'] = (
+                                        f'Jiji BDD tour {tour_idx + 1}/{jiji_max_tours}'
+                                    )
+                                result = TradeResearchCollectionService.collect_jiji(
+                                    query,
+                                    product_category='',
+                                    progress=source_progress,
+                                    should_cancel=cancelled,
+                                    tour_index=tour_idx,
+                                )
+                                with state_lock:
+                                    jiji_database_tours['n'] += 1
+                                if (
+                                    result.get('source') == 'database'
+                                    and not result.get('has_more')
+                                ):
+                                    with state_lock:
+                                        jiji_database_tours['n'] = jiji_max_tours
+                            else:
+                                with state_lock:
+                                    lane_status['marketplaces'] = f'Jiji live tour {n}'
+                                result = TradeResearchCollectionService.collect_jiji(
+                                    query,
+                                    product_category='',
+                                    progress=source_progress,
+                                    should_cancel=cancelled,
+                                )
                             _store_result('jiji', result)
                     except Exception as exc:
                         logger.warning('Lane marketplaces tour échoué : %s', exc)
@@ -332,8 +427,14 @@ class MarketResearchOrchestrator:
                 focus_idx = 0
                 while not cancelled():
                     with state_lock:
-                        lane_rounds['deepseek_web'] = lane_rounds.get('deepseek_web', 0) + 1
-                        n = lane_rounds['deepseek_web']
+                        next_tour = lane_rounds.get('deepseek_web', 0) + 1
+                        if next_tour > deepseek_web_max_tours:
+                            lane_status['deepseek_web'] = (
+                                f'Veille web terminée ({deepseek_web_max_tours} tour(s))'
+                            )
+                            break
+                        lane_rounds['deepseek_web'] = next_tour
+                        n = next_tour
 
                     if not DeepSeekAnalysisService.is_enabled():
                         with state_lock:
@@ -499,9 +600,10 @@ class MarketResearchOrchestrator:
         if not chunks:
             return ''
         text = '\n\n'.join(chunks)
-        if len(text) <= WEB_CONTEXT_MAX_CHARS:
+        max_chars = _web_stored_context_max_chars()
+        if len(text) <= max_chars:
             return text
-        return text[-WEB_CONTEXT_MAX_CHARS:]
+        return text[-max_chars:]
 
     @classmethod
     def _finalize_analysis(
@@ -603,6 +705,7 @@ class MarketResearchOrchestrator:
         analysis['web_watch'] = {
             **web_meta,
             'research_rounds': research_rounds,
+            'max_tours': DeepSeekAnalysisService.get_web_max_tours(),
             'context_chars': len(web_context or ''),
         }
 

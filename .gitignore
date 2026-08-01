@@ -34,6 +34,9 @@ celerybeat-schedule*
 # NLP local (secrets)
 local_nlp/.env
 
+# Outils UI locaux (ex. crawl catalogue Jumia) — jamais commités
+local_dev/
+
 # Fichiers temporaires / assets locaux non versionnés
 *.bak
 *.dat

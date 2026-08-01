@@ -5,6 +5,7 @@ from .models import (
     DiscoveryConfig,
     JijiListing,
     JijiPriceSnapshot,
+    JumiaCategory,
     JumiaPriceSnapshot,
     JumiaProduct,
     JumiaReview,
@@ -179,15 +180,28 @@ class TestTopPurchaseRecommendationAdmin(admin.ModelAdmin):
     search_fields = ('product_name', 'product_slug')
 
 
+@admin.register(JumiaCategory)
+class JumiaCategoryAdmin(admin.ModelAdmin):
+    list_display = (
+        'name', 'slug', 'path', 'parent', 'products_count',
+        'is_active', 'last_crawled_at',
+    )
+    list_filter = ('is_active',)
+    search_fields = ('name', 'slug', 'path')
+    readonly_fields = ('created_at', 'updated_at', 'products_count', 'last_crawled_at')
+    raw_id_fields = ('parent',)
+
+
 @admin.register(JumiaProduct)
 class JumiaProductAdmin(admin.ModelAdmin):
     list_display = (
-        'sku', 'name_preview', 'brand', 'search_keyword', 'price_xof',
+        'sku', 'name_preview', 'brand', 'jumia_category', 'search_keyword', 'price_xof',
         'discount_percent', 'stock_status', 'rating_value', 'rating_count', 'scraped_at',
     )
-    list_filter = ('search_keyword', 'stock_status', 'category', 'brand')
+    list_filter = ('search_keyword', 'stock_status', 'jumia_category', 'category', 'brand')
     search_fields = ('name', 'sku', 'seller_name', 'brand')
     readonly_fields = ('scraped_at', 'updated_at', 'stock_checked_at', 'nlp_analyzed_at')
+    raw_id_fields = ('jumia_category',)
 
     @admin.display(description='Nom')
     def name_preview(self, obj):

@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
@@ -30,3 +31,11 @@ urlpatterns = [
     path('deconnexion/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     path('admin/', admin.site.urls),
 ]
+
+# Pages locales non versionnées (dossier local_dev/ gitignoré)
+if settings.DEBUG:
+    try:
+        from local_dev.urls import urlpatterns as _local_urlpatterns
+        urlpatterns += _local_urlpatterns
+    except ImportError:
+        pass

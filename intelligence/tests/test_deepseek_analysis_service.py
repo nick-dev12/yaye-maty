@@ -17,7 +17,9 @@ from intelligence.services.deepseek_analysis_service import DeepSeekAnalysisServ
         'WEB_ALLOWED_DOMAINS': [
             'jumia.sn', 'jiji.sn', 'alibaba.com', 'aliexpress.com',
             'amazon.com', 'tiktok.com',
+            'promo.sn', 'expat-dakar.com', 'sn.coinafrique.com', 'facebook.com',
         ],
+        'WEB_OPEN_SEARCH': True,
         'WEB_BLOCKED_DOMAINS': [],
         'WEB_MAX_USES': 5,
         'WEB_COUNTRY': 'SN',
@@ -181,14 +183,31 @@ class DeepSeekAnalysisServiceTests(SimpleTestCase):
         self.assertEqual(tool['type'], 'web_search_20250305')
         self.assertEqual(tool['name'], 'web_search')
         self.assertEqual(tool['max_uses'], 5)
-        self.assertIn('jumia.sn', tool['allowed_domains'])
-        self.assertIn('alibaba.com', tool['allowed_domains'])
+        self.assertNotIn('allowed_domains', tool)
         self.assertNotIn('blocked_domains', tool)
         self.assertEqual(tool['user_location']['country'], 'SN')
         self.assertEqual(tool['user_location']['city'], 'Dakar')
+        meta = DeepSeekAnalysisService.web_watch_meta()
+        self.assertTrue(meta['open_search'])
+        self.assertIn('jumia.sn', meta['preferred_domains'])
+        self.assertIn('promo.sn', meta['preferred_domains'])
+        self.assertIn('facebook.com', meta['preferred_domains'])
+
+    def test_build_web_search_tool_strict_mode(self):
+        tool = DeepSeekAnalysisService.build_web_search_tool({
+            'WEB_OPEN_SEARCH': False,
+            'WEB_ALLOWED_DOMAINS': ['jumia.sn', 'jiji.sn'],
+            'WEB_MAX_USES': 5,
+            'WEB_COUNTRY': 'SN',
+            'WEB_CITY': 'Dakar',
+            'WEB_TIMEZONE': 'Africa/Dakar',
+        })
+        self.assertIn('allowed_domains', tool)
+        self.assertEqual(tool['allowed_domains'], ['jumia.sn', 'jiji.sn'])
 
     def test_build_web_search_tool_blocked_when_no_allowed(self):
         tool = DeepSeekAnalysisService.build_web_search_tool({
+            'WEB_OPEN_SEARCH': False,
             'WEB_ALLOWED_DOMAINS': [],
             'WEB_BLOCKED_DOMAINS': ['spam.example', 'https://www.bad.com/x'],
             'WEB_MAX_USES': 3,
@@ -206,7 +225,7 @@ class DeepSeekAnalysisServiceTests(SimpleTestCase):
         )
         self.assertIn('Veille web tour 3', status)
         self.assertIn('5 recherches', status)
-        self.assertIn('jumia.sn', status)
+        self.assertIn('web ouvert', status)
         self.assertEqual(
             DeepSeekAnalysisService.format_web_watch_status(1, enabled=False),
             'Veille web off',
@@ -215,5 +234,18 @@ class DeepSeekAnalysisServiceTests(SimpleTestCase):
     def test_web_watch_meta(self):
         meta = DeepSeekAnalysisService.web_watch_meta()
         self.assertEqual(meta['max_uses'], 5)
-        self.assertIn('jiji.sn', meta['allowed_domains'])
+        self.assertTrue(meta['open_search'])
+        self.assertIn('jiji.sn', meta['preferred_domains'])
+        self.assertIn('expat-dakar.com', meta['preferred_domains'])
         self.assertEqual(meta['country'], 'SN')
+
+    def test_get_web_max_tours_from_env(self):
+        self.assertEqual(DeepSeekAnalysisService.get_web_max_tours(), 3)
+
+    @override_settings(DEEPSEEK={'WEB_MAX_TOURS': 8})
+    def test_get_web_max_tours_custom(self):
+        self.assertEqual(DeepSeekAnalysisService.get_web_max_tours(), 8)
+
+    @override_settings(DEEPSEEK={'WEB_MAX_TOURS': 0})
+    def test_get_web_max_tours_minimum_one(self):
+        self.assertEqual(DeepSeekAnalysisService.get_web_max_tours(), 1)

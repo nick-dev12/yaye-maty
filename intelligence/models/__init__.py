@@ -4,6 +4,7 @@ from .import_master_domain_analysis import ImportMasterDomainAnalysis
 from .jiji_homepage_hit import JijiHomepageHit
 from .jiji_listing import JijiListing
 from .jiji_price_snapshot import JijiPriceSnapshot
+from .jumia_category import JumiaCategory
 from .jumia_homepage_hit import JumiaHomepageHit
 from .jumia_price_snapshot import JumiaPriceSnapshot
 from .jumia_product import JumiaProduct
@@ -47,6 +48,7 @@ __all__ = [
     'SocialScrapeTarget',
     'WolofKeyword',
     'TopPurchaseRecommendation',
+    'JumiaCategory',
     'JumiaProduct',
     'JumiaReview',
     'JumiaPriceSnapshot',

@@ -297,6 +297,27 @@ def _csv_env_list(name: str, default: str = '') -> list[str]:
     return [part.strip() for part in raw.split(',') if part.strip()]
 
 
+def _env_marketplace_source(name: str, *, legacy_catalog_first: bool | None = None) -> str:
+    """
+    Mode collecte marketplace Trade Intelligence.
+
+    - ``catalog`` / ``database`` / ``db`` / ``bdd`` → base de données
+    - ``live`` / ``scrape`` / ``web`` → scraping HTTP normal
+    """
+    raw = (os.getenv(name, '') or '').strip().lower()
+    if raw in ('catalog', 'database', 'db', 'bdd'):
+        return 'catalog'
+    if raw in ('live', 'scrape', 'scraping', 'web'):
+        return 'live'
+    if legacy_catalog_first is not None:
+        return 'catalog' if legacy_catalog_first else 'live'
+    return 'live'
+
+
+_jumia_legacy_catalog = os.getenv(
+    'TRADE_RESEARCH_JUMIA_USE_CATALOG_FIRST', '1',
+).strip().lower() in ('1', 'true', 'yes', 'on')
+
 # DeepSeek — Trade Intelligence (analyse marché + recherche web)
 DEEPSEEK = {
     'API_KEY': os.getenv('DEEPSEEK_API_KEY', ''),
@@ -312,18 +333,35 @@ DEEPSEEK = {
     ),
     'MAX_TOKENS': int(os.getenv('DEEPSEEK_MAX_TOKENS', '8192')),
     'TIMEOUT_SECONDS': float(os.getenv('DEEPSEEK_TIMEOUT_SECONDS', '120')),
-    # Veille web — sites autorisés (allowed_domains API Anthropic/DeepSeek)
-    # Vide = recherche ouverte. Liste CSV : jumia.sn,jiji.sn,alibaba.com…
+    # Veille web — sites prioritaires (prompt + option strict allowed_domains)
     'WEB_ALLOWED_DOMAINS': _csv_env_list(
         'DEEPSEEK_WEB_ALLOWED_DOMAINS',
-        'jumia.sn,jiji.sn,alibaba.com,aliexpress.com,amazon.com,tiktok.com',
+        'jumia.sn,jiji.sn,alibaba.com,aliexpress.com,amazon.com,tiktok.com,'
+        'promo.sn,expat-dakar.com,sn.coinafrique.com,facebook.com',
     ),
-    # Exclusions (ignorées si WEB_ALLOWED_DOMAINS non vide — API refuse les deux)
+    # True = web ouvert + sites prioritaires en consigne ; False = allowed_domains strict API
+    'WEB_OPEN_SEARCH': os.getenv('DEEPSEEK_WEB_OPEN_SEARCH', 'True').lower() in (
+        'true', '1', 'yes', 'on',
+    ),
+    # Exclusions (strict mode ou complément open — jamais avec allowed_domains API)
     'WEB_BLOCKED_DOMAINS': _csv_env_list('DEEPSEEK_WEB_BLOCKED_DOMAINS', ''),
     'WEB_MAX_USES': int(os.getenv('DEEPSEEK_WEB_MAX_USES', '5')),
     'WEB_COUNTRY': os.getenv('DEEPSEEK_WEB_COUNTRY', 'SN'),
     'WEB_CITY': os.getenv('DEEPSEEK_WEB_CITY', 'Dakar'),
     'WEB_TIMEZONE': os.getenv('DEEPSEEK_WEB_TIMEZONE', 'Africa/Dakar'),
+    # Veille web — limites caractères (deepseek-v4-flash)
+    'WEB_CHUNK_MAX_CHARS': int(os.getenv('DEEPSEEK_WEB_CHUNK_MAX_CHARS', '12000')),
+    'WEB_STORED_CONTEXT_MAX_CHARS': int(
+        os.getenv('DEEPSEEK_WEB_STORED_CONTEXT_MAX_CHARS', '12000'),
+    ),
+    'ANALYSIS_PAYLOAD_MAX_CHARS': int(
+        os.getenv('DEEPSEEK_ANALYSIS_PAYLOAD_MAX_CHARS', '12000'),
+    ),
+    'ANALYSIS_WEB_CONTEXT_MAX_CHARS': int(
+        os.getenv('DEEPSEEK_ANALYSIS_WEB_CONTEXT_MAX_CHARS', '12000'),
+    ),
+    # Tours veille web — nombre fixe par session (DEEPSEEK_WEB_MAX_TOURS dans .env)
+    'WEB_MAX_TOURS': max(1, int(os.getenv('DEEPSEEK_WEB_MAX_TOURS', '3'))),
 }
 
 # Trade Intelligence — limites collecte ad-hoc par session
@@ -333,6 +371,33 @@ TRADE_RESEARCH = {
     'MAX_LISTINGS': int(os.getenv('TRADE_RESEARCH_MAX_LISTINGS', '0')),
     'MAX_SOCIAL_POSTS': int(os.getenv('TRADE_RESEARCH_MAX_SOCIAL', '0')),
     'MAX_REVIEWS': int(os.getenv('TRADE_RESEARCH_MAX_REVIEWS', '20')),
+    # Catalogue Jumia pré-crawlé (local) → analyse TI
+    'JUMIA_CATALOG_PRODUCTS_PER_TOUR': int(
+        os.getenv('TRADE_RESEARCH_JUMIA_CATALOG_PRODUCTS_PER_TOUR', '100')
+    ),
+    'JUMIA_CATALOG_MAX_TOURS': int(
+        os.getenv('TRADE_RESEARCH_JUMIA_CATALOG_MAX_TOURS', '3')
+    ),
+    # catalog = BDD JumiaProduct | live = scrape HTTP (legacy : JUMIA_USE_CATALOG_FIRST)
+    'JUMIA_SOURCE': _env_marketplace_source(
+        'TRADE_RESEARCH_JUMIA_SOURCE',
+        legacy_catalog_first=_jumia_legacy_catalog,
+    ),
+    'JUMIA_CATALOG_FALLBACK_LIVE': os.getenv(
+        'TRADE_RESEARCH_JUMIA_CATALOG_FALLBACK_LIVE', '0',
+    ).strip().lower() in ('1', 'true', 'yes', 'on'),
+    'JUMIA_USE_CATALOG_FIRST': _jumia_legacy_catalog,
+    # Jiji : database = JijiListing en BDD | live = scrape HTTP
+    'JIJI_SOURCE': _env_marketplace_source('TRADE_RESEARCH_JIJI_SOURCE'),
+    'JIJI_DATABASE_LISTINGS_PER_TOUR': int(
+        os.getenv('TRADE_RESEARCH_JIJI_DATABASE_LISTINGS_PER_TOUR', '100')
+    ),
+    'JIJI_DATABASE_MAX_TOURS': int(
+        os.getenv('TRADE_RESEARCH_JIJI_DATABASE_MAX_TOURS', '3')
+    ),
+    'JIJI_DATABASE_FALLBACK_LIVE': os.getenv(
+        'TRADE_RESEARCH_JIJI_DATABASE_FALLBACK_LIVE', '0',
+    ).strip().lower() in ('1', 'true', 'yes', 'on'),
 }
 
 # Production derrière Nginx + HTTPS (voir DEPLOYMENT.md)

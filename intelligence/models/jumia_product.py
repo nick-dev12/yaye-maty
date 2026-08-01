@@ -23,6 +23,14 @@ class JumiaProduct(models.Model):
     name = models.CharField('Nom', max_length=400)
     brand = models.CharField('Marque', max_length=120, blank=True, db_index=True)
     category = models.CharField('Catégorie', max_length=160, blank=True)
+    jumia_category = models.ForeignKey(
+        'intelligence.JumiaCategory',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products',
+        verbose_name='Catégorie catalogue',
+    )
     seller_name = models.CharField('Vendeur', max_length=160, blank=True)
     price_xof = models.DecimalField(
         'Prix (FCFA)', max_digits=12, decimal_places=2, null=True, blank=True,

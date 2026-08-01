@@ -455,8 +455,10 @@ class JumiaScraper:
             product_category=product_category,
         )
         if product.sku:
+            # max_reviews=0 → toutes les pages d'avis
+            pages = 0 if max_reviews <= 0 else 3
             reviews, dist, comments_count = self.fetch_reviews(
-                product.sku, max_reviews=max_reviews, max_pages=3,
+                product.sku, max_reviews=max_reviews, max_pages=pages,
             )
             product.reviews = reviews
             if dist:
@@ -472,11 +474,17 @@ class JumiaScraper:
         max_reviews: int = 20,
         max_pages: int = 3,
     ) -> tuple[list[ExtractedJumiaReview], dict, int]:
+        """
+        Récupère les avis d'un SKU.
+
+        ``max_reviews=0`` ou ``max_pages=0`` = pas de plafond (jusqu'à pages vides).
+        """
         all_reviews: list[ExtractedJumiaReview] = []
         distribution: dict = {}
         comments_count = 0
         path = f'/catalog/productratingsreviews/sku/{sku}/'
-        for page in range(1, max_pages + 1):
+        page_limit = 500 if max_pages <= 0 else max_pages
+        for page in range(1, page_limit + 1):
             url = path if page == 1 else f'{path}?page={page}'
             try:
                 html = self._get(url)
@@ -488,9 +496,13 @@ class JumiaScraper:
                 distribution = page_dist
                 comments_count = page_comments
             all_reviews.extend(page_reviews)
-            if len(page_reviews) == 0 or len(all_reviews) >= max_reviews:
+            if len(page_reviews) == 0:
                 break
-        return all_reviews[:max_reviews], distribution, comments_count
+            if max_reviews > 0 and len(all_reviews) >= max_reviews:
+                break
+        if max_reviews > 0:
+            return all_reviews[:max_reviews], distribution, comments_count
+        return all_reviews, distribution, comments_count
 
     # ------------------------------------------------------------------ parsing
 
@@ -501,7 +513,8 @@ class JumiaScraper:
             links = art.xpath('.//a[contains(@class,"core")]')
             if not links:
                 continue
-            href = links[0].get('href') or ''
+            link = links[0]
+            href = link.get('href') or ''
             name_el = art.xpath('.//*[contains(@class,"name")]')
             name = (name_el[0].text_content() if name_el else '').strip()
             price_el = art.xpath('.//*[contains(@class,"prc")]')
@@ -510,6 +523,17 @@ class JumiaScraper:
             old_price = (old_el[0].text_content() if old_el else '').strip()
             disc_el = art.xpath('.//*[contains(@class,"_dsct")]')
             discount_badge = (disc_el[0].text_content() if disc_el else '').strip()
+            brand = (
+                link.get('data-brand')
+                or link.get('data-gtm-brand')
+                or ''
+            ).strip()
+            card_category = (
+                link.get('data-category')
+                or link.get('data-gtm-category')
+                or ''
+            ).strip()
+            gtm_sku = (link.get('data-gtm-id') or link.get('data-id') or '').strip()
             stars_el = art.xpath('.//*[contains(@class,"stars")]')
             rating = None
             review_count = None
@@ -538,6 +562,8 @@ class JumiaScraper:
                 cards.append({
                     'url': abs_url,
                     'name': name,
+                    'brand': brand[:120],
+                    'category': card_category[:160],
                     'price': price,
                     'old_price': old_price,
                     'discount_badge': discount_badge,
@@ -547,7 +573,7 @@ class JumiaScraper:
                     'stock_remaining': stock_remaining,
                     'raw_text': raw_text,
                     'section_label': 'ventes_flash' if source == 'homepage' and stock_remaining else source,
-                    'sku': JumiaDedupService.extract_sku_from_url(abs_url),
+                    'sku': gtm_sku or JumiaDedupService.extract_sku_from_url(abs_url),
                 })
         return cards
 
