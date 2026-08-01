@@ -78,7 +78,12 @@
                     <input type="hidden" name="session_id" value="{{ card.id }}">
                     <button type="submit" class="ti-arch-btn ti-arch-btn--danger">Supprimer</button>
                 </form>
-                <p class="ti-arch-meta-line">{{ card.duration_minutes }} mn · {{ card.sources|join:", "|default:"—" }}</p>
+                <p class="ti-arch-meta-line">
+                    {{ card.duration_minutes }} mn · {{ card.sources|join:", "|default:"—" }}
+                    {% if card.research_rounds != None %}
+                    · {{ card.research_rounds }} tour(s) web{% if card.web_max_uses %} × {{ card.web_max_uses }} rech.{% endif %}
+                    {% endif %}
+                </p>
             </div>
         </article>
         {% endfor %}

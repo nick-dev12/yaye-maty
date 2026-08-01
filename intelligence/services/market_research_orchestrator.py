@@ -337,14 +337,22 @@ class MarketResearchOrchestrator:
 
                     if not DeepSeekAnalysisService.is_enabled():
                         with state_lock:
-                            lane_status['deepseek_web'] = 'Veille web off'
+                            lane_status['deepseek_web'] = (
+                                DeepSeekAnalysisService.format_web_watch_status(
+                                    n, enabled=False,
+                                )
+                            )
                         _pause_lane()
                         continue
 
                     focus = WEB_FOCUS_HINTS[focus_idx % len(WEB_FOCUS_HINTS)]
                     focus_idx += 1
                     with state_lock:
-                        lane_status['deepseek_web'] = f'Veille web tour {n}: {focus[:36]}'
+                        lane_status['deepseek_web'] = (
+                            DeepSeekAnalysisService.format_web_watch_status(
+                                n, focus=focus,
+                            )
+                        )
                     try:
                         chunk = DeepSeekAnalysisService.fetch_web_context(
                             query,
@@ -354,14 +362,27 @@ class MarketResearchOrchestrator:
                         if chunk:
                             with state_lock:
                                 web_chunks.append(
-                                    f'--- Recherche {len(web_chunks) + 1} ({focus}) ---\n{chunk}'
+                                    f'--- Recherche {len(web_chunks) + 1} '
+                                    f'({focus} · '
+                                    f'{DeepSeekAnalysisService.web_watch_meta().get("max_uses", 0)}'
+                                    f' recherches) ---\n{chunk}'
                                 )
                                 joined = cls._join_web_chunks(list(web_chunks))
                             cls._persist_fields(session_id, deepseek_web_context=joined)
+                            with state_lock:
+                                lane_status['deepseek_web'] = (
+                                    DeepSeekAnalysisService.format_web_watch_status(
+                                        n, focus=f'OK {focus}',
+                                    )
+                                )
                     except Exception as exc:
                         logger.warning('Lane DeepSeek web tour échoué : %s', exc)
                         with state_lock:
-                            lane_status['deepseek_web'] = f'Web erreur: {exc}'[:120]
+                            lane_status['deepseek_web'] = (
+                                DeepSeekAnalysisService.format_web_watch_status(
+                                    n, error=str(exc),
+                                )
+                            )
                     if cancelled():
                         break
                     _pause_lane()
@@ -406,7 +427,8 @@ class MarketResearchOrchestrator:
                             lane_status.get(lane, lane)
                             for lane in lanes
                         ]
-                    snapshot = ' · '.join(parts)[:200]
+                    # progress_message max 300 — garder place pour « · reste XmYYs »
+                    snapshot = ' · '.join(parts)[:220]
                     report(
                         collect_progress_pct(),
                         f'Parallèle — {snapshot}' if snapshot else 'Collecte parallèle…',
@@ -573,14 +595,24 @@ class MarketResearchOrchestrator:
 
         if stop_reason:
             analysis['stop_reason'] = stop_reason
-        analysis['research_rounds'] = (
+        research_rounds = (
             max(0, len(web_context.split('--- Recherche')) - 1) if web_context else 0
         )
+        analysis['research_rounds'] = research_rounds
+        web_meta = DeepSeekAnalysisService.web_watch_meta()
+        analysis['web_watch'] = {
+            **web_meta,
+            'research_rounds': research_rounds,
+            'context_chars': len(web_context or ''),
+        }
 
         done_msg = (
-            f'Analyse terminée (collecte {stop_reason}).'
-            if stop_reason else 'Analyse terminée.'
+            f'Analyse terminée — {research_rounds} tour(s) veille web '
+            f'× {web_meta.get("max_uses") or "?"} recherches'
+            + (f' (collecte {stop_reason}).' if stop_reason else '.')
         )
+        if len(done_msg) > 280:
+            done_msg = done_msg[:280]
         cls._persist_fields(
             session_id,
             analysis_result=analysis,

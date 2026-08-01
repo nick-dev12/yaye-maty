@@ -68,6 +68,13 @@ class TradeResearchArchiveService:
         except (TypeError, ValueError):
             note_f = None
 
+        web_watch = analysis.get('web_watch') if isinstance(analysis, dict) else {}
+        if not isinstance(web_watch, dict):
+            web_watch = {}
+        research_rounds = analysis.get('research_rounds') if isinstance(analysis, dict) else None
+        if research_rounds is None:
+            research_rounds = web_watch.get('research_rounds')
+
         return {
             'id': session.pk,
             'domain_label': session.domain_label,
@@ -81,6 +88,8 @@ class TradeResearchArchiveService:
             'top_product': top_pick.get('produit') or '—',
             'top_note': note_f,
             'top_reco': top_pick.get('recommandation') or '',
+            'research_rounds': research_rounds,
+            'web_max_uses': web_watch.get('max_uses'),
             'created_at': session.created_at,
             'completed_at': session.completed_at,
             'error_message': (session.error_message or '')[:200],

@@ -199,3 +199,21 @@ class DeepSeekAnalysisServiceTests(SimpleTestCase):
         self.assertEqual(tool['blocked_domains'], ['spam.example', 'bad.com'])
         self.assertNotIn('allowed_domains', tool)
         self.assertEqual(tool['max_uses'], 3)
+
+    def test_format_web_watch_status_references_uses_and_sites(self):
+        status = DeepSeekAnalysisService.format_web_watch_status(
+            3, focus='prix Jumia.sn et Jiji.sn',
+        )
+        self.assertIn('Veille web tour 3', status)
+        self.assertIn('5 recherches', status)
+        self.assertIn('jumia.sn', status)
+        self.assertEqual(
+            DeepSeekAnalysisService.format_web_watch_status(1, enabled=False),
+            'Veille web off',
+        )
+
+    def test_web_watch_meta(self):
+        meta = DeepSeekAnalysisService.web_watch_meta()
+        self.assertEqual(meta['max_uses'], 5)
+        self.assertIn('jiji.sn', meta['allowed_domains'])
+        self.assertEqual(meta['country'], 'SN')

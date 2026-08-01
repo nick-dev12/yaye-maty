@@ -68,6 +68,9 @@ class TradeIntelligenceDisplayService:
                 domain_label=session.domain_label or '',
                 category_label=session.keyword or session.category_label or '',
             )
+        web_watch = analysis.get('web_watch') if isinstance(analysis, dict) else None
+        if not isinstance(web_watch, dict):
+            web_watch = None
         return {
             'id': session.pk,
             'domain_slug': session.domain_slug,
@@ -83,6 +86,11 @@ class TradeIntelligenceDisplayService:
             'progress_message': session.progress_message,
             'error_message': session.error_message,
             'analysis': analysis,
+            'web_watch': web_watch,
+            'research_rounds': (
+                (analysis or {}).get('research_rounds')
+                if isinstance(analysis, dict) else None
+            ),
             'completed_at': session.completed_at.isoformat() if session.completed_at else None,
         }
 

@@ -200,6 +200,57 @@ class DeepSeekAnalysisService:
         return tool
 
     @classmethod
+    def web_watch_meta(cls, cfg: dict | None = None) -> dict:
+        """Métadonnées veille web pour UI / résultat d'analyse."""
+        tool = cls.build_web_search_tool(cfg)
+        return {
+            'max_uses': int(tool.get('max_uses') or 0),
+            'allowed_domains': list(tool.get('allowed_domains') or []),
+            'blocked_domains': list(tool.get('blocked_domains') or []),
+            'country': (tool.get('user_location') or {}).get('country', ''),
+            'city': (tool.get('user_location') or {}).get('city', ''),
+        }
+
+    @classmethod
+    def format_web_watch_status(
+        cls,
+        tour: int,
+        *,
+        focus: str = '',
+        enabled: bool = True,
+        error: str = '',
+        cfg: dict | None = None,
+    ) -> str:
+        """
+        Libellé progression : « Veille web tour 3 · 5 recherches · jumia.sn+5 ».
+        Compact pour barre de statut parallèle (≤120 car.).
+        """
+        if not enabled:
+            return 'Veille web off'
+        if error:
+            return f'Web erreur: {error}'[:120]
+
+        meta = cls.web_watch_meta(cfg)
+        max_uses = meta['max_uses']
+        domains = meta['allowed_domains']
+        if domains:
+            if len(domains) <= 2:
+                sites = ','.join(domains)
+            else:
+                sites = f'{domains[0]}+{len(domains) - 1}'
+        else:
+            sites = 'web ouvert'
+
+        parts = [f'Veille web tour {max(1, int(tour))}']
+        if max_uses > 0:
+            parts.append(f'{max_uses} recherches')
+        parts.append(sites)
+        focus_short = (focus or '').strip()[:22]
+        if focus_short:
+            parts.append(focus_short)
+        return ' · '.join(parts)[:120]
+
+    @classmethod
     def _chat_extra_body(cls, cfg: dict) -> dict:
         """
         DeepSeek V4 active le « thinking » par défaut : le JSON peut arriver vide

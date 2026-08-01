@@ -295,6 +295,22 @@
     color: var(--color-gris);
 }
 
+.ti-web-meta {
+    margin: 0 0 1rem;
+    padding: 0.55rem 0.9rem;
+    background: rgba(var(--color-bleu-rgb), 0.08);
+    border: 1px solid rgba(var(--color-bleu-rgb), 0.22);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    color: var(--color-noir);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.ti-web-meta strong {
+    color: var(--color-bleu);
+}
+
 .ti-highlights {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

@@ -6,7 +6,7 @@
 {% block body_class %}intel-layout{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=9">
+<link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=10">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -78,6 +78,14 @@
         <p class="ti-progress-msg" id="ti-progress-msg">Initialisation…</p>
         <p class="ti-timer" id="ti-timer"></p>
     </div>
+
+    <p class="ti-web-meta" id="ti-web-meta"{% if not analysis.web_watch %} hidden{% endif %}>
+        Veille web :
+        <strong id="ti-web-rounds">{{ analysis.web_watch.research_rounds|default:"—" }}</strong> tour(s)
+        × <strong id="ti-web-uses">{{ analysis.web_watch.max_uses|default:"—" }}</strong> recherches/tour
+        · sites :
+        <span id="ti-web-sites">{% if analysis.web_watch.allowed_domains %}{{ analysis.web_watch.allowed_domains|join:", " }}{% else %}web ouvert{% endif %}</span>
+    </p>
 
     <section class="ti-highlights" id="ti-highlights" {% if not has_results %}hidden{% endif %}>
         <article class="ti-highlight-card">
@@ -181,5 +189,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/trade-intelligence.js' %}?v=8"></script>
+<script src="{% static 'js/trade-intelligence.js' %}?v=9"></script>
 {% endblock %}

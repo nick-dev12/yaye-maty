@@ -18,6 +18,10 @@
     const timerEl = document.getElementById('ti-timer');
     const tableBody = document.getElementById('ti-table-body');
     const highlightsEl = document.getElementById('ti-highlights');
+    const webMetaEl = document.getElementById('ti-web-meta');
+    const webRoundsEl = document.getElementById('ti-web-rounds');
+    const webUsesEl = document.getElementById('ti-web-uses');
+    const webSitesEl = document.getElementById('ti-web-sites');
 
     let analysisData = null;
     const analysisScript = document.getElementById('ti-analysis-data');
@@ -123,9 +127,31 @@
         set('margin', highlights.meilleure_marge);
     }
 
+    function renderWebWatch(data) {
+        if (!webMetaEl) return;
+        const ww = (data && data.web_watch) || null;
+        const rounds = ww && ww.research_rounds != null
+            ? ww.research_rounds
+            : (data && data.research_rounds != null ? data.research_rounds : null);
+        if (rounds == null && !ww) {
+            webMetaEl.hidden = true;
+            return;
+        }
+        webMetaEl.hidden = false;
+        if (webRoundsEl) webRoundsEl.textContent = rounds != null ? String(rounds) : '—';
+        if (webUsesEl) {
+            webUsesEl.textContent = ww && ww.max_uses != null ? String(ww.max_uses) : '—';
+        }
+        if (webSitesEl) {
+            const domains = ww && Array.isArray(ww.allowed_domains) ? ww.allowed_domains : [];
+            webSitesEl.textContent = domains.length ? domains.join(', ') : 'web ouvert';
+        }
+    }
+
     function applyAnalysis(data) {
         analysisData = data;
         renderHighlights(data.highlights);
+        renderWebWatch(data);
         renderTable(data[activeTab] || data.top_investissement || []);
         const title = document.querySelector('.ti-table-title');
         if (title && activeTab === 'top_investissement') {
