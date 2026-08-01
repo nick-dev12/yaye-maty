@@ -14,6 +14,15 @@ from intelligence.services.deepseek_analysis_service import DeepSeekAnalysisServ
         'ENABLED': True,
         'MAX_TOKENS': 8192,
         'TIMEOUT_SECONDS': 30,
+        'WEB_ALLOWED_DOMAINS': [
+            'jumia.sn', 'jiji.sn', 'alibaba.com', 'aliexpress.com',
+            'amazon.com', 'tiktok.com',
+        ],
+        'WEB_BLOCKED_DOMAINS': [],
+        'WEB_MAX_USES': 5,
+        'WEB_COUNTRY': 'SN',
+        'WEB_CITY': 'Dakar',
+        'WEB_TIMEZONE': 'Africa/Dakar',
     }
 )
 class DeepSeekAnalysisServiceTests(SimpleTestCase):
@@ -155,3 +164,38 @@ class DeepSeekAnalysisServiceTests(SimpleTestCase):
     def test_parse_json_response_empty_raises(self):
         with self.assertRaises(ValueError):
             DeepSeekAnalysisService._parse_json_response('')
+
+    def test_normalize_web_domain(self):
+        self.assertEqual(
+            DeepSeekAnalysisService.normalize_web_domain('https://www.Jumia.sn/catalog/'),
+            'jumia.sn',
+        )
+        self.assertEqual(
+            DeepSeekAnalysisService.normalize_web_domain('alibaba.com'),
+            'alibaba.com',
+        )
+        self.assertEqual(DeepSeekAnalysisService.normalize_web_domain('not a domain'), '')
+
+    def test_build_web_search_tool_allowed_domains(self):
+        tool = DeepSeekAnalysisService.build_web_search_tool()
+        self.assertEqual(tool['type'], 'web_search_20250305')
+        self.assertEqual(tool['name'], 'web_search')
+        self.assertEqual(tool['max_uses'], 5)
+        self.assertIn('jumia.sn', tool['allowed_domains'])
+        self.assertIn('alibaba.com', tool['allowed_domains'])
+        self.assertNotIn('blocked_domains', tool)
+        self.assertEqual(tool['user_location']['country'], 'SN')
+        self.assertEqual(tool['user_location']['city'], 'Dakar')
+
+    def test_build_web_search_tool_blocked_when_no_allowed(self):
+        tool = DeepSeekAnalysisService.build_web_search_tool({
+            'WEB_ALLOWED_DOMAINS': [],
+            'WEB_BLOCKED_DOMAINS': ['spam.example', 'https://www.bad.com/x'],
+            'WEB_MAX_USES': 3,
+            'WEB_COUNTRY': 'SN',
+            'WEB_CITY': 'Dakar',
+            'WEB_TIMEZONE': 'Africa/Dakar',
+        })
+        self.assertEqual(tool['blocked_domains'], ['spam.example', 'bad.com'])
+        self.assertNotIn('allowed_domains', tool)
+        self.assertEqual(tool['max_uses'], 3)

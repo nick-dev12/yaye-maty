@@ -126,6 +126,80 @@ class DeepSeekAnalysisService:
         return bool(cfg.get('ENABLED') and cfg.get('API_KEY'))
 
     @classmethod
+    def normalize_web_domain(cls, raw: str) -> str:
+        """Normalise un domaine pour allowed_domains (sans schéma ni www.)."""
+        text = str(raw or '').strip().lower()
+        if not text:
+            return ''
+        text = re.sub(r'^https?://', '', text)
+        text = text.split('/')[0].split('?')[0].strip('.')
+        if text.startswith('www.'):
+            text = text[4:]
+        # Domaines uniquement (lettres, chiffres, points, tirets)
+        if not re.fullmatch(r'[a-z0-9][a-z0-9.-]*\.[a-z]{2,}', text):
+            return ''
+        return text
+
+    @classmethod
+    def parse_web_domains(cls, values: Any) -> list[str]:
+        """Liste unique de domaines valides depuis list/tuple/CSV."""
+        if values is None:
+            return []
+        if isinstance(values, str):
+            parts = [p.strip() for p in values.split(',')]
+        elif isinstance(values, (list, tuple, set)):
+            parts = [str(p).strip() for p in values]
+        else:
+            return []
+        seen: set[str] = set()
+        out: list[str] = []
+        for part in parts:
+            domain = cls.normalize_web_domain(part)
+            if domain and domain not in seen:
+                seen.add(domain)
+                out.append(domain)
+        return out
+
+    @classmethod
+    def build_web_search_tool(cls, cfg: dict | None = None) -> dict:
+        """
+        Outil web_search DeepSeek (API Anthropic) avec filtre de sites.
+
+        - allowed_domains prioritaire (si non vide)
+        - sinon blocked_domains
+        - user_location SN pour pertinence locale
+        """
+        cfg = cfg or cls._config()
+        tool: dict[str, Any] = {
+            'type': 'web_search_20250305',
+            'name': 'web_search',
+        }
+        max_uses = int(cfg.get('WEB_MAX_USES') or 0)
+        if max_uses > 0:
+            tool['max_uses'] = min(max_uses, 20)
+
+        allowed = cls.parse_web_domains(cfg.get('WEB_ALLOWED_DOMAINS') or [])
+        blocked = cls.parse_web_domains(cfg.get('WEB_BLOCKED_DOMAINS') or [])
+        if allowed:
+            tool['allowed_domains'] = allowed
+        elif blocked:
+            tool['blocked_domains'] = blocked
+
+        country = str(cfg.get('WEB_COUNTRY') or 'SN').strip().upper()[:2]
+        city = str(cfg.get('WEB_CITY') or 'Dakar').strip()
+        timezone = str(cfg.get('WEB_TIMEZONE') or 'Africa/Dakar').strip()
+        if country:
+            location: dict[str, str] = {
+                'type': 'approximate',
+                'country': country,
+                'timezone': timezone or 'Africa/Dakar',
+            }
+            if city:
+                location['city'] = city
+            tool['user_location'] = location
+        return tool
+
+    @classmethod
     def _chat_extra_body(cls, cfg: dict) -> dict:
         """
         DeepSeek V4 active le « thinking » par défaut : le JSON peut arriver vide
@@ -172,9 +246,18 @@ class DeepSeekAnalysisService:
         model = cfg.get('MODEL', 'deepseek-v4-flash')
         domain = (domain_label or '').strip() or 'le domaine indiqué'
         focus = (focus_hint or 'meilleurs modèles et opportunités').strip()
+        web_tool = cls.build_web_search_tool(cfg)
+        allowed = web_tool.get('allowed_domains') or []
+        sites_line = (
+            f'SITES AUTORISÉS (recherche UNIQUEMENT ici) : {", ".join(allowed)}.'
+            if allowed
+            else 'Sites prioritaires : Jumia.sn, Jiji.sn, TikTok, Alibaba, AliExpress, Amazon.'
+        )
         domain_lock = (
-            f'PÉRIMÈTRE ABSOLU : uniquement le domaine « {domain} » au Sénégal. '
-            f'N’inclus AUCUN produit hors de « {domain} ».'
+            f'PÉRIMÈTRE ABSOLU : uniquement le domaine produit « {domain} » au Sénégal. '
+            f'N’inclus AUCUN produit hors de « {domain} ». '
+            f'{sites_line} '
+            'Cite modèles précis, prix (XOF ou USD), et l’URL/site source quand possible.'
         )
 
         payload = {
@@ -189,11 +272,12 @@ class DeepSeekAnalysisService:
                         f'Angle de recherche : {focus}.\n'
                         f'Liste au moins 10 MODÈLES/VARIANTES UNIQUEMENT dans « {domain} ». '
                         'Ex. si domaine téléphonie → modèles précis (Samsung A54, iPhone 13…). '
-                        'Jamais hors domaine. Prix XOF, Jumia/Jiji/TikTok, investissement.'
+                        'Jamais hors domaine. Résultats concrets : prix, stock/rotation, '
+                        'avis, opportunité d’investissement. Une ligne = un modèle + site source.'
                     ),
                 },
             ],
-            'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}],
+            'tools': [web_tool],
         }
         headers = {
             'x-api-key': api_key,

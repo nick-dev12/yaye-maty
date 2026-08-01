@@ -291,6 +291,12 @@ NLP_CLASSIFIER = {
     'CONFIDENCE_THRESHOLD': float(os.getenv('NLP_CONFIDENCE_THRESHOLD', '0.55')),
 }
 
+def _csv_env_list(name: str, default: str = '') -> list[str]:
+    """Liste CSV depuis .env — domaines, tags, etc."""
+    raw = os.getenv(name, default) or ''
+    return [part.strip() for part in raw.split(',') if part.strip()]
+
+
 # DeepSeek — Trade Intelligence (analyse marché + recherche web)
 DEEPSEEK = {
     'API_KEY': os.getenv('DEEPSEEK_API_KEY', ''),
@@ -306,6 +312,18 @@ DEEPSEEK = {
     ),
     'MAX_TOKENS': int(os.getenv('DEEPSEEK_MAX_TOKENS', '8192')),
     'TIMEOUT_SECONDS': float(os.getenv('DEEPSEEK_TIMEOUT_SECONDS', '120')),
+    # Veille web — sites autorisés (allowed_domains API Anthropic/DeepSeek)
+    # Vide = recherche ouverte. Liste CSV : jumia.sn,jiji.sn,alibaba.com…
+    'WEB_ALLOWED_DOMAINS': _csv_env_list(
+        'DEEPSEEK_WEB_ALLOWED_DOMAINS',
+        'jumia.sn,jiji.sn,alibaba.com,aliexpress.com,amazon.com,tiktok.com',
+    ),
+    # Exclusions (ignorées si WEB_ALLOWED_DOMAINS non vide — API refuse les deux)
+    'WEB_BLOCKED_DOMAINS': _csv_env_list('DEEPSEEK_WEB_BLOCKED_DOMAINS', ''),
+    'WEB_MAX_USES': int(os.getenv('DEEPSEEK_WEB_MAX_USES', '5')),
+    'WEB_COUNTRY': os.getenv('DEEPSEEK_WEB_COUNTRY', 'SN'),
+    'WEB_CITY': os.getenv('DEEPSEEK_WEB_CITY', 'Dakar'),
+    'WEB_TIMEZONE': os.getenv('DEEPSEEK_WEB_TIMEZONE', 'Africa/Dakar'),
 }
 
 # Trade Intelligence — limites collecte ad-hoc par session
