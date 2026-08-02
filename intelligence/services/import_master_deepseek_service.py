@@ -42,14 +42,20 @@ Mission :
 6) Classer domaines et produits selon demande réelle, marge et risque stock.
 
 Règles prix ABSOLUES :
-- prix_sn_min_xof ≤ prix_sn_max_xof (entiers XOF).
-- Prioriser prix_locaux_bdd si présents, sinon web SN ouvert, sinon estimation prudente.
-- marge_pct entre 5 et 70 si données crédibles ; sinon baisser la note et alerter.
-- Pas de fourchettes fantaisistes (ex. min 1000 / max 500000 pour un même SKU).
-- Fourchettes sourcing au format « $18 – $22 » (symbole $, jamais « USD »)
-  UNIQUEMENT si un prix réel a été trouvé sur la plateforme.
-- Si aucun prix fiable trouvé sur Alibaba / AliExpress / Amazon : champ VIDE ("").
-  INTERDIT d’inventer, d’estimer au hasard ou d’écrire « Non pertinent ».
+- SOURCE DE VÉRITÉ = section RECHERCHE WEB ci-dessous (pas les chiffres des analyses TI).
+- Les notes/synthèses Trade Intelligence sont des HYPOTHÈSES à confirmer ou infirmer via le web.
+- Ne jamais recopier un prix TI sans confirmation web ; si contradiction → prix web + note plus basse.
+- prix_sn_min_xof ≤ prix_sn_max_xof (entiers XOF) — fourchette confirmée par le web uniquement.
+- marge_pct entre 5 et 70 si données web crédibles ; sinon baisser la note et alerter.
+- Cohérence obligatoire : prix sourcing ($) × taux + fret/douane ≈ landed XOF ; marge = SN − landed.
+- Pas de fourchettes fantaisistes (ex. sac engrais 50 kg à $380 si le marché local est ~20 000 XOF).
+- Fourchettes sourcing « $min – $max » UNIQUEMENT si trouvées sur le web ; sinon "".
+- Si aucun prix fiable : champs vides, fiabilite_prix = "estime" ou "faible", note plafonnée.
+
+Réflexion (thinking) avant JSON :
+1) Croiser web vs hypothèses TI pour chaque produit Top.
+2) Vérifier unités (sac/kg/pièce) et ordres de grandeur SN vs international.
+3) Rejeter ou corriger tout chiffre incohérent avant de produire le JSON.
 
 Commentaires (synthese, commentaire_analyste, commentaire opportunités) :
 - Ton décideur : concret, convaincant, réaliste (saisonnalité, rotation, risque stock, marge %).
@@ -64,27 +70,28 @@ JSON compact obligatoire (évite troncature) : pas de blabla, listes ≤ 4 items
 
 COMPARE_USER = """Analyse comparative d'importation YAYEMATY.
 
-=== ANALYSES TRADE INTELLIGENCE + PRIX LOCAUX BDD (par domaine) ===
+=== ANALYSES TRADE INTELLIGENCE (contexte produits / notes — PAS source de prix) ===
 {domains_json}
 
-=== RECHERCHE WEB (marché SN ouvert min/max + sourcing international) ===
+=== RECHERCHE WEB — SOURCE DE VÉRITÉ (prix marché SN + sourcing à vérifier) ===
 {web_context}
 
 Consignes :
-- Chaque domaine inclut jusqu'à 2 analyses récentes : tendances notes / produits.
-- Compare les domaines avec critères demande, marge réelle, fiabilité prix SN, concurrence.
+- Les prix et marges DOIVENT provenir de la RECHERCHE WEB ; croiser plusieurs résultats web.
+- Si le web contredit une synthèse TI : suivre le web, baisser la note, alerter dans commentaire_prix.
+- Chaque domaine inclut jusqu'à 2 analyses récentes : tendances notes / produits (sans recopier leurs prix).
+- Compare les domaines : demande réelle, marge après vérification web, risque stock, concurrence.
 - EXACTEMENT 10 produits dans produits_import (Top 10), triés par note décroissante.
-- EXACTEMENT 5 meilleures_opportunites (Top 5), alignées sur les meilleurs produits.
-- Marché SN + sourcing international ($) + landed XOF + marges.
-- Fourchettes « $min – $max » seulement si trouvées ; sinon "".
+- EXACTEMENT 5 meilleures_opportunites (Top 5), alignées sur les meilleurs produits vérifiés.
+- Fourchettes « $min – $max » seulement si trouvées sur le web ; sinon "".
+- fiabilite_prix : "web" (confirmé web), "estime" (peu de sources), "faible" (incohérent / non trouvé).
 - resume / commentaires : convaincants, réalistes, SANS nommer de sites web.
-- comparaison domaines : arbitrage capital d’import, chiffres, pas de marketing vague.
 
 Réponds avec ce JSON exact :
 {{
   "resume": "Synthèse 3–5 phrases avec fourchettes SN et marges % des priorités.",
   "commentaire_global": "Commentaire analyste (marché SN, sourcing, timing).",
-  "methodologie": "TI + web SN ouvert (prioritaires + autres sites) + sourcing Alibaba/AliExpress/Amazon/Made-in-China + BDD.",
+  "methodologie": "TI (contexte) + vérification web SN ouvert + sourcing international confirmé.",
   "classement_domaines": [
     {{
       "rang": 1,
@@ -145,7 +152,7 @@ Réponds avec ce JSON exact :
       "marge_max_xof": 10000,
       "marge_pct": 32,
       "marge_estimee_xof": "7 000 – 10 000 XOF (~32%)",
-      "fiabilite_prix": "web|bdd|mixte|estime",
+      "fiabilite_prix": "web|estime|faible",
       "sources_prix": ["jumia.sn", "jiji.sn", "alibaba.com", "made-in-china.com"]
     }}
   ],
@@ -199,16 +206,17 @@ class ImportMasterDeepSeekService:
     )
 
     WEB_FOCUSES = (
-        'prix les plus bas marché Sénégal : Jumia Jiji Promo CoinAfrique Expat-Dakar '
-        'Jemba DakarCenter OccasionDakar TafTaf Facebook Instagram ET tout autre '
-        'site web SN (prix min XOF par modèle)',
-        'prix les plus hauts / premium marché Sénégal : mêmes priorités + web ouvert '
-        'autres marketplaces / annonces SN (prix max XOF par modèle)',
-        'prix gros Alibaba Made-in-China 1688 Global Sources (USD) + coût landed XOF '
-        'Sénégal (fret + douane approximatifs) par modèle',
-        'prix AliExpress Amazon DHgate Yiwugo HKTDC wholesale vs revente marché SN',
-        'marges revendeur Sénégal réalistes (prix SN min–max moins coût landed) '
-        'tous domaines confondus — web ouvert autorisé',
+        'vérification croisée prix SN : confirmer ou infirmer chaque produit Top '
+        'via plusieurs sources web (min/max XOF, écarter chiffres non confirmés)',
+        'prix les plus bas marché Sénégal : annonces en ligne + web ouvert '
+        '(prix min XOF par modèle, unité claire sac/kg/pièce)',
+        'prix les plus hauts / premium marché Sénégal : web ouvert '
+        '(prix max XOF par modèle)',
+        'prix gros sourcing international ($) + coût landed XOF '
+        '(fret + douane — cohérent avec le produit et l’unité)',
+        'prix retail/wholesale AliExpress Amazon vs revente marché SN vérifiée',
+        'marges revendeur Sénégal réalistes après vérification web '
+        '(prix SN confirmé − landed) — rejeter les marges >70% non crédibles',
     )
 
     @classmethod
@@ -494,6 +502,46 @@ class ImportMasterDeepSeekService:
             snap['prix_locaux_bdd'] = local_prices[:20]
         return snapshots
 
+    @classmethod
+    def _snapshots_for_ai_prompt(cls, snapshots: list[dict]) -> list[dict]:
+        """
+        Payload envoyé à DeepSeek : contexte TI uniquement (pas de prix BDD locale).
+        Les prix doivent être vérifiés via la recherche web, pas injectés depuis PostgreSQL.
+        """
+        cleaned: list[dict] = []
+        for snap in snapshots:
+            if not isinstance(snap, dict):
+                continue
+            entry = {
+                k: v for k, v in snap.items()
+                if k not in ('prix_locaux_bdd',)
+            }
+            sessions_out = []
+            for session in entry.get('sessions') or []:
+                if not isinstance(session, dict):
+                    continue
+                sess = dict(session)
+                tops = []
+                for item in sess.get('top_produits') or []:
+                    if not isinstance(item, dict):
+                        continue
+                    prod = {
+                        k: v for k, v in item.items()
+                        if k != 'prix_locaux_bdd'
+                    }
+                    tops.append(prod)
+                sess['top_produits'] = tops
+                sessions_out.append(sess)
+            entry['sessions'] = sessions_out
+            if entry.get('top_produits'):
+                entry['top_produits'] = [
+                    {k: v for k, v in item.items() if k != 'prix_locaux_bdd'}
+                    for item in entry['top_produits']
+                    if isinstance(item, dict)
+                ]
+            cleaned.append(entry)
+        return cleaned
+
     # ------------------------------------------------------------------ web
 
     @classmethod
@@ -531,9 +579,9 @@ class ImportMasterDeepSeekService:
                 )
             chunk = DeepSeekAnalysisService.fetch_web_context(
                 f'Produits Top : {product_hint}. Domaines : {domains}. '
-                f'Cherche prix min et max en XOF sur le marché sénégalais '
-                f'(sites prioritaires + web ouvert) et prix sourcing '
-                f'Alibaba / AliExpress / Amazon / Made-in-China.com.',
+                f'Vérifie et croise les prix (min/max XOF marché Sénégal + sourcing $) '
+                f'pour chaque produit — plusieurs sources web, unités claires, '
+                f'rejette les chiffres incohérents ou non confirmés.',
                 domain_label='Import multi-domaines YAYEMATY',
                 focus_hint=focus,
                 preferred_domains=list(cls.IMPORT_WEB_PREFERRED_DOMAINS),
@@ -772,14 +820,16 @@ class ImportMasterDeepSeekService:
                 marge_max = marge_max if marge_max is not None else 0
 
         fiabilite = str(row.get('fiabilite_prix') or '').strip().lower()
-        if fiabilite not in ('web', 'bdd', 'mixte', 'estime'):
+        if fiabilite in ('bdd', 'mixte'):
+            fiabilite = 'web'
+        if fiabilite not in ('web', 'estime', 'faible'):
             sources = ' '.join(str(s) for s in (row.get('sources_prix') or [])).lower()
-            if 'jumia' in sources or 'jiji' in sources or 'bdd' in sources:
-                fiabilite = 'mixte' if ('alibaba' in sources or 'aliexpress' in sources) else 'bdd'
-            elif sources:
+            if sources and sn_min is not None:
                 fiabilite = 'web'
-            else:
+            elif sn_min is not None:
                 fiabilite = 'estime'
+            else:
+                fiabilite = 'faible'
 
         prix_sn_xof = str(row.get('prix_sn_xof') or '').strip()
         if not prix_sn_xof or sn_min is not None:
@@ -828,7 +878,7 @@ class ImportMasterDeepSeekService:
                 continue
             reliable = sum(
                 1 for p in prods
-                if p.get('fiabilite_prix') in ('bdd', 'mixte', 'web')
+                if p.get('fiabilite_prix') in ('web', 'estime')
                 and p.get('prix_sn_min_xof') is not None
             )
             pcts = [
@@ -863,35 +913,38 @@ class ImportMasterDeepSeekService:
             raise RuntimeError('DEEPSEEK_API_KEY non configurée.')
 
         client = OpenAI(api_key=api_key, base_url=cfg.get('BASE_URL', 'https://api.deepseek.com'))
-        # Compact : indent=None réduit fortement le prompt (évite troncature JSON sortie)
-        domains_json = json.dumps(snapshots, ensure_ascii=False, separators=(',', ':'))[
-            :DOMAINS_JSON_MAX_CHARS
-        ]
+        prompt_snapshots = cls._snapshots_for_ai_prompt(snapshots)
+        domains_json = json.dumps(
+            prompt_snapshots, ensure_ascii=False, separators=(',', ':'),
+        )[:DOMAINS_JSON_MAX_CHARS]
         web_max = DeepSeekAnalysisService._char_limit(
             'ANALYSIS_WEB_CONTEXT_MAX_CHARS', USER_WEB_CONTEXT_MAX_CHARS,
         )
         user_content = COMPARE_USER.format(
             domains_json=domains_json,
-            web_context=(web_context or 'Aucun contexte web.')[:web_max],
+            web_context=(web_context or 'Aucun contexte web — ne pas inventer de prix.')[:web_max],
         )
-        # Import Master produit un gros JSON (Top 10 + prix) — plafond plus haut
         max_tokens = max(8192, min(int(cfg.get('MAX_TOKENS', 8192)), 16384))
         timeout = float(cfg.get('TIMEOUT_SECONDS', 120))
-        extra = DeepSeekAnalysisService._chat_extra_body(cfg)
+        extra_think = DeepSeekAnalysisService._chat_extra_body(
+            cfg, for_import_master=True,
+        )
+        extra_plain = {'thinking': {'type': 'disabled'}}
         model = cfg.get('MODEL', 'deepseek-v4-flash')
 
-        def _call(messages: list[dict]) -> tuple[str, str]:
+        def _call(messages: list[dict], *, extra_body: dict | None = None) -> tuple[str, str]:
+            body = extra_body if extra_body is not None else extra_think
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 response_format={'type': 'json_object'},
                 max_tokens=max_tokens,
                 timeout=timeout,
-                extra_body=extra,
+                extra_body=body,
             )
             choice = response.choices[0]
             finish = getattr(choice, 'finish_reason', '') or ''
-            raw = (choice.message.content or '').strip()
+            raw = DeepSeekAnalysisService._extract_completion_content(choice.message)
             return raw, finish
 
         messages = [
@@ -899,6 +952,11 @@ class ImportMasterDeepSeekService:
             {'role': 'user', 'content': user_content},
         ]
         raw, finish = _call(messages)
+        if not raw.strip():
+            logger.warning(
+                'Import Master : réponse vide (thinking) — retry sans thinking.',
+            )
+            raw, finish = _call(messages, extra_body=extra_plain)
         if finish == 'length':
             logger.warning(
                 'Import Master : réponse DeepSeek tronquée (finish_reason=length, '
@@ -923,7 +981,7 @@ class ImportMasterDeepSeekService:
                     ),
                 },
             ]
-            raw2, finish2 = _call(retry_messages)
+            raw2, finish2 = _call(retry_messages, extra_body=extra_plain)
             if finish2 == 'length':
                 logger.warning('Import Master retry encore tronqué (%s chars).', len(raw2))
             try:
@@ -1082,7 +1140,7 @@ class ImportMasterDeepSeekService:
                 **price_fields,
             })
 
-        # Fallback produits depuis snapshots (+ prix BDD si déjà enrichis)
+        # Fallback produits depuis snapshots TI (sans prix BDD — web requis)
         if not products and snapshots:
             flat = []
             for snap in snapshots:
@@ -1096,15 +1154,9 @@ class ImportMasterDeepSeekService:
                     flat.append((n, snap['domaine'], item))
             flat.sort(key=lambda x: x[0], reverse=True)
             for i, (n, domaine, item) in enumerate(flat[:TOP_PRODUCTS_IMPORT], start=1):
-                local = item.get('prix_locaux_bdd') or {}
-                seed = {
-                    'prix_sn_min_xof': local.get('min_xof'),
-                    'prix_sn_max_xof': local.get('max_xof'),
-                    'prix_sn_median_xof': local.get('avg_xof'),
-                    'fiabilite_prix': 'bdd' if local else 'estime',
-                    'sources_prix': local.get('sources') or [],
-                }
-                price_fields = cls._normalize_product_prices(seed)
+                price_fields = cls._normalize_product_prices({
+                    'fiabilite_prix': 'faible',
+                })
                 price_fields.pop('_price_alert', None)
                 products.append({
                     'rang': i,
@@ -1114,12 +1166,6 @@ class ImportMasterDeepSeekService:
                     'recommandation': reco_for(n, str(item.get('recommandation') or '')),
                     'synthese': str(item.get('synthese') or '')[:360],
                     'commentaire_analyste': str(item.get('synthese') or '')[:500],
-                    'commentaire_prix': (
-                        'Prix SN issus de la BDD locale — relancez l’analyse pour '
-                        'compléter sourcing web et marges landed.'
-                        if local else
-                        'Prix sourcing web non disponibles — relancez l’analyse comparative.'
-                    ),
                     'prix_alibaba_usd': '',
                     'prix_alibaba_usd_min': None,
                     'prix_alibaba_usd_max': None,
@@ -1128,7 +1174,7 @@ class ImportMasterDeepSeekService:
                     'show_alibaba': False,
                     'show_aliexpress': False,
                     'show_amazon': False,
-                    'sources_prix': list(seed.get('sources_prix') or [])[:8],
+                    'sources_prix': [],
                     **price_fields,
                 })
 
@@ -1211,9 +1257,8 @@ class ImportMasterDeepSeekService:
             'resume': resume,
             'commentaire_global': commentaire_global,
             'methodologie': cls._sanitize_public_comment(data.get('methodologie') or (
-                'Comparaison des 2 dernières sessions Trade Intelligence par domaine '
-                '(90 jours max), enrichie par veille marché SN (min/max) et sourcing '
-                'international pour estimer coût landed et marges.'
+                'Contexte Trade Intelligence + vérification web marché SN (min/max) '
+                'et sourcing international confirmé avant chiffrage.'
             ))[:400],
             'classement_domaines': ranking[:12],
             'comparaison': comparisons[:12],
@@ -1459,16 +1504,12 @@ class ImportMasterDeepSeekService:
                 analysis.save()
             return result
 
-        report(12, 'Croisement prix locaux Jumia / Jiji en base…')
-        try:
-            snapshots = cls.enrich_snapshots_with_local_prices(snapshots)
-        except Exception as exc:
-            logger.warning('Enrichissement prix BDD Import Master : %s', exc)
+        report(12, 'Préparation contexte TI (prix via recherche web uniquement)…')
 
         report(
-            20,
+            18,
             f'{len(snapshots)} domaine(s) · {sessions_total} analyse(s) — '
-            f'recherche web marché SN & sourcing…',
+            f'verification web prix SN & sourcing…',
         )
         web_context = ''
         try:
@@ -1487,7 +1528,7 @@ class ImportMasterDeepSeekService:
             analysis.domains_snapshot = snapshots
             analysis.save(update_fields=['web_context', 'domains_snapshot'])
 
-        report(55, 'Analyse IA — comparaison, Top 10 et prix marché SN…')
+        report(55, 'Analyse IA (thinking) — vérification web, Top 10 et marges…')
         try:
             if DeepSeekAnalysisService.is_enabled():
                 result = cls.analyze(snapshots, web_context)

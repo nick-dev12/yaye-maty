@@ -335,17 +335,40 @@ class DeepSeekAnalysisService:
         return ' · '.join(parts)[:120]
 
     @classmethod
-    def _chat_extra_body(cls, cfg: dict) -> dict:
+    def _chat_extra_body(cls, cfg: dict, *, for_import_master: bool = False) -> dict:
         """
-        DeepSeek V4 active le « thinking » par défaut : le JSON peut arriver vide
-        dans message.content → JSONDecodeError. Désactivé pour les réponses structurées.
+        DeepSeek V4 — thinking activé par défaut sur le modèle.
+        Trade Intelligence : thinking désactivé si THINKING_ENABLED=False (JSON stable).
+        Import Master : thinking activé si IMPORT_MASTER_THINKING_ENABLED=True (défaut).
         """
+        if for_import_master and cfg.get('IMPORT_MASTER_THINKING_ENABLED', True):
+            return {}
         if cfg.get('THINKING_ENABLED'):
             return {}
         model = str(cfg.get('MODEL', 'deepseek-v4-flash')).lower()
         if 'v4' in model or model in ('deepseek-chat', 'deepseek-reasoner'):
             return {'thinking': {'type': 'disabled'}}
         return {}
+
+    @classmethod
+    def _extract_completion_content(cls, message) -> str:
+        """Contenu final ; tente reasoning si thinking a vidé message.content."""
+        raw = (getattr(message, 'content', None) or '').strip()
+        if raw:
+            return raw
+        for attr in ('reasoning_content', 'reasoning'):
+            block = getattr(message, attr, None)
+            if not block:
+                continue
+            text = str(block).strip()
+            if not text:
+                continue
+            if text.startswith('{') or text.startswith('```'):
+                return text
+            idx = text.rfind('{')
+            if idx >= 0:
+                return text[idx:].strip()
+        return raw
 
     @classmethod
     def _strip_json_fences(cls, raw: str) -> str:
@@ -579,7 +602,7 @@ class DeepSeekAnalysisService:
             timeout=float(cfg.get('TIMEOUT_SECONDS', 120)),
             extra_body=cls._chat_extra_body(cfg),
         )
-        raw = (response.choices[0].message.content or '').strip()
+        raw = cls._extract_completion_content(response.choices[0].message)
         parsed = cls._parse_json_response(raw)
         return cls.ensure_top10(
             cls.validate_result(parsed),

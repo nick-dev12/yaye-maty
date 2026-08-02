@@ -331,6 +331,10 @@ DEEPSEEK = {
     'THINKING_ENABLED': os.getenv('DEEPSEEK_THINKING_ENABLED', 'False').lower() in (
         'true', '1', 'yes',
     ),
+    # Import Master : réflexion DeepSeek activée par défaut (prix / marges / cohérence)
+    'IMPORT_MASTER_THINKING_ENABLED': os.getenv(
+        'DEEPSEEK_IMPORT_MASTER_THINKING_ENABLED', 'True',
+    ).lower() in ('true', '1', 'yes'),
     'MAX_TOKENS': int(os.getenv('DEEPSEEK_MAX_TOKENS', '8192')),
     'TIMEOUT_SECONDS': float(os.getenv('DEEPSEEK_TIMEOUT_SECONDS', '120')),
     # Veille web Trade Intelligence — marché SN uniquement

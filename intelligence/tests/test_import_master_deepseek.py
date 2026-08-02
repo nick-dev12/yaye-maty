@@ -82,8 +82,29 @@ class ImportMasterDeepSeekNormalizeTests(TestCase):
         self.assertIn('22 000', top['prix_sn_xof'])
         self.assertIn('25 000', top['prix_sn_xof'])
         self.assertLessEqual(float(top['marge_pct']), 80)
-        self.assertIn(top['fiabilite_prix'], ('web', 'bdd', 'mixte', 'estime'))
-        self.assertEqual(top['fiabilite_prix'], 'mixte')
+        self.assertIn(top['fiabilite_prix'], ('web', 'estime', 'faible'))
+        self.assertEqual(top['fiabilite_prix'], 'web')
+
+    def test_snapshots_for_ai_prompt_strips_bdd(self):
+        snapshots = [{
+            'domaine': 'Test',
+            'prix_locaux_bdd': [{'produit': 'X', 'min_xof': 1000}],
+            'top_produits': [{
+                'produit': 'Widget',
+                'note': 8.0,
+                'prix_locaux_bdd': {'min_xof': 500},
+            }],
+            'sessions': [{
+                'top_produits': [{
+                    'produit': 'Widget',
+                    'prix_locaux_bdd': {'min_xof': 500},
+                }],
+            }],
+        }]
+        clean = ImportMasterDeepSeekService._snapshots_for_ai_prompt(snapshots)
+        self.assertNotIn('prix_locaux_bdd', clean[0])
+        self.assertNotIn('prix_locaux_bdd', clean[0]['top_produits'][0])
+        self.assertNotIn('prix_locaux_bdd', clean[0]['sessions'][0]['top_produits'][0])
 
     def test_parse_range_from_text(self):
         lo, hi = ImportMasterDeepSeekService._parse_range_from_text('95–120k XOF')

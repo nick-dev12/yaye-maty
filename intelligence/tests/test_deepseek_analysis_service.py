@@ -160,6 +160,17 @@ class DeepSeekAnalysisServiceTests(SimpleTestCase):
         body = DeepSeekAnalysisService._chat_extra_body({'MODEL': 'deepseek-v4-flash'})
         self.assertEqual(body, {'thinking': {'type': 'disabled'}})
 
+    def test_chat_extra_body_import_master_enables_thinking(self):
+        body = DeepSeekAnalysisService._chat_extra_body(
+            {
+                'MODEL': 'deepseek-v4-flash',
+                'THINKING_ENABLED': False,
+                'IMPORT_MASTER_THINKING_ENABLED': True,
+            },
+            for_import_master=True,
+        )
+        self.assertEqual(body, {})
+
     def test_parse_json_response_strips_markdown(self):
         raw = '```json\n{"ok": true}\n```'
         self.assertEqual(DeepSeekAnalysisService._parse_json_response(raw), {'ok': True})
