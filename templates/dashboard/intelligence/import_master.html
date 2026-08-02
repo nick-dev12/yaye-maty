@@ -20,7 +20,7 @@
             <p class="im-report-sub">
                 Comparaison des <strong>2 dernières analyses Trade Intelligence</strong> par domaine
                 (données ≤ 90 jours), meilleures opportunités web
-                et prix potentiels (Alibaba, AliExpress, Amazon).
+                et prix potentiels (Alibaba, AliExpress, Amazon, Made-in-China).
             </p>
         </div>
         <div class="im-report-actions">
@@ -200,8 +200,8 @@
     {% if r.produits_import %}
     <section class="im-block" aria-labelledby="im-prod-title">
         <header class="im-block-head">
-            <h2 id="im-prod-title">Top produits à importer — prix potentiels</h2>
-            <p>Tous domaines confondus · Alibaba · AliExpress · Amazon · marché SN</p>
+            <h2 id="im-prod-title">Top 10 produits à importer — prix potentiels</h2>
+            <p>Tous domaines confondus · marché SN ouvert (min–max) · Alibaba · AliExpress · Amazon · Made-in-China</p>
         </header>
         <div class="im-prod-stack">
             {% for p in r.produits_import %}
@@ -227,6 +227,17 @@
                     <div class="im-price-cell">
                         <span>Marché SN</span>
                         <strong>{{ p.prix_sn_xof|default:"—" }}</strong>
+                        {% if p.prix_sn_median_xof %}
+                        <em class="im-price-sub">médiane ~ {{ p.prix_sn_median_xof|floatformat:0 }} XOF</em>
+                        {% endif %}
+                        {% if p.fiabilite_prix %}
+                        <span class="im-fiabilite im-fiabilite--{{ p.fiabilite_prix }}">
+                            {% if p.fiabilite_prix == 'bdd' %}BDD locale
+                            {% elif p.fiabilite_prix == 'mixte' %}Web + BDD
+                            {% elif p.fiabilite_prix == 'web' %}Web SN
+                            {% else %}Estimé{% endif %}
+                        </span>
+                        {% endif %}
                     </div>
                     <div class="im-price-cell">
                         <span>Alibaba</span>
@@ -240,6 +251,10 @@
                         <span>Amazon</span>
                         <strong>{{ p.prix_amazon_usd|default:"—" }}</strong>
                     </div>
+                    <div class="im-price-cell">
+                        <span>Made-in-China</span>
+                        <strong>{{ p.prix_made_in_china_usd|default:"—" }}</strong>
+                    </div>
                     <div class="im-price-cell im-price-cell--accent">
                         <span>Achat potentiel</span>
                         <strong>{{ p.prix_potentiel_achat_xof|default:"—" }}</strong>
@@ -247,6 +262,9 @@
                     <div class="im-price-cell im-price-cell--accent">
                         <span>Marge estimée</span>
                         <strong>{{ p.marge_estimee_xof|default:"—" }}</strong>
+                        {% if p.marge_pct != None %}
+                        <em class="im-price-sub">{{ p.marge_pct|floatformat:0 }}% marge</em>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -286,7 +304,7 @@
             {{ im_domains_available }} domaine{{ im_domains_available|pluralize }}
             · {{ im_sessions_available|default:im_domains_available }} analyse{{ im_sessions_available|default:im_domains_available|pluralize }} récente{{ im_sessions_available|default:im_domains_available|pluralize }}
             (2 max. par domaine). Lancez l’analyse comparative pour comparer les tendances,
-            détecter les meilleures opportunités et estimer les prix Alibaba / AliExpress / Amazon.
+            détecter les meilleures opportunités et estimer les prix Alibaba / AliExpress / Amazon / Made-in-China (web SN ouvert).
         </p>
         {% else %}
         <p>

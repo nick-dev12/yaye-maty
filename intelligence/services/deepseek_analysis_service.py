@@ -246,26 +246,48 @@ class DeepSeekAnalysisService:
         }
 
     @classmethod
-    def _web_sites_prompt_line(cls, cfg: dict | None = None) -> str:
+    def _web_sites_prompt_line(
+        cls,
+        cfg: dict | None = None,
+        *,
+        extra_note: str = '',
+    ) -> str:
         """Consigne sites pour fetch_web_context (prioritaires ± web ouvert)."""
         cfg = cfg or cls._config()
         preferred = cls.parse_web_domains(cfg.get('WEB_ALLOWED_DOMAINS') or [])
         open_search = bool(cfg.get('WEB_OPEN_SEARCH', True))
+        note = (extra_note or '').strip()
+        sourcing = {
+            'alibaba.com', 'aliexpress.com', 'amazon.com', 'made-in-china.com',
+            '1688.com', 'dhgate.com', 'globalsources.com', 'yiwugo.com', 'hktdc.com',
+        }
+        uses_sourcing = bool(set(preferred) & sourcing)
         if open_search:
             if preferred:
-                return (
+                line = (
                     f'SITES PRIORITAIRES (consulter en premier) : {", ".join(preferred)}. '
                     'Tu peux aussi élargir la recherche sur tout le web ouvert '
                     'pour des informations complémentaires fiables (presse, forums, '
-                    'marketplaces, réseaux sociaux, etc.).'
+                    'marketplaces, réseaux sociaux, autres sites marché SN, etc.).'
                 )
-            return (
-                'Recherche web ouverte — parcours libre du web pour informations '
-                'marché Sénégal fiables.'
-            )
+            else:
+                line = (
+                    'Recherche web ouverte — parcours libre du web pour informations '
+                    'marché Sénégal fiables.'
+                )
+            if not uses_sourcing:
+                line += (
+                    ' Ne priorisez pas Alibaba, AliExpress, Amazon ni Made-in-China '
+                    '(réservés exclusivement à Import Master).'
+                )
+            return f'{line} {note}'.strip()
         if preferred:
-            return f'SITES AUTORISÉS (recherche UNIQUEMENT ici) : {", ".join(preferred)}.'
-        return 'Sites prioritaires : Jumia.sn, Jiji.sn, TikTok, Alibaba, AliExpress, Amazon.'
+            line = f'SITES AUTORISÉS (recherche UNIQUEMENT ici) : {", ".join(preferred)}.'
+            return f'{line} {note}'.strip()
+        return (
+            'Sites prioritaires SN : Jumia, Jiji, Promo, CoinAfrique, Expat-Dakar, '
+            'Jemba, DakarCenter, OccasionDakar, TafTaf, Facebook, Instagram, TikTok.'
+        )
 
     @classmethod
     def format_web_watch_status(
@@ -346,12 +368,26 @@ class DeepSeekAnalysisService:
         *,
         domain_label: str = '',
         focus_hint: str = '',
+        preferred_domains: list[str] | None = None,
+        open_search: bool | None = None,
+        extra_sites_note: str = '',
     ) -> str:
-        """Recherche web native DeepSeek — strictement bornée au domaine."""
-        cfg = cls._config()
+        """
+        Recherche web native DeepSeek — bornée au domaine produit.
+
+        ``preferred_domains`` remplace la liste TI (Import Master passe sa propre liste
+        avec Alibaba / AliExpress / Amazon / Made-in-China — hors .env TI).
+        """
+        cfg = dict(cls._config() or {})
         api_key = cfg.get('API_KEY', '')
         if not api_key:
             return ''
+
+        if preferred_domains is not None:
+            # Remplacement total : Import Master ≠ Trade Intelligence
+            cfg['WEB_ALLOWED_DOMAINS'] = cls.parse_web_domains(preferred_domains)
+        if open_search is not None:
+            cfg['WEB_OPEN_SEARCH'] = bool(open_search)
 
         base = cfg.get('ANTHROPIC_BASE_URL', 'https://api.deepseek.com/anthropic').rstrip('/')
         url = f'{base}/v1/messages'
@@ -360,7 +396,7 @@ class DeepSeekAnalysisService:
         domain = (domain_label or '').strip() or 'le domaine indiqué'
         focus = (focus_hint or 'meilleurs modèles et opportunités').strip()
         web_tool = cls.build_web_search_tool(cfg)
-        sites_line = cls._web_sites_prompt_line(cfg)
+        sites_line = cls._web_sites_prompt_line(cfg, extra_note=extra_sites_note)
         domain_lock = (
             f'PÉRIMÈTRE ABSOLU : uniquement le domaine produit « {domain} » au Sénégal. '
             f'N’inclus AUCUN produit hors de « {domain} ». '

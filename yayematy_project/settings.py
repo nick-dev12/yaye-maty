@@ -333,11 +333,13 @@ DEEPSEEK = {
     ),
     'MAX_TOKENS': int(os.getenv('DEEPSEEK_MAX_TOKENS', '8192')),
     'TIMEOUT_SECONDS': float(os.getenv('DEEPSEEK_TIMEOUT_SECONDS', '120')),
-    # Veille web — sites prioritaires (prompt + option strict allowed_domains)
+    # Veille web Trade Intelligence — marché SN uniquement
+    # (Alibaba / AliExpress / Amazon / Made-in-China = Import Master seulement)
     'WEB_ALLOWED_DOMAINS': _csv_env_list(
         'DEEPSEEK_WEB_ALLOWED_DOMAINS',
-        'jumia.sn,jiji.sn,alibaba.com,aliexpress.com,amazon.com,tiktok.com,'
-        'promo.sn,expat-dakar.com,sn.coinafrique.com,facebook.com',
+        'jumia.sn,jiji.sn,promo.sn,expat-dakar.com,sn.coinafrique.com,'
+        'jemba.sn,dakarcenter.com,occasiondakar.com,taftaf.sn,'
+        'facebook.com,instagram.com,tiktok.com',
     ),
     # True = web ouvert + sites prioritaires en consigne ; False = allowed_domains strict API
     'WEB_OPEN_SEARCH': os.getenv('DEEPSEEK_WEB_OPEN_SEARCH', 'True').lower() in (

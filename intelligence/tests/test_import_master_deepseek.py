@@ -33,6 +33,7 @@ class ImportMasterDeepSeekNormalizeTests(TestCase):
         self.assertEqual(result['classement_domaines'][0]['recommandation'], 'Bon, je vous le recommande')
         self.assertTrue(result['produits_import'])
         self.assertEqual(result['produits_import'][0]['produit'], 'iPhone 13')
+        self.assertLessEqual(len(result['produits_import']), 10)
 
     def test_normalize_reco_alignment(self):
         data = {
@@ -52,6 +53,72 @@ class ImportMasterDeepSeekNormalizeTests(TestCase):
         self.assertEqual(result['classement_domaines'][1]['recommandation'], 'À éviter')
         self.assertEqual(result['produits_import'][0]['recommandation'], "Peut faire l'affaire mais moyen")
         self.assertEqual(result['meilleures_opportunites'][0]['recommandation'], 'Bon, je vous le recommande')
+
+    def test_normalize_sn_price_range_and_top10(self):
+        products = []
+        for i in range(15):
+            products.append({
+                'produit': f'Produit {i}',
+                'domaine': 'Agri' if i % 2 == 0 else 'Mode',
+                'note': 9.5 - i * 0.2,
+                'prix_sn_min_xof': 25000,
+                'prix_sn_max_xof': 22000,  # inversé → swap
+                'prix_landed_xof': 15000,
+                'marge_pct': 95,  # absurde → recalcul
+                'sources_prix': ['jumia.sn', 'alibaba.com'],
+            })
+        result = ImportMasterDeepSeekService.normalize_result(
+            {'produits_import': products, 'classement_domaines': [
+                {'domaine': 'Agri', 'note_globale': 8.0},
+                {'domaine': 'Mode', 'note_globale': 7.0},
+            ]},
+            [],
+        )
+        self.assertEqual(len(result['produits_import']), 10)
+        self.assertEqual(result['produits_import'][0]['rang'], 1)
+        top = result['produits_import'][0]
+        self.assertEqual(top['prix_sn_min_xof'], 22000)
+        self.assertEqual(top['prix_sn_max_xof'], 25000)
+        self.assertIn('22 000', top['prix_sn_xof'])
+        self.assertIn('25 000', top['prix_sn_xof'])
+        self.assertLessEqual(float(top['marge_pct']), 80)
+        self.assertIn(top['fiabilite_prix'], ('web', 'bdd', 'mixte', 'estime'))
+        self.assertEqual(top['fiabilite_prix'], 'mixte')
+
+    def test_parse_range_from_text(self):
+        lo, hi = ImportMasterDeepSeekService._parse_range_from_text('95–120k XOF')
+        self.assertEqual(lo, 95000)
+        self.assertEqual(hi, 120000)
+        lo2, hi2 = ImportMasterDeepSeekService._parse_range_from_text('22 000 - 25 000')
+        self.assertEqual(lo2, 22000)
+        self.assertEqual(hi2, 25000)
+
+    def test_format_sn_range(self):
+        text = ImportMasterDeepSeekService._format_sn_range(22000, 25000)
+        self.assertEqual(text, '22 000 – 25 000 XOF')
+
+    def test_import_web_preferred_includes_made_in_china_only_for_im(self):
+        domains = ImportMasterDeepSeekService.IMPORT_WEB_PREFERRED_DOMAINS
+        self.assertIn('made-in-china.com', domains)
+        self.assertIn('jumia.sn', domains)
+        self.assertIn('jemba.sn', domains)
+        self.assertIn('alibaba.com', domains)
+        self.assertIn('1688.com', domains)
+        self.assertIn('dhgate.com', domains)
+        self.assertIn('globalsources.com', domains)
+        # Sourcing giants absents de la veille Trade Intelligence (.env / settings)
+        from django.conf import settings
+        ti_domains = list(
+            (getattr(settings, 'DEEPSEEK', {}) or {}).get('WEB_ALLOWED_DOMAINS') or []
+        )
+        for forbidden in (
+            'made-in-china.com', 'alibaba.com', 'aliexpress.com', 'amazon.com',
+            '1688.com', 'dhgate.com', 'globalsources.com',
+        ):
+            self.assertNotIn(forbidden, ti_domains)
+        # Sites SN locaux présents côté TI
+        for sn in ('jemba.sn', 'dakarcenter.com', 'occasiondakar.com', 'taftaf.sn'):
+            self.assertIn(sn, ti_domains)
 
 
 class ImportMasterStopAndExpireTests(TestCase):

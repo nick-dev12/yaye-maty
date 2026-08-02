@@ -492,6 +492,12 @@
     margin: 0.75rem 0;
 }
 
+@media (min-width: 900px) {
+    .im-price-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
 .im-price-cell {
     padding: 0.55rem 0.65rem;
     border-radius: 10px;
@@ -520,6 +526,45 @@
 
 .im-price-cell--accent strong {
     color: var(--color-orange);
+}
+
+.im-price-sub {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.68rem;
+    font-style: normal;
+    color: var(--color-gris);
+}
+
+.im-fiabilite {
+    display: inline-block;
+    margin-top: 0.35rem;
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.im-fiabilite--bdd {
+    background: rgba(var(--color-bleu-rgb), 0.12);
+    color: var(--color-bleu);
+}
+
+.im-fiabilite--mixte {
+    background: rgba(var(--color-jaune-rgb), 0.2);
+    color: var(--color-noir);
+}
+
+.im-fiabilite--web {
+    background: rgba(var(--color-bleu-rgb), 0.08);
+    color: var(--color-bleu);
+}
+
+.im-fiabilite--estime {
+    background: rgba(var(--color-gris-rgb), 0.15);
+    color: var(--color-gris);
 }
 
 .im-sources {

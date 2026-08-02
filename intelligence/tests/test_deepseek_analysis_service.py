@@ -15,9 +15,10 @@ from intelligence.services.deepseek_analysis_service import DeepSeekAnalysisServ
         'MAX_TOKENS': 8192,
         'TIMEOUT_SECONDS': 30,
         'WEB_ALLOWED_DOMAINS': [
-            'jumia.sn', 'jiji.sn', 'alibaba.com', 'aliexpress.com',
-            'amazon.com', 'tiktok.com',
-            'promo.sn', 'expat-dakar.com', 'sn.coinafrique.com', 'facebook.com',
+            'jumia.sn', 'jiji.sn', 'promo.sn', 'expat-dakar.com',
+            'sn.coinafrique.com', 'jemba.sn', 'dakarcenter.com',
+            'occasiondakar.com', 'taftaf.sn',
+            'facebook.com', 'instagram.com', 'tiktok.com',
         ],
         'WEB_OPEN_SEARCH': True,
         'WEB_BLOCKED_DOMAINS': [],
