@@ -130,15 +130,15 @@ class ImportMasterDeepSeekNormalizeTests(TestCase):
             '$18 – $22',
         )
         self.assertEqual(
-            ImportMasterDeepSeekService._coerce_usd_display('Non pertinent'),
-            '—',
+            ImportMasterDeepSeekService._resolve_platform_price('Non pertinent'),
+            '',
         )
         self.assertEqual(
             ImportMasterDeepSeekService._coerce_usd_display('', lo=20, hi=25),
             '$20 – $25',
         )
 
-    def test_polish_fills_non_pertinent_from_alibaba(self):
+    def test_polish_hides_missing_platform_prices(self):
         result = ImportMasterDeepSeekService.polish_result_for_display({
             'produits_import': [{
                 'prix_alibaba_usd': '18–22 USD',
@@ -151,10 +151,32 @@ class ImportMasterDeepSeekNormalizeTests(TestCase):
         })
         p = result['produits_import'][0]
         self.assertEqual(p['prix_alibaba_usd'], '$18 – $22')
-        self.assertTrue(p['prix_aliexpress_usd'].startswith('$'))
-        self.assertNotIn('Non pertinent', p['prix_aliexpress_usd'])
-        self.assertTrue(p['prix_amazon_usd'].startswith('$'))
-        self.assertEqual(p['prix_made_in_china_usd'], '$20 – $25')
+        self.assertTrue(p['show_alibaba'])
+        self.assertEqual(p['prix_aliexpress_usd'], '')
+        self.assertFalse(p['show_aliexpress'])
+        self.assertEqual(p['prix_amazon_usd'], '')
+        self.assertFalse(p['show_amazon'])
+        self.assertNotIn('prix_made_in_china_usd', p)
+
+    def test_normalize_does_not_invent_platform_prices(self):
+        result = ImportMasterDeepSeekService.normalize_result(
+            {
+                'produits_import': [{
+                    'produit': 'Widget',
+                    'domaine': 'Tech',
+                    'note': 8.0,
+                    'prix_alibaba_usd': '18–22 USD',
+                    'prix_aliexpress_usd': 'Non pertinent',
+                    'prix_amazon_usd': '',
+                }],
+            },
+            [],
+        )
+        p = result['produits_import'][0]
+        self.assertTrue(p['show_alibaba'])
+        self.assertFalse(p['show_aliexpress'])
+        self.assertFalse(p['show_amazon'])
+        self.assertEqual(p['prix_aliexpress_usd'], '')
 
     def test_import_web_preferred_includes_made_in_china_only_for_im(self):
         domains = ImportMasterDeepSeekService.IMPORT_WEB_PREFERRED_DOMAINS

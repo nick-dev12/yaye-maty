@@ -4,7 +4,7 @@
 {% block title %}Import Master — Rapport d'analyse{% endblock %}
 {% block body_class %}intel-layout import-master-page-body{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/import-master.css' %}?v=7">
+<link rel="stylesheet" href="{% static 'css/import-master.css' %}?v=8">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -241,7 +241,7 @@
     <section class="im-block" aria-labelledby="im-prod-title">
         <header class="im-block-head">
             <h2 id="im-prod-title">Top 10 produits à importer — prix potentiels</h2>
-            <p>Tous domaines confondus · marché SN ouvert (min–max) · Alibaba · AliExpress · Amazon · Made-in-China</p>
+            <p>Tous domaines confondus · marché SN · Alibaba · AliExpress · Amazon (uniquement si prix trouvé)</p>
         </header>
         <div class="im-prod-stack">
             {% for p in r.produits_import %}
@@ -257,40 +257,48 @@
                 </header>
 
                 <div class="im-price-grid">
+                    {% if p.prix_sn_xof %}
                     <div class="im-price-cell">
                         <span>Marché SN</span>
-                        <strong>{{ p.prix_sn_xof|default:"—" }}</strong>
+                        <strong>{{ p.prix_sn_xof }}</strong>
                         {% if p.prix_sn_median_xof %}
                         <em class="im-price-sub">médiane ~ {{ p.prix_sn_median_xof|floatformat:0 }} XOF</em>
                         {% endif %}
                     </div>
+                    {% endif %}
+                    {% if p.show_alibaba and p.prix_alibaba_usd %}
                     <div class="im-price-cell">
                         <span>Alibaba</span>
-                        <strong>{{ p.prix_alibaba_usd|default:"—" }}</strong>
+                        <strong>{{ p.prix_alibaba_usd }}</strong>
                     </div>
+                    {% endif %}
+                    {% if p.show_aliexpress and p.prix_aliexpress_usd %}
                     <div class="im-price-cell">
                         <span>AliExpress</span>
-                        <strong>{{ p.prix_aliexpress_usd|default:"—" }}</strong>
+                        <strong>{{ p.prix_aliexpress_usd }}</strong>
                     </div>
+                    {% endif %}
+                    {% if p.show_amazon and p.prix_amazon_usd %}
                     <div class="im-price-cell">
                         <span>Amazon</span>
-                        <strong>{{ p.prix_amazon_usd|default:"—" }}</strong>
+                        <strong>{{ p.prix_amazon_usd }}</strong>
                     </div>
-                    <div class="im-price-cell">
-                        <span>Made-in-China</span>
-                        <strong>{{ p.prix_made_in_china_usd|default:"—" }}</strong>
-                    </div>
+                    {% endif %}
+                    {% if p.prix_potentiel_achat_xof %}
                     <div class="im-price-cell im-price-cell--accent">
                         <span>Achat potentiel</span>
-                        <strong>{{ p.prix_potentiel_achat_xof|default:"—" }}</strong>
+                        <strong>{{ p.prix_potentiel_achat_xof }}</strong>
                     </div>
+                    {% endif %}
+                    {% if p.marge_estimee_xof %}
                     <div class="im-price-cell im-price-cell--accent">
                         <span>Marge estimée</span>
-                        <strong>{{ p.marge_estimee_xof|default:"—" }}</strong>
+                        <strong>{{ p.marge_estimee_xof }}</strong>
                         {% if p.marge_pct != None %}
                         <em class="im-price-sub">{{ p.marge_pct|floatformat:0 }}% marge</em>
                         {% endif %}
                     </div>
+                    {% endif %}
                 </div>
             </article>
             {% endfor %}
@@ -318,7 +326,7 @@
             {{ im_domains_available }} domaine{{ im_domains_available|pluralize }}
             · {{ im_sessions_available|default:im_domains_available }} analyse{{ im_sessions_available|default:im_domains_available|pluralize }} récente{{ im_sessions_available|default:im_domains_available|pluralize }}
             · Top 5 par analyse). Sélectionnez les domaines puis lancez l’analyse
-            pour comparer tendances, opportunités et prix Alibaba / AliExpress / Amazon / Made-in-China.
+            pour comparer tendances, opportunités et prix Alibaba / AliExpress / Amazon.
         </p>
         {% else %}
         <p>

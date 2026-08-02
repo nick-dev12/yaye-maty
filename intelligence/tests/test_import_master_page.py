@@ -51,7 +51,9 @@ class ImportMasterDisplayTests(TestCase):
         self.assertEqual(ctx['im_reco_counts']['buy'], 1)
         product = ctx['im_domain_result']['produits_import'][0]
         self.assertEqual(product['prix_alibaba_usd'], '$18 – $22')
-        self.assertNotIn('Non pertinent', product['prix_aliexpress_usd'])
+        self.assertTrue(product['show_alibaba'])
+        self.assertFalse(product['show_aliexpress'])
+        self.assertFalse(product['show_amazon'])
 
     def test_home_preview_from_domain_result(self):
         ImportMasterDomainAnalysis.objects.create(

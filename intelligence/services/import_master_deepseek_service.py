@@ -46,8 +46,10 @@ Règles prix ABSOLUES :
 - Prioriser prix_locaux_bdd si présents, sinon web SN ouvert, sinon estimation prudente.
 - marge_pct entre 5 et 70 si données crédibles ; sinon baisser la note et alerter.
 - Pas de fourchettes fantaisistes (ex. min 1000 / max 500000 pour un même SKU).
-- Fourchettes sourcing au format « $18 – $22 » (symbole $, jamais « USD »).
-- INTERDIT « Non pertinent » / « N/A » : estime une fourchette wholesale réaliste.
+- Fourchettes sourcing au format « $18 – $22 » (symbole $, jamais « USD »)
+  UNIQUEMENT si un prix réel a été trouvé sur la plateforme.
+- Si aucun prix fiable trouvé sur Alibaba / AliExpress / Amazon : champ VIDE ("").
+  INTERDIT d’inventer, d’estimer au hasard ou d’écrire « Non pertinent ».
 
 Commentaires (synthese, commentaire_analyste, commentaire opportunités) :
 - Ton décideur : concret, convaincant, réaliste (saisonnalité, rotation, risque stock, marge %).
@@ -74,7 +76,7 @@ Consignes :
 - EXACTEMENT 10 produits dans produits_import (Top 10), triés par note décroissante.
 - EXACTEMENT 5 meilleures_opportunites (Top 5), alignées sur les meilleurs produits.
 - Marché SN + sourcing international ($) + landed XOF + marges.
-- Fourchettes prix « $min – $max » ; jamais « Non pertinent ».
+- Fourchettes « $min – $max » seulement si trouvées ; sinon "".
 - resume / commentaires : convaincants, réalistes, SANS nommer de sites web.
 - comparaison domaines : arbitrage capital d’import, chiffres, pas de marketing vague.
 
@@ -134,9 +136,9 @@ Réponds avec ce JSON exact :
       "prix_alibaba_usd": "$18 – $22",
       "prix_alibaba_usd_min": 18,
       "prix_alibaba_usd_max": 22,
-      "prix_aliexpress_usd": "$20 – $28",
-      "prix_amazon_usd": "$25 – $35",
-      "prix_made_in_china_usd": "$16 – $20",
+      "prix_aliexpress_usd": "$20 – $28 ou \"\" si non trouvé",
+      "prix_amazon_usd": "$25 – $35 ou \"\" si non trouvé",
+      "prix_made_in_china_usd": "",
       "prix_potentiel_achat_xof": "15 000 XOF",
       "prix_landed_xof": 15000,
       "marge_min_xof": 7000,
@@ -646,29 +648,34 @@ class ImportMasterDeepSeekService:
         *,
         lo: float | int | None = None,
         hi: float | int | None = None,
+        allow_numeric_fallback: bool = True,
     ) -> str:
-        """Fourchette display « $18 – $22 » ; remplace « Non pertinent » / « USD »."""
-        if lo is not None or hi is not None:
-            formatted = cls._format_usd_range(lo, hi)
-            if formatted:
-                return formatted
+        """
+        Fourchette display « $18 – $22 ».
+        Retourne '' si aucun prix réel (pas d’estimation inventée).
+        """
         raw = str(text or '').strip()
         if cls._is_blank_price_label(raw):
-            return '—'
+            if allow_numeric_fallback and (lo is not None or hi is not None):
+                return cls._format_usd_range(lo, hi)
+            return ''
         t_lo, t_hi = cls._parse_range_from_text(raw)
         if t_lo is not None or t_hi is not None:
-            # Les montants USD restent en unités (pas ×1000 sauf si k explicite)
-            formatted = cls._format_usd_range(t_lo, t_hi)
-            if formatted:
-                return formatted
-        # Déjà au bon format ($…) mais nettoyage USD suffix
+            return cls._format_usd_range(t_lo, t_hi)
+        if allow_numeric_fallback and (lo is not None or hi is not None):
+            return cls._format_usd_range(lo, hi)
         cleaned = re.sub(r'\bUSD\b', '', raw, flags=re.I).strip()
         cleaned = re.sub(r'\s+', ' ', cleaned)
-        if cleaned.startswith('$'):
+        if cleaned.startswith('$') and re.search(r'\d', cleaned):
             return cleaned[:80]
         if re.search(r'\d', cleaned):
             return f'${cleaned}'[:80]
-        return '—'
+        return ''
+
+    @classmethod
+    def _resolve_platform_price(cls, text: str | None) -> str:
+        """Prix plateforme uniquement s’il est présent et chiffré — sinon masqué."""
+        return cls._coerce_usd_display(text, allow_numeric_fallback=False)
 
     @classmethod
     def _format_sn_range(cls, lo: int | None, hi: int | None) -> str:
@@ -1040,38 +1047,17 @@ class ImportMasterDeepSeekService:
                     note = min(note, 5.5)
             usd_min = cls._parse_number(row.get('prix_alibaba_usd_min'))
             usd_max = cls._parse_number(row.get('prix_alibaba_usd_max'))
+            alibaba_raw = str(row.get('prix_alibaba_usd') or '')
             if usd_min is None or usd_max is None:
-                a_lo, a_hi = cls._parse_range_from_text(
-                    str(row.get('prix_alibaba_usd') or ''),
-                )
+                a_lo, a_hi = cls._parse_range_from_text(alibaba_raw)
                 usd_min = usd_min if usd_min is not None else a_lo
                 usd_max = usd_max if usd_max is not None else a_hi
-            alibaba = cls._coerce_usd_display(
-                row.get('prix_alibaba_usd'), lo=usd_min, hi=usd_max,
-            )
-            ax_lo, ax_hi = cls._parse_range_from_text(
-                str(row.get('prix_aliexpress_usd') or ''),
-            )
-            am_lo, am_hi = cls._parse_range_from_text(
-                str(row.get('prix_amazon_usd') or ''),
-            )
-            mic_lo, mic_hi = cls._parse_range_from_text(
-                str(row.get('prix_made_in_china_usd') or ''),
-            )
-            # Si AliExpress/Amazon vides alors qu’Alibaba existe : fourchette proche estimée
-            if alibaba != '—' and usd_min is not None:
-                if ax_lo is None and cls._is_blank_price_label(
-                    str(row.get('prix_aliexpress_usd') or ''),
-                ):
-                    ax_lo, ax_hi = int(round(usd_min * 1.1)), int(round((usd_max or usd_min) * 1.35))
-                if am_lo is None and cls._is_blank_price_label(
-                    str(row.get('prix_amazon_usd') or ''),
-                ):
-                    am_lo, am_hi = int(round(usd_min * 1.25)), int(round((usd_max or usd_min) * 1.6))
-                if mic_lo is None and cls._is_blank_price_label(
-                    str(row.get('prix_made_in_china_usd') or ''),
-                ):
-                    mic_lo, mic_hi = usd_min, usd_max or usd_min
+            # Uniquement les prix réellement trouvés — pas d’estimation croisée
+            alibaba = cls._resolve_platform_price(alibaba_raw)
+            if not alibaba and usd_min is not None and not alibaba_raw.strip():
+                alibaba = cls._format_usd_range(usd_min, usd_max)
+            aliexpress = cls._resolve_platform_price(row.get('prix_aliexpress_usd'))
+            amazon = cls._resolve_platform_price(row.get('prix_amazon_usd'))
             products.append({
                 'rang': int(row.get('rang') or i),
                 'produit': str(row.get('produit') or '')[:200],
@@ -1083,17 +1069,13 @@ class ImportMasterDeepSeekService:
                     row.get('commentaire_analyste') or row.get('synthese') or '',
                 )[:500],
                 'prix_alibaba_usd': alibaba[:80],
-                'prix_alibaba_usd_min': usd_min,
-                'prix_alibaba_usd_max': usd_max,
-                'prix_aliexpress_usd': cls._coerce_usd_display(
-                    row.get('prix_aliexpress_usd'), lo=ax_lo, hi=ax_hi,
-                )[:80],
-                'prix_amazon_usd': cls._coerce_usd_display(
-                    row.get('prix_amazon_usd'), lo=am_lo, hi=am_hi,
-                )[:80],
-                'prix_made_in_china_usd': cls._coerce_usd_display(
-                    row.get('prix_made_in_china_usd'), lo=mic_lo, hi=mic_hi,
-                )[:80],
+                'prix_alibaba_usd_min': usd_min if alibaba else None,
+                'prix_alibaba_usd_max': usd_max if alibaba else None,
+                'prix_aliexpress_usd': aliexpress[:80],
+                'prix_amazon_usd': amazon[:80],
+                'show_alibaba': bool(alibaba),
+                'show_aliexpress': bool(aliexpress),
+                'show_amazon': bool(amazon),
                 'sources_prix': [
                     str(s) for s in (row.get('sources_prix') or []) if s
                 ][:8],
@@ -1143,7 +1125,9 @@ class ImportMasterDeepSeekService:
                     'prix_alibaba_usd_max': None,
                     'prix_aliexpress_usd': '',
                     'prix_amazon_usd': '',
-                    'prix_made_in_china_usd': '',
+                    'show_alibaba': False,
+                    'show_aliexpress': False,
+                    'show_amazon': False,
                     'sources_prix': list(seed.get('sources_prix') or [])[:8],
                     **price_fields,
                 })
@@ -1351,38 +1335,31 @@ class ImportMasterDeepSeekService:
         for row in products:
             if not isinstance(row, dict):
                 continue
-            # Plus affichés : on peut les vider pour alléger le contexte
             row.pop('commentaire_prix', None)
             row.pop('sources_prix', None)
+            row.pop('prix_made_in_china_usd', None)
+
+            alibaba_raw = str(row.get('prix_alibaba_usd') or '')
             usd_min = cls._parse_number(row.get('prix_alibaba_usd_min'))
             usd_max = cls._parse_number(row.get('prix_alibaba_usd_max'))
-            if usd_min is None or usd_max is None:
-                a_lo, a_hi = cls._parse_range_from_text(str(row.get('prix_alibaba_usd') or ''))
-                usd_min = usd_min if usd_min is not None else a_lo
-                usd_max = usd_max if usd_max is not None else a_hi
-            row['prix_alibaba_usd'] = cls._coerce_usd_display(
-                row.get('prix_alibaba_usd'), lo=usd_min, hi=usd_max,
-            )[:80]
+            alibaba = cls._resolve_platform_price(alibaba_raw)
+            if not alibaba and usd_min is not None and not alibaba_raw.strip():
+                alibaba = cls._format_usd_range(usd_min, usd_max)
+            # Anciens rapports : « Non pertinent » / inventé → masquer
+            if cls._is_blank_price_label(alibaba_raw) and alibaba_raw.strip():
+                alibaba = ''
+            aliexpress = cls._resolve_platform_price(row.get('prix_aliexpress_usd'))
+            amazon = cls._resolve_platform_price(row.get('prix_amazon_usd'))
 
-            def _fill(key: str, estimate_fn):
-                raw = str(row.get(key) or '')
-                lo, hi = cls._parse_range_from_text(raw)
-                if lo is None and cls._is_blank_price_label(raw) and usd_min is not None:
-                    lo, hi = estimate_fn(usd_min, usd_max or usd_min)
-                row[key] = cls._coerce_usd_display(raw, lo=lo, hi=hi)[:80]
-
-            _fill(
-                'prix_aliexpress_usd',
-                lambda mn, mx: (int(round(mn * 1.1)), int(round(mx * 1.35))),
-            )
-            _fill(
-                'prix_amazon_usd',
-                lambda mn, mx: (int(round(mn * 1.25)), int(round(mx * 1.6))),
-            )
-            _fill(
-                'prix_made_in_china_usd',
-                lambda mn, mx: (mn, mx),
-            )
+            row['prix_alibaba_usd'] = alibaba[:80]
+            row['prix_aliexpress_usd'] = aliexpress[:80]
+            row['prix_amazon_usd'] = amazon[:80]
+            row['show_alibaba'] = bool(alibaba)
+            row['show_aliexpress'] = bool(aliexpress)
+            row['show_amazon'] = bool(amazon)
+            if not alibaba:
+                row['prix_alibaba_usd_min'] = None
+                row['prix_alibaba_usd_max'] = None
         return result
 
     @classmethod
