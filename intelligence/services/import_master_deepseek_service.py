@@ -24,6 +24,7 @@ from intelligence.services.deepseek_analysis_service import DeepSeekAnalysisServ
 logger = logging.getLogger(__name__)
 
 TOP_PRODUCTS_IMPORT = 10
+TOP_OPPORTUNITIES = 5
 WEB_CONTEXT_MAX_CHARS = 16000
 DOMAINS_JSON_MAX_CHARS = 16000
 USER_WEB_CONTEXT_MAX_CHARS = 12000
@@ -32,25 +33,31 @@ COMPARE_SYSTEM = """Tu es un analyste import senior pour YAYEMATY MARKET (Séné
 Tu produis UNIQUEMENT du JSON valide, sans markdown.
 Mission :
 1) Comparer les résultats d'analyse Trade Intelligence DÉJÀ PASSÉS (domaines + Top produits).
-2) Identifier les meilleures opportunités d'importation tous domaines confondus (Top 10 produits).
+2) Identifier EXACTEMENT 5 meilleures opportunités d'importation (Top 5).
 3) Pour CHAQUE produit Top 10 : fourchette MARCHÉ SN (prix_sn_min_xof / prix_sn_max_xof)
-   via sites SN prioritaires (Jumia.sn, Jiji.sn, promo.sn, sn.coinafrique.com, expat-dakar.com,
-   Facebook) ET tout autre site web pertinent pour le marché sénégalais (web ouvert).
-4) Estimer prix sourcing Alibaba / AliExpress / Amazon / Made-in-China / 1688 / DHgate /
-   Global Sources / Yiwugo / HKTDC (USD) + coût landed XOF.
-   Ces plateformes d’import sont réservées à Import Master (pas Trade Intelligence).
+   via le marché sénégalais (annonces locales, marketplaces, réseaux — web ouvert).
+4) Estimer prix sourcing international ($) + coût landed XOF
+   (plateformes type gros Chine / wholesale — Import Master uniquement).
 5) Calculer marges cohérentes : marge ≈ prix_SN − prix_landed_xof (pas de marge inventée).
-6) Classer domaines et produits en tenant compte de la fiabilité des prix et des marges réalistes.
+6) Classer domaines et produits selon demande réelle, marge et risque stock.
 
 Règles prix ABSOLUES :
 - prix_sn_min_xof ≤ prix_sn_max_xof (entiers XOF).
 - Prioriser prix_locaux_bdd si présents, sinon web SN ouvert, sinon estimation prudente.
 - marge_pct entre 5 et 70 si données crédibles ; sinon baisser la note et alerter.
 - Pas de fourchettes fantaisistes (ex. min 1000 / max 500000 pour un même SKU).
+- Fourchettes sourcing au format « $18 – $22 » (symbole $, jamais « USD »).
+- INTERDIT « Non pertinent » / « N/A » : estime une fourchette wholesale réaliste.
+
+Commentaires (synthese, commentaire_analyste, commentaire opportunités) :
+- Ton décideur : concret, convaincant, réaliste (saisonnalité, rotation, risque stock, marge %).
+- INTERDIT de citer des noms de sites / plateformes (pas Jumia, Jiji, Alibaba, TikTok, etc.).
+  Dire « marché local », « annonces en ligne », « sourcing gros », « revente Dakar ».
+- 1–2 phrases max, chiffres utiles (prix SN min–max, marge %) quand disponibles.
 
 Recommandations EXACTES :
 « Bon, je vous le recommande » | « Peut faire l'affaire mais moyen » | « À éviter »
-Commentaires : 2–4 phrases max, chiffres (min–max SN, marge %) obligatoires.
+JSON compact obligatoire (évite troncature) : pas de blabla, listes ≤ 4 items.
 """
 
 COMPARE_USER = """Analyse comparative d'importation YAYEMATY.
@@ -58,20 +65,18 @@ COMPARE_USER = """Analyse comparative d'importation YAYEMATY.
 === ANALYSES TRADE INTELLIGENCE + PRIX LOCAUX BDD (par domaine) ===
 {domains_json}
 
-=== RECHERCHE WEB (marché SN ouvert min/max + sourcing Alibaba/AliExpress/Amazon/Made-in-China) ===
+=== RECHERCHE WEB (marché SN ouvert min/max + sourcing international) ===
 {web_context}
 
 Consignes :
 - Chaque domaine inclut jusqu'à 2 analyses récentes : tendances notes / produits.
 - Compare les domaines avec critères demande, marge réelle, fiabilité prix SN, concurrence.
-- EXACTEMENT 10 produits dans produits_import (Top 10 tous domaines), triés par note décroissante.
-- Marché SN : sites prioritaires + TOUT autre site web utile pour prix Sénégal (pas limité à la liste).
-- Sourcing : Alibaba, AliExpress, Amazon ET Made-in-China.com (USD) + landed XOF.
-- Pour chaque produit : prix_sn_min_xof et prix_sn_max_xof OBLIGATOIRES (entiers),
-  prix sourcing USD (dont made-in-china si pertinent), prix_landed_xof, marge_min/max/pct.
-- resume et commentaire_global DOIVENT citer fourchettes SN et marges % des priorités.
-- comparaison domaines : s'appuyer sur fourchettes structurées, pas du marketing vague.
-- meilleures_opportunites (≤10) alignées sur les mêmes Top produits.
+- EXACTEMENT 10 produits dans produits_import (Top 10), triés par note décroissante.
+- EXACTEMENT 5 meilleures_opportunites (Top 5), alignées sur les meilleurs produits.
+- Marché SN + sourcing international ($) + landed XOF + marges.
+- Fourchettes prix « $min – $max » ; jamais « Non pertinent ».
+- resume / commentaires : convaincants, réalistes, SANS nommer de sites web.
+- comparaison domaines : arbitrage capital d’import, chiffres, pas de marketing vague.
 
 Réponds avec ce JSON exact :
 {{
@@ -126,12 +131,12 @@ Réponds avec ce JSON exact :
       "prix_sn_max_xof": 25000,
       "prix_sn_median_xof": 23500,
       "prix_sn_xof": "22 000 – 25 000 XOF",
-      "prix_alibaba_usd": "18–22 USD",
+      "prix_alibaba_usd": "$18 – $22",
       "prix_alibaba_usd_min": 18,
       "prix_alibaba_usd_max": 22,
-      "prix_aliexpress_usd": "...",
-      "prix_amazon_usd": "...",
-      "prix_made_in_china_usd": "ex. 16–20 USD",
+      "prix_aliexpress_usd": "$20 – $28",
+      "prix_amazon_usd": "$25 – $35",
+      "prix_made_in_china_usd": "$16 – $20",
       "prix_potentiel_achat_xof": "15 000 XOF",
       "prix_landed_xof": 15000,
       "marge_min_xof": 7000,
@@ -151,7 +156,7 @@ class ImportMasterDeepSeekService:
     """Compare domaines déjà analysés + opportunités / prix web via DeepSeek."""
 
     SESSIONS_PER_DOMAIN = 2
-    TOP_PRODUCTS_PER_SESSION = 8
+    TOP_PRODUCTS_PER_SESSION = 5
     MAX_SESSION_AGE_DAYS = 90
 
     # Prioritaires Import Master — sourcing international UNIQUEMENT ici (pas TI).
@@ -267,9 +272,11 @@ class ImportMasterDeepSeekService:
         sessions_per_domain: int | None = None,
         per_session_top: int | None = None,
         max_age_days: int | None = None,
+        domain_slugs: list[str] | None = None,
     ) -> list[dict]:
         """
-        Dernières sessions DONE/STOPPED par domaine (défaut : 2 analyses récentes).
+        Dernières sessions DONE/STOPPED par domaine (défaut : 2 analyses, Top 5).
+        ``domain_slugs`` : filtre optionnel (sélection UI).
         """
         n_sessions = max(1, int(
             sessions_per_domain if sessions_per_domain is not None
@@ -284,6 +291,9 @@ class ImportMasterDeepSeekService:
             int(max_age_days if max_age_days is not None else cls.MAX_SESSION_AGE_DAYS),
         )
         cutoff = timezone.now() - timedelta(days=age_days)
+        selected = {
+            str(s).strip() for s in (domain_slugs or []) if str(s).strip()
+        }
 
         done_statuses = (
             MarketResearchSession.Status.DONE,
@@ -300,13 +310,24 @@ class ImportMasterDeepSeekService:
                 | models.Q(completed_at__isnull=True, created_at__gte=cutoff)
             )
         )
-        domain_slugs = sorted(set(
+        if selected:
+            base_qs = base_qs.filter(domain_slug__in=selected)
+        all_slugs = sorted(set(
             base_qs.values_list('domain_slug', flat=True)
         ))
+        # Conserve l’ordre de sélection UI si fourni
+        if selected:
+            ordered_selected = [s for s in domain_slugs if s in selected and s in all_slugs]
+            for s in all_slugs:
+                if s not in ordered_selected:
+                    ordered_selected.append(s)
+            slug_list = ordered_selected
+        else:
+            slug_list = all_slugs
         ordered_qs = base_qs.order_by('-completed_at', '-id')
 
         snapshots = []
-        for slug in domain_slugs:
+        for slug in slug_list:
             sessions = list(ordered_qs.filter(domain_slug=slug)[:n_sessions])
             if not sessions:
                 continue
@@ -558,6 +579,8 @@ class ImportMasterDeepSeekService:
         raw = (text or '').strip().lower().replace('\u00a0', ' ')
         if not raw:
             return None, None
+        # Ignore devises pour parser $18 – $22 / 18–22 USD
+        raw = re.sub(r'[$€£]', '', raw)
         # 22 000 - 25 000 | 95–120k | 22000–25000
         pattern = re.compile(
             r'(\d[\d\s.]*)\s*(k)?\s*[-–—àa]+\s*(\d[\d\s.]*)\s*(k)?',
@@ -584,6 +607,68 @@ class ImportMasterDeepSeekService:
         if n is None:
             return ''
         return f'{n:,}'.replace(',', ' ') + ' XOF'
+
+    @staticmethod
+    def _is_blank_price_label(text: str) -> bool:
+        t = (text or '').strip().lower().replace('\u00a0', ' ')
+        if not t or t in ('—', '-', '…', '...', 'n/a', 'na', 'nd', 'n.d.'):
+            return True
+        markers = (
+            'non pertinent', 'non applicable', 'indisponible', 'sans objet',
+            'pas pertinent', 'not relevant', 'unavailable', 'aucun prix',
+        )
+        return any(m in t for m in markers)
+
+    @staticmethod
+    def _format_usd_amount(n: float | int) -> str:
+        value = float(n)
+        if abs(value - round(value)) < 0.05:
+            return f'${int(round(value))}'
+        return f'${value:.2f}'.rstrip('0').rstrip('.')
+
+    @classmethod
+    def _format_usd_range(cls, lo: float | int | None, hi: float | int | None) -> str:
+        if lo is None and hi is None:
+            return ''
+        if lo is None:
+            return cls._format_usd_amount(hi)
+        if hi is None or float(lo) == float(hi):
+            return cls._format_usd_amount(lo)
+        a, b = float(lo), float(hi)
+        if a > b:
+            a, b = b, a
+        return f'{cls._format_usd_amount(a)} – {cls._format_usd_amount(b)}'
+
+    @classmethod
+    def _coerce_usd_display(
+        cls,
+        text: str | None,
+        *,
+        lo: float | int | None = None,
+        hi: float | int | None = None,
+    ) -> str:
+        """Fourchette display « $18 – $22 » ; remplace « Non pertinent » / « USD »."""
+        if lo is not None or hi is not None:
+            formatted = cls._format_usd_range(lo, hi)
+            if formatted:
+                return formatted
+        raw = str(text or '').strip()
+        if cls._is_blank_price_label(raw):
+            return '—'
+        t_lo, t_hi = cls._parse_range_from_text(raw)
+        if t_lo is not None or t_hi is not None:
+            # Les montants USD restent en unités (pas ×1000 sauf si k explicite)
+            formatted = cls._format_usd_range(t_lo, t_hi)
+            if formatted:
+                return formatted
+        # Déjà au bon format ($…) mais nettoyage USD suffix
+        cleaned = re.sub(r'\bUSD\b', '', raw, flags=re.I).strip()
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+        if cleaned.startswith('$'):
+            return cleaned[:80]
+        if re.search(r'\d', cleaned):
+            return f'${cleaned}'[:80]
+        return '—'
 
     @classmethod
     def _format_sn_range(cls, lo: int | None, hi: int | None) -> str:
@@ -771,7 +856,10 @@ class ImportMasterDeepSeekService:
             raise RuntimeError('DEEPSEEK_API_KEY non configurée.')
 
         client = OpenAI(api_key=api_key, base_url=cfg.get('BASE_URL', 'https://api.deepseek.com'))
-        domains_json = json.dumps(snapshots, ensure_ascii=False, indent=2)[:DOMAINS_JSON_MAX_CHARS]
+        # Compact : indent=None réduit fortement le prompt (évite troncature JSON sortie)
+        domains_json = json.dumps(snapshots, ensure_ascii=False, separators=(',', ':'))[
+            :DOMAINS_JSON_MAX_CHARS
+        ]
         web_max = DeepSeekAnalysisService._char_limit(
             'ANALYSIS_WEB_CONTEXT_MAX_CHARS', USER_WEB_CONTEXT_MAX_CHARS,
         )
@@ -779,19 +867,68 @@ class ImportMasterDeepSeekService:
             domains_json=domains_json,
             web_context=(web_context or 'Aucun contexte web.')[:web_max],
         )
-        response = client.chat.completions.create(
-            model=cfg.get('MODEL', 'deepseek-v4-flash'),
-            messages=[
-                {'role': 'system', 'content': COMPARE_SYSTEM},
-                {'role': 'user', 'content': user_content},
-            ],
-            response_format={'type': 'json_object'},
-            max_tokens=min(int(cfg.get('MAX_TOKENS', 8192)), 8192),
-            timeout=float(cfg.get('TIMEOUT_SECONDS', 120)),
-            extra_body=DeepSeekAnalysisService._chat_extra_body(cfg),
-        )
-        raw = (response.choices[0].message.content or '').strip()
-        parsed = DeepSeekAnalysisService._parse_json_response(raw)
+        # Import Master produit un gros JSON (Top 10 + prix) — plafond plus haut
+        max_tokens = max(8192, min(int(cfg.get('MAX_TOKENS', 8192)), 16384))
+        timeout = float(cfg.get('TIMEOUT_SECONDS', 120))
+        extra = DeepSeekAnalysisService._chat_extra_body(cfg)
+        model = cfg.get('MODEL', 'deepseek-v4-flash')
+
+        def _call(messages: list[dict]) -> tuple[str, str]:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                response_format={'type': 'json_object'},
+                max_tokens=max_tokens,
+                timeout=timeout,
+                extra_body=extra,
+            )
+            choice = response.choices[0]
+            finish = getattr(choice, 'finish_reason', '') or ''
+            raw = (choice.message.content or '').strip()
+            return raw, finish
+
+        messages = [
+            {'role': 'system', 'content': COMPARE_SYSTEM},
+            {'role': 'user', 'content': user_content},
+        ]
+        raw, finish = _call(messages)
+        if finish == 'length':
+            logger.warning(
+                'Import Master : réponse DeepSeek tronquée (finish_reason=length, '
+                '%s chars) — réparation / retry.',
+                len(raw),
+            )
+        try:
+            parsed = DeepSeekAnalysisService._parse_json_response(raw)
+        except (ValueError, json.JSONDecodeError) as first_exc:
+            # Retry compact : JSON plus court (commentaires ≤ 1 phrase)
+            logger.warning('Import Master JSON invalide (%s) — retry compact.', first_exc)
+            retry_messages = messages + [
+                {'role': 'assistant', 'content': raw[:12000]},
+                {
+                    'role': 'user',
+                    'content': (
+                        'Le JSON précédent est INCOMPLET/INVALIDE. '
+                        'Renvoie UNIQUEMENT un JSON COMPLET et VALIDE, plus compact : '
+                        'commentaires ≤ 1 phrase, listes ≤ 3 items, '
+                        'EXACTEMENT 10 produits_import avec fourchettes prix. '
+                        'Pas de markdown.'
+                    ),
+                },
+            ]
+            raw2, finish2 = _call(retry_messages)
+            if finish2 == 'length':
+                logger.warning('Import Master retry encore tronqué (%s chars).', len(raw2))
+            try:
+                parsed = DeepSeekAnalysisService._parse_json_response(raw2)
+            except (ValueError, json.JSONDecodeError):
+                # Dernier recours : réparer la 1ʳᵉ réponse partielle
+                repaired = DeepSeekAnalysisService._repair_truncated_json(
+                    DeepSeekAnalysisService._strip_json_fences(raw),
+                )
+                if repaired is None:
+                    raise first_exc
+                parsed = repaired
         return cls.normalize_result(parsed, snapshots)
 
     @classmethod
@@ -816,14 +953,21 @@ class ImportMasterDeepSeekService:
                 'domaine': str(row.get('domaine') or '')[:120],
                 'note_globale': round(note, 1),
                 'recommandation': reco_for(note, str(row.get('recommandation') or '')),
-                'synthese': str(row.get('synthese') or '')[:360],
-                'commentaire_analyste': str(
-                    row.get('commentaire_analyste') or row.get('synthese') or ''
+                'synthese': cls._sanitize_public_comment(row.get('synthese') or '')[:360],
+                'commentaire_analyste': cls._sanitize_public_comment(
+                    row.get('commentaire_analyste') or row.get('synthese') or '',
                 )[:500],
-                'points_forts': [str(x)[:140] for x in (row.get('points_forts') or [])[:5]],
-                'risques': [str(x)[:140] for x in (row.get('risques') or [])[:5]],
+                'points_forts': [
+                    cls._sanitize_public_comment(x)[:140]
+                    for x in (row.get('points_forts') or [])[:5]
+                ],
+                'risques': [
+                    cls._sanitize_public_comment(x)[:140]
+                    for x in (row.get('risques') or [])[:5]
+                ],
                 'opportunites_cles': [
-                    str(x)[:160] for x in (row.get('opportunites_cles') or [])[:5]
+                    cls._sanitize_public_comment(x)[:160]
+                    for x in (row.get('opportunites_cles') or [])[:5]
                 ],
             })
 
@@ -837,7 +981,7 @@ class ImportMasterDeepSeekService:
                         except (TypeError, ValueError):
                             pass
                 avg = round(sum(notes) / len(notes), 1) if notes else 5.0
-                synth = DeepSeekAnalysisService._default_synthese(snap['domaine'], avg, i)
+                synth = cls._default_domain_comment(snap['domaine'], avg, i)
                 ranking.append({
                     'rang': i,
                     'domaine': snap['domaine'],
@@ -869,7 +1013,7 @@ class ImportMasterDeepSeekService:
                 'produit': str(row.get('produit') or '')[:200],
                 'note': round(note, 1),
                 'recommandation': reco_for(note, str(row.get('recommandation') or '')),
-                'commentaire': str(row.get('commentaire') or '')[:450],
+                'commentaire': cls._sanitize_public_comment(row.get('commentaire') or '')[:450],
                 'action': str(row.get('action') or '')[:120],
             })
 
@@ -896,29 +1040,60 @@ class ImportMasterDeepSeekService:
                     note = min(note, 5.5)
             usd_min = cls._parse_number(row.get('prix_alibaba_usd_min'))
             usd_max = cls._parse_number(row.get('prix_alibaba_usd_max'))
-            alibaba = str(row.get('prix_alibaba_usd') or '').strip()
-            if not alibaba and usd_min is not None:
-                if usd_max and usd_max != usd_min:
-                    alibaba = f'{usd_min}–{usd_max} USD'
-                else:
-                    alibaba = f'{usd_min} USD'
+            if usd_min is None or usd_max is None:
+                a_lo, a_hi = cls._parse_range_from_text(
+                    str(row.get('prix_alibaba_usd') or ''),
+                )
+                usd_min = usd_min if usd_min is not None else a_lo
+                usd_max = usd_max if usd_max is not None else a_hi
+            alibaba = cls._coerce_usd_display(
+                row.get('prix_alibaba_usd'), lo=usd_min, hi=usd_max,
+            )
+            ax_lo, ax_hi = cls._parse_range_from_text(
+                str(row.get('prix_aliexpress_usd') or ''),
+            )
+            am_lo, am_hi = cls._parse_range_from_text(
+                str(row.get('prix_amazon_usd') or ''),
+            )
+            mic_lo, mic_hi = cls._parse_range_from_text(
+                str(row.get('prix_made_in_china_usd') or ''),
+            )
+            # Si AliExpress/Amazon vides alors qu’Alibaba existe : fourchette proche estimée
+            if alibaba != '—' and usd_min is not None:
+                if ax_lo is None and cls._is_blank_price_label(
+                    str(row.get('prix_aliexpress_usd') or ''),
+                ):
+                    ax_lo, ax_hi = int(round(usd_min * 1.1)), int(round((usd_max or usd_min) * 1.35))
+                if am_lo is None and cls._is_blank_price_label(
+                    str(row.get('prix_amazon_usd') or ''),
+                ):
+                    am_lo, am_hi = int(round(usd_min * 1.25)), int(round((usd_max or usd_min) * 1.6))
+                if mic_lo is None and cls._is_blank_price_label(
+                    str(row.get('prix_made_in_china_usd') or ''),
+                ):
+                    mic_lo, mic_hi = usd_min, usd_max or usd_min
             products.append({
                 'rang': int(row.get('rang') or i),
                 'produit': str(row.get('produit') or '')[:200],
                 'domaine': str(row.get('domaine') or '')[:120],
                 'note': round(note, 1),
                 'recommandation': reco_for(note, str(row.get('recommandation') or '')),
-                'synthese': str(row.get('synthese') or '')[:360],
-                'commentaire_analyste': str(
-                    row.get('commentaire_analyste') or row.get('synthese') or ''
+                'synthese': cls._sanitize_public_comment(row.get('synthese') or '')[:360],
+                'commentaire_analyste': cls._sanitize_public_comment(
+                    row.get('commentaire_analyste') or row.get('synthese') or '',
                 )[:500],
-                'commentaire_prix': str(row.get('commentaire_prix') or '')[:360],
                 'prix_alibaba_usd': alibaba[:80],
                 'prix_alibaba_usd_min': usd_min,
                 'prix_alibaba_usd_max': usd_max,
-                'prix_aliexpress_usd': str(row.get('prix_aliexpress_usd') or '')[:80],
-                'prix_amazon_usd': str(row.get('prix_amazon_usd') or '')[:80],
-                'prix_made_in_china_usd': str(row.get('prix_made_in_china_usd') or '')[:80],
+                'prix_aliexpress_usd': cls._coerce_usd_display(
+                    row.get('prix_aliexpress_usd'), lo=ax_lo, hi=ax_hi,
+                )[:80],
+                'prix_amazon_usd': cls._coerce_usd_display(
+                    row.get('prix_amazon_usd'), lo=am_lo, hi=am_hi,
+                )[:80],
+                'prix_made_in_china_usd': cls._coerce_usd_display(
+                    row.get('prix_made_in_china_usd'), lo=mic_lo, hi=mic_hi,
+                )[:80],
                 'sources_prix': [
                     str(s) for s in (row.get('sources_prix') or []) if s
                 ][:8],
@@ -982,14 +1157,12 @@ class ImportMasterDeepSeekService:
                 float(row.get('note') or 0), row.get('recommandation') or '',
             )
 
-        # Opportunités alignées sur Top produits si vides ou incohérentes
+        # Opportunités = Top 5 uniquement
         if products:
             opportunities.sort(key=lambda x: x.get('note') or 0, reverse=True)
-            if len(opportunities) < min(5, len(products)):
+            if len(opportunities) < min(TOP_OPPORTUNITIES, len(products)):
                 opportunities = []
-                for p in products[:TOP_PRODUCTS_IMPORT]:
-                    sn = p.get('prix_sn_xof') or 'prix SN n/d'
-                    marge = p.get('marge_estimee_xof') or 'marge n/d'
+                for p in products[:TOP_OPPORTUNITIES]:
                     opportunities.append({
                         'rang': p['rang'],
                         'titre': f"{p['produit'][:80]}",
@@ -997,16 +1170,16 @@ class ImportMasterDeepSeekService:
                         'produit': p.get('produit') or '',
                         'note': p.get('note') or 0,
                         'recommandation': p.get('recommandation') or '',
-                        'commentaire': (
-                            f"Marché SN {sn} · marge {marge}. "
-                            f"{(p.get('synthese') or '')[:200]}"
-                        )[:450],
+                        'commentaire': cls._default_opportunity_comment(p),
                         'action': 'Importer / tester stock / surveiller',
                     })
             else:
-                opportunities = opportunities[:TOP_PRODUCTS_IMPORT]
+                opportunities = opportunities[:TOP_OPPORTUNITIES]
                 for i, row in enumerate(opportunities, start=1):
                     row['rang'] = i
+                    row['commentaire'] = cls._sanitize_public_comment(
+                        row.get('commentaire') or '',
+                    )[:450]
 
         ranking = cls._adjust_domain_notes(ranking, products)
 
@@ -1016,13 +1189,17 @@ class ImportMasterDeepSeekService:
                 comparisons.append({
                     'domaine_a': str(row.get('domaine_a') or '')[:120],
                     'domaine_b': str(row.get('domaine_b') or '')[:120],
-                    'verdict': str(row.get('verdict') or '')[:320],
+                    'verdict': cls._sanitize_public_comment(row.get('verdict') or '')[:320],
                     'critere': str(row.get('critere') or '')[:60],
-                    'commentaire': str(row.get('commentaire') or row.get('verdict') or '')[:400],
+                    'commentaire': cls._sanitize_public_comment(
+                        row.get('commentaire') or row.get('verdict') or '',
+                    )[:400],
                 })
 
-        resume = str(data.get('resume') or '')[:700]
-        commentaire_global = str(data.get('commentaire_global') or resume)[:700]
+        resume = cls._sanitize_public_comment(data.get('resume') or '')[:700]
+        commentaire_global = cls._sanitize_public_comment(
+            data.get('commentaire_global') or resume,
+        )[:700]
         if not resume and ranking:
             top_d = ranking[0]
             top_p = products[0] if products else None
@@ -1049,19 +1226,183 @@ class ImportMasterDeepSeekService:
         return {
             'resume': resume,
             'commentaire_global': commentaire_global,
-            'methodologie': str(data.get('methodologie') or (
+            'methodologie': cls._sanitize_public_comment(data.get('methodologie') or (
                 'Comparaison des 2 dernières sessions Trade Intelligence par domaine '
-                '(90 jours max), enrichie par recherches web marché SN ouvertes (min/max) + '
-                'sourcing Alibaba / AliExpress / Amazon / Made-in-China.com et BDD Jumia/Jiji.'
+                '(90 jours max), enrichie par veille marché SN (min/max) et sourcing '
+                'international pour estimer coût landed et marges.'
             ))[:400],
             'classement_domaines': ranking[:12],
             'comparaison': comparisons[:12],
-            'meilleures_opportunites': opportunities[:TOP_PRODUCTS_IMPORT],
+            'meilleures_opportunites': opportunities[:TOP_OPPORTUNITIES],
             'produits_import': products[:TOP_PRODUCTS_IMPORT],
-            'alertes': alertes[:10],
+            'alertes': [cls._sanitize_public_comment(a)[:220] for a in alertes[:10]],
             'domains_count': len(snapshots),
             'generated_at': timezone.now().isoformat(),
         }
+
+    _SITE_NAME_RE = re.compile(
+        r'\b('
+        r'jumia(?:\.sn)?|jiji(?:\.sn)?|promo\.sn|coinafrique|expat[- ]?dakar|'
+        r'jemba|dakarcenter|occasiondakar|taftaf|'
+        r'alibaba|aliexpress|amazon|made[- ]?in[- ]?china|1688|dhgate|'
+        r'global\s*sources|yiwugo|hktdc|tiktok|instagram|facebook|facebook\s*marketplace'
+        r')\b',
+        re.I,
+    )
+
+    @classmethod
+    def _sanitize_public_comment(cls, text) -> str:
+        """Retire les noms de sites ; garde un ton marché local / sourcing générique."""
+        raw = str(text or '').strip()
+        if not raw:
+            return ''
+        cleaned = cls._SITE_NAME_RE.sub('marché local', raw)
+        cleaned = re.sub(
+            r'\b(signaux|sur|via|chez|sur le|sur la)\s+marché local(?:\s*/\s*marché local)?',
+            'sur le marché local',
+            cleaned,
+            flags=re.I,
+        )
+        cleaned = re.sub(r'marché local\s*/\s*marché local', 'marché local', cleaned, flags=re.I)
+        cleaned = re.sub(r'\s{2,}', ' ', cleaned).strip(' -·,;')
+        return cleaned
+
+    @classmethod
+    def _default_domain_comment(cls, domaine: str, note: float, rang: int) -> str:
+        name = (domaine or 'Ce domaine').strip()[:80]
+        if note >= 7.5:
+            return (
+                f'«{name}» se démarque ({note}/10) : demande locale solide et '
+                f'rotation crédible — un bon candidat pour engager du stock ciblé.'
+            )
+        if note >= 5.0:
+            return (
+                f'«{name}» reste moyen ({note}/10) : l’opportunité existe mais '
+                f'marge ou concurrence freinent. Testez un petit volume avant d’élargir.'
+            )
+        return (
+            f'«{name}» ({note}/10) : signaux trop faibles pour immobiliser du capital. '
+            f'Mieux vaut surveiller avant d’importer.'
+        )
+
+    @classmethod
+    def _default_opportunity_comment(cls, product: dict) -> str:
+        name = str(product.get('produit') or 'Ce produit')[:80]
+        sn = product.get('prix_sn_xof') or ''
+        marge = product.get('marge_estimee_xof') or ''
+        note = product.get('note')
+        parts = [f'«{name}» offre une fenêtre d’import crédible']
+        if note is not None:
+            parts[0] += f' ({note}/10)'
+        parts[0] += '.'
+        if sn:
+            parts.append(f'Prix marché local {sn}.')
+        if marge and 'n/d' not in str(marge).lower():
+            parts.append(f'Marge estimée {marge}.')
+        else:
+            parts.append('Validez le coût landed avant d’engager le stock.')
+        return cls._sanitize_public_comment(' '.join(parts))[:450]
+
+    @classmethod
+    def polish_result_for_display(cls, result: dict) -> dict:
+        """Nettoie prix USD + commentaires (rapports déjà stockés inclus)."""
+        if not isinstance(result, dict):
+            return {}
+
+        for key in ('resume', 'commentaire_global', 'methodologie'):
+            if result.get(key):
+                result[key] = cls._sanitize_public_comment(result.get(key))[:700]
+
+        for row in result.get('classement_domaines') or []:
+            if not isinstance(row, dict):
+                continue
+            for k in ('synthese', 'commentaire_analyste'):
+                if row.get(k):
+                    row[k] = cls._sanitize_public_comment(row.get(k))[:500]
+            for list_key in ('points_forts', 'risques', 'opportunites_cles'):
+                items = row.get(list_key)
+                if isinstance(items, list):
+                    row[list_key] = [
+                        cls._sanitize_public_comment(x)[:160] for x in items if x
+                    ]
+
+        for row in result.get('meilleures_opportunites') or []:
+            if isinstance(row, dict) and row.get('commentaire'):
+                row['commentaire'] = cls._sanitize_public_comment(row.get('commentaire'))[:450]
+
+        for row in result.get('comparaison') or []:
+            if not isinstance(row, dict):
+                continue
+            for k in ('verdict', 'commentaire'):
+                if row.get(k):
+                    row[k] = cls._sanitize_public_comment(row.get(k))[:400]
+
+        # Top 5 opportunités à l’affichage (rapports anciens)
+        opps = result.get('meilleures_opportunites')
+        if isinstance(opps, list):
+            result['meilleures_opportunites'] = opps[:TOP_OPPORTUNITIES]
+            for i, row in enumerate(result['meilleures_opportunites'], start=1):
+                if isinstance(row, dict):
+                    row['rang'] = i
+
+        products = result.get('produits_import')
+        if not isinstance(products, list):
+            return result
+        for row in products:
+            if not isinstance(row, dict):
+                continue
+            # Plus affichés : on peut les vider pour alléger le contexte
+            row.pop('commentaire_prix', None)
+            row.pop('sources_prix', None)
+            usd_min = cls._parse_number(row.get('prix_alibaba_usd_min'))
+            usd_max = cls._parse_number(row.get('prix_alibaba_usd_max'))
+            if usd_min is None or usd_max is None:
+                a_lo, a_hi = cls._parse_range_from_text(str(row.get('prix_alibaba_usd') or ''))
+                usd_min = usd_min if usd_min is not None else a_lo
+                usd_max = usd_max if usd_max is not None else a_hi
+            row['prix_alibaba_usd'] = cls._coerce_usd_display(
+                row.get('prix_alibaba_usd'), lo=usd_min, hi=usd_max,
+            )[:80]
+
+            def _fill(key: str, estimate_fn):
+                raw = str(row.get(key) or '')
+                lo, hi = cls._parse_range_from_text(raw)
+                if lo is None and cls._is_blank_price_label(raw) and usd_min is not None:
+                    lo, hi = estimate_fn(usd_min, usd_max or usd_min)
+                row[key] = cls._coerce_usd_display(raw, lo=lo, hi=hi)[:80]
+
+            _fill(
+                'prix_aliexpress_usd',
+                lambda mn, mx: (int(round(mn * 1.1)), int(round(mx * 1.35))),
+            )
+            _fill(
+                'prix_amazon_usd',
+                lambda mn, mx: (int(round(mn * 1.25)), int(round(mx * 1.6))),
+            )
+            _fill(
+                'prix_made_in_china_usd',
+                lambda mn, mx: (mn, mx),
+            )
+        return result
+
+    @classmethod
+    def _selected_slugs_from_analysis(cls, analysis) -> list[str] | None:
+        """Lit le filtre domaines stocké avant l’écrasement par les snapshots complets."""
+        raw = getattr(analysis, 'domains_snapshot', None) or []
+        if not raw:
+            return None
+        if isinstance(raw, list) and raw and all(isinstance(x, str) for x in raw):
+            return [x.strip() for x in raw if x.strip()]
+        if isinstance(raw, list) and raw and all(isinstance(x, dict) for x in raw):
+            # Placeholder UI : [{'domain_slug': '...'}] sans sessions
+            if all('sessions' not in x for x in raw):
+                slugs = [
+                    str(x.get('domain_slug') or '').strip()
+                    for x in raw
+                    if x.get('domain_slug')
+                ]
+                return slugs or None
+        return None
 
     @classmethod
     def run_analysis(
@@ -1070,6 +1411,7 @@ class ImportMasterDeepSeekService:
         progress: Any = None,
         analysis_id: int | None = None,
         should_cancel=None,
+        domain_slugs: list[str] | None = None,
     ) -> dict:
         """Pipeline : snapshots domaines → prix BDD → web → DeepSeek → persist."""
         from intelligence.models import ImportMasterDomainAnalysis
@@ -1101,8 +1443,16 @@ class ImportMasterDeepSeekService:
             if analysis and analysis.status == ImportMasterDomainAnalysis.Status.STOPPED:
                 raise RuntimeError('Analyse annulée par l’utilisateur.')
 
-        report(5, 'Chargement des 2 dernières analyses TI par domaine…')
-        snapshots = cls.collect_domain_snapshots()
+        selected = list(domain_slugs or [])
+        if not selected and analysis:
+            selected = cls._selected_slugs_from_analysis(analysis) or []
+
+        report(5, 'Chargement des 2 dernières analyses TI (Top 5) par domaine…')
+        snapshots = cls.collect_domain_snapshots(
+            domain_slugs=selected or None,
+            per_session_top=cls.TOP_PRODUCTS_PER_SESSION,
+            sessions_per_domain=cls.SESSIONS_PER_DOMAIN,
+        )
         sessions_total = sum(s.get('sessions_count') or 1 for s in snapshots)
         if not snapshots:
             result = {

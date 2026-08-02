@@ -4,7 +4,7 @@
 {% block title %}Import Master — Rapport d'analyse{% endblock %}
 {% block body_class %}intel-layout import-master-page-body{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/import-master.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'css/import-master.css' %}?v=7">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -17,11 +17,6 @@
         <div class="im-report-top-copy">
             <p class="im-kicker">Rapport d’analyse · multi-domaines</p>
             <h1 class="im-report-title">Import Master</h1>
-            <p class="im-report-sub">
-                Comparaison des <strong>2 dernières analyses Trade Intelligence</strong> par domaine
-                (données ≤ 90 jours), meilleures opportunités web
-                et prix potentiels (Alibaba, AliExpress, Amazon, Made-in-China).
-            </p>
         </div>
         <div class="im-report-actions">
             <a href="{% url 'intelligence:index' %}" class="im-btn im-btn--outline">Trade Intelligence</a>
@@ -32,15 +27,60 @@
                 <button type="submit" class="im-btn im-btn--stop">Arrêter l’analyse</button>
             </form>
             {% endif %}
-            <form method="post" action="{% url 'intelligence:import_master' %}">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="analyser_domaines">
-                <button type="submit" class="im-btn im-btn--primary" {% if im_domain_running %}disabled{% endif %}>
-                    {% if im_domain_running %}Analyse en cours…{% else %}Lancer l’analyse comparative{% endif %}
-                </button>
-            </form>
+            <button type="button"
+                    class="im-btn im-btn--primary"
+                    id="im-open-domain-modal"
+                    {% if im_domain_running or not im_domain_snapshots %}disabled{% endif %}>
+                {% if im_domain_running %}Analyse en cours…{% else %}Lancer l’analyse comparative{% endif %}
+            </button>
         </div>
     </header>
+
+    <div class="im-modal is-hidden" id="im-domain-modal" role="dialog" aria-modal="true" aria-labelledby="im-domain-modal-title" hidden>
+        <button type="button" class="im-modal-backdrop" id="im-domain-modal-backdrop" aria-label="Fermer"></button>
+        <div class="im-modal-panel">
+            <header class="im-modal-head">
+                <div>
+                    <p class="im-kicker">Sélection</p>
+                    <h2 id="im-domain-modal-title">Domaines à analyser</h2>
+                    <p class="im-modal-sub">Top 5 produits des 2 dernières analyses TI par domaine sélectionné.</p>
+                </div>
+                <button type="button" class="im-modal-close" id="im-domain-modal-close" aria-label="Fermer">×</button>
+            </header>
+            <form method="post" action="{% url 'intelligence:import_master' %}" id="im-domain-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="analyser_domaines">
+                <div class="im-modal-toolbar">
+                    <label class="im-modal-search">
+                        <span class="visually-hidden">Rechercher un domaine</span>
+                        <input type="search"
+                               id="im-domain-search"
+                               placeholder="Filtrer les domaines…"
+                               autocomplete="off">
+                    </label>
+                    <button type="button" class="im-btn im-btn--outline im-btn--sm" id="im-domain-select-all">Tout sélectionner</button>
+                </div>
+                <div class="im-modal-list" id="im-domain-list">
+                    {% for s in im_domain_snapshots %}
+                    <label class="im-domain-check" data-domain-label="{{ s.domaine|lower }}">
+                        <input type="checkbox" name="domain_slugs" value="{{ s.domain_slug }}" checked>
+                        <span class="im-domain-check-body">
+                            <strong>{{ s.domaine }}</strong>
+                            <em>{{ s.sessions_count|default:1 }} analyse{{ s.sessions_count|default:1|pluralize }} · {{ s.top_produits|length }} produit{{ s.top_produits|length|pluralize }} Top</em>
+                        </span>
+                    </label>
+                    {% empty %}
+                    <p class="im-modal-empty">Aucun domaine prêt — lancez d’abord Trade Intelligence.</p>
+                    {% endfor %}
+                </div>
+                <footer class="im-modal-actions">
+                    <p class="im-modal-count" id="im-domain-count"></p>
+                    <button type="button" class="im-btn im-btn--outline" id="im-domain-modal-cancel">Annuler</button>
+                    <button type="submit" class="im-btn im-btn--primary" id="im-domain-submit">Lancer l’analyse</button>
+                </footer>
+            </form>
+        </div>
+    </div>
 
     {% if messages %}
     <div class="im-messages">
@@ -89,11 +129,11 @@
     {% if r.meilleures_opportunites %}
     <section class="im-block" aria-labelledby="im-opp-web-title">
         <header class="im-block-head">
-            <h2 id="im-opp-web-title">Meilleures opportunités</h2>
-            <p>Opportunités priorisées à partir des Top domaines + recherche web</p>
+            <h2 id="im-opp-web-title">Top 5 meilleures opportunités</h2>
+            <p>Priorités d’import tous domaines confondus</p>
         </header>
         <div class="im-opp-stack">
-            {% for o in r.meilleures_opportunites %}
+            {% for o in r.meilleures_opportunites|slice:":5" %}
             <article class="im-opp-detail">
                 <div class="im-opp-detail-rank">#{{ o.rang }}</div>
                 <div class="im-opp-detail-body">
@@ -216,27 +256,12 @@
                     <span class="im-badge {% if 'éviter' in p.recommandation|lower %}im-badge--gris{% elif 'moyen' in p.recommandation|lower or 'affaire' in p.recommandation|lower %}im-badge--jaune{% else %}im-badge--orange{% endif %}">{{ p.recommandation }}</span>
                 </header>
 
-                {% if p.synthese or p.commentaire_analyste %}
-                <div class="im-analyst-note im-analyst-note--inline">
-                    <span class="im-analyst-label">Analyse</span>
-                    <p>{{ p.commentaire_analyste|default:p.synthese }}</p>
-                </div>
-                {% endif %}
-
                 <div class="im-price-grid">
                     <div class="im-price-cell">
                         <span>Marché SN</span>
                         <strong>{{ p.prix_sn_xof|default:"—" }}</strong>
                         {% if p.prix_sn_median_xof %}
                         <em class="im-price-sub">médiane ~ {{ p.prix_sn_median_xof|floatformat:0 }} XOF</em>
-                        {% endif %}
-                        {% if p.fiabilite_prix %}
-                        <span class="im-fiabilite im-fiabilite--{{ p.fiabilite_prix }}">
-                            {% if p.fiabilite_prix == 'bdd' %}BDD locale
-                            {% elif p.fiabilite_prix == 'mixte' %}Web + BDD
-                            {% elif p.fiabilite_prix == 'web' %}Web SN
-                            {% else %}Estimé{% endif %}
-                        </span>
                         {% endif %}
                     </div>
                     <div class="im-price-cell">
@@ -267,17 +292,6 @@
                         {% endif %}
                     </div>
                 </div>
-
-                {% if p.commentaire_prix %}
-                <div class="im-analyst-note im-analyst-note--price">
-                    <span class="im-analyst-label">Commentaire prix</span>
-                    <p>{{ p.commentaire_prix }}</p>
-                </div>
-                {% endif %}
-
-                {% if p.sources_prix %}
-                <p class="im-sources">Sources : {% for s in p.sources_prix %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
-                {% endif %}
             </article>
             {% endfor %}
         </div>
@@ -303,8 +317,8 @@
         <p>
             {{ im_domains_available }} domaine{{ im_domains_available|pluralize }}
             · {{ im_sessions_available|default:im_domains_available }} analyse{{ im_sessions_available|default:im_domains_available|pluralize }} récente{{ im_sessions_available|default:im_domains_available|pluralize }}
-            (2 max. par domaine). Lancez l’analyse comparative pour comparer les tendances,
-            détecter les meilleures opportunités et estimer les prix Alibaba / AliExpress / Amazon / Made-in-China (web SN ouvert).
+            · Top 5 par analyse). Sélectionnez les domaines puis lancez l’analyse
+            pour comparer tendances, opportunités et prix Alibaba / AliExpress / Amazon / Made-in-China.
         </p>
         {% else %}
         <p>
@@ -334,5 +348,5 @@
 {% block activity_panel %}{% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/import-master.js' %}?v=2"></script>
+<script src="{% static 'js/import-master.js' %}?v=3"></script>
 {% endblock %}

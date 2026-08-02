@@ -97,6 +97,65 @@ class ImportMasterDeepSeekNormalizeTests(TestCase):
         text = ImportMasterDeepSeekService._format_sn_range(22000, 25000)
         self.assertEqual(text, '22 000 – 25 000 XOF')
 
+    def test_sanitize_public_comment_strips_site_names(self):
+        text = ImportMasterDeepSeekService._sanitize_public_comment(
+            'forte demande et bons signaux Jumia/Jiji — candidate à stocker.',
+        )
+        self.assertNotIn('Jumia', text)
+        self.assertNotIn('Jiji', text)
+        self.assertIn('marché local', text.lower())
+
+    def test_opportunities_capped_at_five(self):
+        products = [
+            {'produit': f'P{i}', 'domaine': 'Tech', 'note': 9 - i * 0.1}
+            for i in range(8)
+        ]
+        result = ImportMasterDeepSeekService.normalize_result(
+            {
+                'produits_import': products,
+                'meilleures_opportunites': [
+                    {'produit': f'P{i}', 'note': 9 - i * 0.1, 'commentaire': 'ok Jumia'}
+                    for i in range(8)
+                ],
+            },
+            [],
+        )
+        self.assertEqual(len(result['meilleures_opportunites']), 5)
+        for opp in result['meilleures_opportunites']:
+            self.assertNotIn('Jumia', opp.get('commentaire') or '')
+
+    def test_coerce_usd_display_uses_dollar_not_usd_suffix(self):
+        self.assertEqual(
+            ImportMasterDeepSeekService._coerce_usd_display('18–22 USD'),
+            '$18 – $22',
+        )
+        self.assertEqual(
+            ImportMasterDeepSeekService._coerce_usd_display('Non pertinent'),
+            '—',
+        )
+        self.assertEqual(
+            ImportMasterDeepSeekService._coerce_usd_display('', lo=20, hi=25),
+            '$20 – $25',
+        )
+
+    def test_polish_fills_non_pertinent_from_alibaba(self):
+        result = ImportMasterDeepSeekService.polish_result_for_display({
+            'produits_import': [{
+                'prix_alibaba_usd': '18–22 USD',
+                'prix_alibaba_usd_min': 18,
+                'prix_alibaba_usd_max': 22,
+                'prix_aliexpress_usd': 'Non pertinent',
+                'prix_amazon_usd': 'Non pertinent',
+                'prix_made_in_china_usd': '20–25 USD',
+            }],
+        })
+        p = result['produits_import'][0]
+        self.assertEqual(p['prix_alibaba_usd'], '$18 – $22')
+        self.assertTrue(p['prix_aliexpress_usd'].startswith('$'))
+        self.assertNotIn('Non pertinent', p['prix_aliexpress_usd'])
+        self.assertTrue(p['prix_amazon_usd'].startswith('$'))
+        self.assertEqual(p['prix_made_in_china_usd'], '$20 – $25')
+
     def test_import_web_preferred_includes_made_in_china_only_for_im(self):
         domains = ImportMasterDeepSeekService.IMPORT_WEB_PREFERRED_DOMAINS
         self.assertIn('made-in-china.com', domains)
@@ -178,7 +237,20 @@ class ImportMasterStopAndExpireTests(TestCase):
         resp = self.client.get(reverse('intelligence:import_master'))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Lancer l’analyse comparative')
+        self.assertContains(resp, 'im-domain-modal')
         self.assertNotContains(resp, 'Arrêter l’analyse')
+
+    def test_launch_requires_domain_selection(self):
+        resp = self.client.post(
+            reverse('intelligence:import_master'),
+            {'action': 'analyser_domaines'},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(
+            ImportMasterDomainAnalysis.objects.filter(
+                status=ImportMasterDomainAnalysis.Status.PENDING,
+            ).exists()
+        )
 
 
 class ImportMasterCollectSnapshotsTests(TestCase):

@@ -82,6 +82,9 @@ class ImportMasterPageController:
         return HttpResponseRedirect(reverse('intelligence:import_master'))
     def _handle_domain_analysis(self):
         from intelligence.models import ImportMasterDomainAnalysis
+        from intelligence.services.import_master_deepseek_service import (
+            ImportMasterDeepSeekService,
+        )
         from intelligence.tasks import run_import_master_domain_analysis
 
         # Nettoie les pending/running coincés avant de relancer
@@ -100,18 +103,40 @@ class ImportMasterPageController:
             )
             return HttpResponseRedirect(reverse('intelligence:import_master'))
 
+        selected = [
+            str(s).strip()
+            for s in self.request.POST.getlist('domain_slugs')
+            if str(s).strip()
+        ]
+        available = {
+            s['domain_slug']
+            for s in ImportMasterDeepSeekService.collect_domain_snapshots()
+            if s.get('domain_slug')
+        }
+        selected = [s for s in selected if s in available]
+        if not selected:
+            messages.error(
+                self.request,
+                'Sélectionnez au moins un domaine à inclure dans l’analyse.',
+            )
+            return HttpResponseRedirect(reverse('intelligence:import_master'))
+
         analysis = ImportMasterDomainAnalysis.objects.create(
             status=ImportMasterDomainAnalysis.Status.PENDING,
             progress_message='Démarrage…',
+            domains_snapshot=[{'domain_slug': s} for s in selected],
         )
         try:
-            async_result = run_import_master_domain_analysis.delay(analysis.pk)
+            async_result = run_import_master_domain_analysis.delay(
+                analysis.pk, domain_slugs=selected,
+            )
             analysis.celery_task_id = async_result.id or ''
             analysis.progress_message = 'File d’attente Celery…'
             analysis.save(update_fields=['celery_task_id', 'progress_message'])
             messages.success(
                 self.request,
-                'Analyse comparative lancée — 2 dernières analyses par domaine + prix sourcing.',
+                f'Analyse lancée — {len(selected)} domaine(s), '
+                'Top 5 des 2 dernières analyses TI + prix sourcing.',
             )
         except Exception as exc:
             logger.exception('Celery delay Import Master échoué — fallback thread')
@@ -121,7 +146,7 @@ class ImportMasterPageController:
             analysis.save(update_fields=['progress_message', 'status'])
             thread = threading.Thread(
                 target=self._run_analysis_thread,
-                args=(analysis.pk,),
+                args=(analysis.pk, selected),
                 daemon=True,
                 name=f'im-domain-{analysis.pk}',
             )
@@ -135,7 +160,7 @@ class ImportMasterPageController:
         return HttpResponseRedirect(reverse('intelligence:import_master'))
 
     @staticmethod
-    def _run_analysis_thread(analysis_id: int) -> None:
+    def _run_analysis_thread(analysis_id: int, domain_slugs: list | None = None) -> None:
         from django.db import close_old_connections
         from intelligence.services.import_master_deepseek_service import (
             ImportMasterDeepSeekService,
@@ -143,7 +168,10 @@ class ImportMasterPageController:
 
         close_old_connections()
         try:
-            ImportMasterDeepSeekService.run_analysis(analysis_id=analysis_id)
+            ImportMasterDeepSeekService.run_analysis(
+                analysis_id=analysis_id,
+                domain_slugs=domain_slugs,
+            )
         except Exception as exc:
             from intelligence.models import ImportMasterDomainAnalysis
             ImportMasterDomainAnalysis.objects.filter(pk=analysis_id).update(

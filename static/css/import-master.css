@@ -691,3 +691,236 @@
         flex-direction: column;
     }
 }
+
+/* ---------- Modale sélection domaines ---------- */
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+body.im-modal-open {
+    overflow: hidden;
+}
+
+.im-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.im-modal.is-hidden,
+.im-modal[hidden] {
+    display: none;
+}
+
+.im-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(26, 26, 26, 0.45);
+    cursor: pointer;
+}
+
+.im-modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 100%);
+    max-height: min(88vh, 720px);
+    display: flex;
+    flex-direction: column;
+    background: var(--color-blanc);
+    border-radius: 14px;
+    box-shadow: 0 18px 48px rgba(26, 26, 26, 0.18);
+    overflow: hidden;
+}
+
+.im-modal-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.15rem 1.25rem 0.85rem;
+    border-bottom: 1px solid rgba(140, 140, 140, 0.22);
+}
+
+.im-modal-head h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--color-noir);
+}
+
+.im-modal-sub {
+    margin: 0.35rem 0 0;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    color: var(--color-gris);
+}
+
+.im-modal-close {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 8px;
+    background: #f0f3f7;
+    color: var(--color-noir);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.im-modal-close:hover {
+    background: rgba(var(--color-orange-rgb), 0.12);
+    color: var(--color-orange);
+}
+
+.im-modal-panel form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+
+.im-modal-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+    padding: 0.85rem 1.25rem;
+}
+
+.im-modal-search {
+    flex: 1 1 200px;
+}
+
+.im-modal-search input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(140, 140, 140, 0.35);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--color-noir);
+    background: #f8fafc;
+}
+
+.im-modal-search input:focus {
+    outline: 2px solid rgba(var(--color-bleu-rgb), 0.35);
+    border-color: var(--color-bleu);
+    background: var(--color-blanc);
+}
+
+.im-btn--sm {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.im-modal-list {
+    flex: 1;
+    min-height: 160px;
+    max-height: 42vh;
+    overflow-y: auto;
+    padding: 0 1rem 0.5rem;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.im-domain-check {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    background: #f5f7fa;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.im-domain-check:hover {
+    background: rgba(var(--color-bleu-rgb), 0.08);
+}
+
+.im-domain-check input {
+    margin-top: 0.2rem;
+    accent-color: var(--color-orange);
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+.im-domain-check-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.im-domain-check-body strong {
+    font-size: 0.92rem;
+    color: var(--color-noir);
+}
+
+.im-domain-check-body em {
+    font-style: normal;
+    font-size: 0.76rem;
+    color: var(--color-gris);
+}
+
+.im-modal-empty {
+    margin: 1rem 0.5rem;
+    color: var(--color-gris);
+    font-size: 0.9rem;
+}
+
+.im-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.9rem 1.25rem 1.15rem;
+    border-top: 1px solid rgba(140, 140, 140, 0.22);
+    background: #fafbfc;
+}
+
+.im-modal-count {
+    margin: 0;
+    margin-right: auto;
+    font-size: 0.8rem;
+    color: var(--color-gris);
+}
+
+@media (max-width: 640px) {
+    .im-modal {
+        padding: 0.5rem;
+        align-items: flex-end;
+    }
+
+    .im-modal-panel {
+        width: 100%;
+        max-height: 92vh;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .im-modal-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .im-modal-count {
+        margin-right: 0;
+        text-align: center;
+    }
+}

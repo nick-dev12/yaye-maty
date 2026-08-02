@@ -348,18 +348,111 @@ class DeepSeekAnalysisService:
         return {}
 
     @classmethod
-    def _parse_json_response(cls, raw: str) -> dict:
-        """Parse le JSON DeepSeek (strip markdown, erreur claire si vide)."""
+    def _strip_json_fences(cls, raw: str) -> str:
         text = (raw or '').strip()
+        if text.startswith('```'):
+            text = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE)
+            text = re.sub(r'\s*```$', '', text)
+        return text.strip()
+
+    @classmethod
+    def _json_stack_state(cls, text: str) -> tuple[bool, list[str]]:
+        """Retourne (in_string, pile de fermetures attendues)."""
+        in_string = False
+        escape = False
+        stack: list[str] = []
+        for ch in text:
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == '\\':
+                    escape = True
+                elif ch == '"':
+                    in_string = False
+                continue
+            if ch == '"':
+                in_string = True
+            elif ch == '{':
+                stack.append('}')
+            elif ch == '[':
+                stack.append(']')
+            elif ch in '}]':
+                if stack and stack[-1] == ch:
+                    stack.pop()
+        return in_string, stack
+
+    @classmethod
+    def _close_truncated_json(cls, text: str) -> str:
+        """Ferme guillemets / crochets / accolades d'un JSON coupé (max_tokens)."""
+        s = (text or '').rstrip()
+        if not s:
+            return s
+
+        in_string, _stack = cls._json_stack_state(s)
+        if in_string:
+            s += '"'
+
+        # Clé orpheline en fin : ,"foo":   ou   ,"foo
+        s = re.sub(r',\s*"[^"]*"\s*:\s*$', '', s)
+        s = re.sub(r',\s*"[^"]*$', '', s)
+        # Valeur manquante après « : »
+        s = re.sub(r':\s*$', ': null', s)
+        s = re.sub(r',\s*$', '', s)
+
+        _in_string, stack = cls._json_stack_state(s)
+        if _in_string:
+            s += '"'
+            _in_string, stack = cls._json_stack_state(s)
+        s += ''.join(reversed(stack))
+        return s
+
+    @classmethod
+    def _repair_truncated_json(cls, text: str) -> dict | None:
+        """Tente plusieurs stratégies de réparation si le JSON est tronqué."""
+        candidates = [cls._close_truncated_json(text)]
+        # Tronque au dernier objet/élément probablement complet
+        for marker, end_len in (('},', 1), ('"]', 2), (']', 1), ('"}', 2)):
+            idx = text.rfind(marker)
+            if idx <= 0:
+                continue
+            candidates.append(cls._close_truncated_json(text[: idx + end_len]))
+
+        seen: set[str] = set()
+        for cand in candidates:
+            if not cand or cand in seen:
+                continue
+            seen.add(cand)
+            try:
+                data = json.loads(cand)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(data, dict):
+                return data
+        return None
+
+    @classmethod
+    def _parse_json_response(cls, raw: str) -> dict:
+        """Parse le JSON DeepSeek (strip markdown, réparation si tronqué)."""
+        text = cls._strip_json_fences(raw)
         if not text:
             raise ValueError(
                 'Réponse DeepSeek vide — vérifiez DEEPSEEK_API_KEY, le modèle '
                 'deepseek-v4-flash et le redémarrage Celery.'
             )
-        if text.startswith('```'):
-            text = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE)
-            text = re.sub(r'\s*```$', '', text)
-        return json.loads(text)
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            repaired = cls._repair_truncated_json(text)
+            if repaired is not None:
+                logger.warning(
+                    'JSON DeepSeek tronqué réparé (%s) — réponse partielle utilisée.',
+                    exc,
+                )
+                return repaired
+            raise ValueError(f'JSON DeepSeek invalide : {exc}') from exc
+        if not isinstance(data, dict):
+            raise ValueError('JSON DeepSeek : objet attendu.')
+        return data
 
     @classmethod
     def fetch_web_context(

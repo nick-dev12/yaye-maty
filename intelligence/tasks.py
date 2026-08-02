@@ -346,7 +346,7 @@ def generate_import_opportunities(window_days: int = 7) -> dict:
 
 
 @shared_task(bind=True, name='intelligence.run_import_master_domain_analysis', time_limit=900, soft_time_limit=840)
-def run_import_master_domain_analysis(self, analysis_id: int) -> dict:
+def run_import_master_domain_analysis(self, analysis_id: int, domain_slugs=None) -> dict:
     """Import Master — comparaison multi-domaines DeepSeek + prix sourcing."""
     from intelligence.models import ImportMasterDomainAnalysis
     from intelligence.services.collection_cancel_service import CollectionCancelService
@@ -382,6 +382,7 @@ def run_import_master_domain_analysis(self, analysis_id: int) -> dict:
         result = ImportMasterDeepSeekService.run_analysis(
             progress=progress,
             analysis_id=analysis_id,
+            domain_slugs=domain_slugs,
             should_cancel=should_cancel,
         )
         # Si stoppé pendant l’exécution

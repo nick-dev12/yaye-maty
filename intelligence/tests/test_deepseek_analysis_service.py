@@ -168,6 +168,17 @@ class DeepSeekAnalysisServiceTests(SimpleTestCase):
         with self.assertRaises(ValueError):
             DeepSeekAnalysisService._parse_json_response('')
 
+    def test_parse_json_response_repairs_truncated(self):
+        # Simule une coupure mid-string (comme Import Master max_tokens)
+        raw = (
+            '{"resume": "ok", "produits_import": ['
+            '{"produit": "A", "note": 8.5, "commentaire": "texte coupé'
+        )
+        data = DeepSeekAnalysisService._parse_json_response(raw)
+        self.assertIsInstance(data, dict)
+        self.assertEqual(data.get('resume'), 'ok')
+        self.assertIsInstance(data.get('produits_import'), list)
+
     def test_normalize_web_domain(self):
         self.assertEqual(
             DeepSeekAnalysisService.normalize_web_domain('https://www.Jumia.sn/catalog/'),

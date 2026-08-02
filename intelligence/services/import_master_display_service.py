@@ -4,6 +4,7 @@ Contexte UI Import Master — rapport DeepSeek comparaison domaines uniquement.
 
 from __future__ import annotations
 
+import copy
 from datetime import timedelta
 
 from django.utils import timezone
@@ -55,6 +56,10 @@ class ImportMasterDisplayService:
         result = (latest.analysis_result or {}) if latest else {}
         if not isinstance(result, dict):
             result = {}
+        else:
+            result = ImportMasterDeepSeekService.polish_result_for_display(
+                copy.deepcopy(result),
+            )
 
         reco_counts = {'buy': 0, 'watch': 0, 'avoid': 0}
         for row in result.get('produits_import') or []:
