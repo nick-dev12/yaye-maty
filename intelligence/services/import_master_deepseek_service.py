@@ -79,7 +79,7 @@ COMPARE_USER = """Analyse comparative d'importation YAYEMATY.
 Consignes :
 - Les prix et marges DOIVENT provenir de la RECHERCHE WEB ; croiser plusieurs résultats web.
 - Si le web contredit une synthèse TI : suivre le web, baisser la note, alerter dans commentaire_prix.
-- Chaque domaine inclut jusqu'à 2 analyses récentes : tendances notes / produits (sans recopier leurs prix).
+- Chaque domaine inclut la dernière analyse TI récente : Top 5 produits (sans recopier leurs prix).
 - Compare les domaines : demande réelle, marge après vérification web, risque stock, concurrence.
 - EXACTEMENT 10 produits dans produits_import (Top 10), triés par note décroissante.
 - EXACTEMENT 5 meilleures_opportunites (Top 5), alignées sur les meilleurs produits vérifiés.
@@ -164,7 +164,7 @@ Réponds avec ce JSON exact :
 class ImportMasterDeepSeekService:
     """Compare domaines déjà analysés + opportunités / prix web via DeepSeek."""
 
-    SESSIONS_PER_DOMAIN = 2
+    SESSIONS_PER_DOMAIN = 1
     TOP_PRODUCTS_PER_SESSION = 5
     MAX_SESSION_AGE_DAYS = 90
 
@@ -285,7 +285,7 @@ class ImportMasterDeepSeekService:
         domain_slugs: list[str] | None = None,
     ) -> list[dict]:
         """
-        Dernières sessions DONE/STOPPED par domaine (défaut : 2 analyses, Top 5).
+        Dernière session DONE/STOPPED par domaine (défaut : 1 analyse, Top 5).
         ``domain_slugs`` : filtre optionnel (sélection UI).
         """
         n_sessions = max(1, int(
@@ -1469,7 +1469,7 @@ class ImportMasterDeepSeekService:
         if not selected and analysis:
             selected = cls._selected_slugs_from_analysis(analysis) or []
 
-        report(5, 'Chargement des 2 dernières analyses TI (Top 5) par domaine…')
+        report(5, 'Chargement de la dernière analyse TI (Top 5) par domaine…')
         snapshots = cls.collect_domain_snapshots(
             domain_slugs=selected or None,
             per_session_top=cls.TOP_PRODUCTS_PER_SESSION,

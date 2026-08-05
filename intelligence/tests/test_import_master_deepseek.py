@@ -305,7 +305,7 @@ class ImportMasterCollectSnapshotsTests(TestCase):
             self.assertIn('top_produits', snap)
             self.assertIn('sessions', snap)
 
-    def test_collect_limits_two_sessions_per_domain(self):
+    def test_collect_limits_one_session_per_domain(self):
         slug = 'test-im-tech-isolated'
         MarketResearchSession.objects.filter(domain_slug=slug).delete()
         analysis = {
@@ -324,11 +324,11 @@ class ImportMasterCollectSnapshotsTests(TestCase):
             )
         snaps = [
             s for s in ImportMasterDeepSeekService.collect_domain_snapshots(
-                sessions_per_domain=2,
+                sessions_per_domain=1,
             )
             if s['domain_slug'] == slug
         ]
         self.assertEqual(len(snaps), 1)
-        self.assertEqual(snaps[0]['sessions_count'], 2)
-        self.assertEqual(len(snaps[0]['sessions']), 2)
+        self.assertEqual(snaps[0]['sessions_count'], 1)
+        self.assertEqual(len(snaps[0]['sessions']), 1)
         MarketResearchSession.objects.filter(domain_slug=slug).delete()

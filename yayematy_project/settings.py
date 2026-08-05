@@ -148,6 +148,34 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT', '3600'))
+
+# E-mail SMTP (cPanel — mail.yayematy.com, port 465 SSL)
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'yayematy_project.email_backend.EmailBackend',
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'mail.yayematy.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '465'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'service@yayematy.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'True').lower() in ('true', '1', 'yes')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'False').lower() in ('true', '1', 'yes')
+EMAIL_SSL_INSECURE = os.getenv('EMAIL_SSL_INSECURE', 'True').lower() in ('true', '1', 'yes')
+DEFAULT_FROM_EMAIL = os.getenv(
+    'DEFAULT_FROM_EMAIL',
+    'YAYEMATY MARKET <service@yayematy.com>',
+)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+# Liens dans les e-mails de réinitialisation (prod : https + analyse.yayematy.com)
+EMAIL_RESET_DOMAIN = os.getenv(
+    'EMAIL_RESET_DOMAIN',
+    ALLOWED_HOSTS[0] if ALLOWED_HOSTS else '127.0.0.1:8000',
+)
+EMAIL_RESET_USE_HTTPS = os.getenv(
+    'EMAIL_RESET_USE_HTTPS',
+    'False' if DEBUG else 'True',
+).lower() in ('true', '1', 'yes')
 
 # Scraping réseaux sociaux (Playwright Stealth — VPS)
 SOCIAL_SCRAPER = {

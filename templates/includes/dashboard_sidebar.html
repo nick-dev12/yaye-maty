@@ -40,10 +40,6 @@
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path stroke-linecap="round" d="M10 6v4h3"/></svg>
                 <span class="nav-item-label">Domaines</span>
             </a>
-            <a href="{% url 'intelligence:collecte_test' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'collecte_test' %} active{% endif %}" data-nav-label="session test collecte">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4v4l3 2M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
-                <span class="nav-item-label">Session test</span>
-            </a>
             <a href="{% url 'intelligence:index' %}" class="nav-item{% if request.resolver_match.namespace == 'intelligence' and request.resolver_match.url_name == 'index' %} active{% endif %}" data-nav-label="trade intelligence">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 15V5m4 10V9m4 6V7m4 8V4"/></svg>
                 <span class="nav-item-label">Trade Intelligence</span>

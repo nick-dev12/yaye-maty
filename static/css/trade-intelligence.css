@@ -898,3 +898,371 @@
         padding: 0.38rem 0.5rem;
     }
 }
+
+/* ---------- Sélecteur multi-domaines + modale ---------- */
+
+.ti-field--domains {
+    min-width: 0;
+}
+
+.ti-domain-picker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2.65rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid rgba(var(--color-gris-rgb), 0.35);
+    border-radius: var(--radius-sm);
+    background: var(--color-blanc);
+    color: var(--color-noir);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+
+.ti-domain-picker:hover:not(:disabled) {
+    border-color: var(--color-bleu);
+}
+
+.ti-domain-picker:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ti-domain-picker-ico {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--color-gris);
+}
+
+body.ti-modal-open {
+    overflow: hidden;
+}
+
+.ti-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.ti-modal.is-hidden,
+.ti-modal[hidden] {
+    display: none !important;
+}
+
+.ti-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    border: none;
+    background: rgba(26, 26, 26, 0.45);
+    cursor: pointer;
+}
+
+.ti-modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(520px, 100%);
+    max-height: min(85vh, 640px);
+    display: flex;
+    flex-direction: column;
+    background: var(--color-blanc);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(26, 26, 26, 0.18);
+    overflow: hidden;
+}
+
+.ti-modal-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.15rem 1.25rem 0.75rem;
+    border-bottom: 1px solid rgba(var(--color-gris-rgb), 0.15);
+}
+
+.ti-modal-kicker {
+    margin: 0 0 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-bleu);
+}
+
+.ti-modal-head h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--color-noir);
+}
+
+.ti-modal-sub {
+    margin: 0.35rem 0 0;
+    font-size: 0.82rem;
+    color: var(--color-gris);
+    line-height: 1.45;
+}
+
+.ti-modal-close {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-gris);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.ti-modal-close:hover {
+    background: rgba(var(--color-gris-rgb), 0.12);
+    color: var(--color-noir);
+}
+
+.ti-modal-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    align-items: center;
+}
+
+.ti-modal-search {
+    flex: 1 1 180px;
+}
+
+.ti-modal-search input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(var(--color-gris-rgb), 0.35);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-family: inherit;
+}
+
+.ti-modal-search input:focus {
+    outline: none;
+    border-color: var(--color-bleu);
+    box-shadow: 0 0 0 2px rgba(var(--color-bleu-rgb), 0.15);
+}
+
+.ti-btn-outline,
+.ti-btn-primary,
+.ti-btn-sm {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.ti-btn-outline {
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(var(--color-gris-rgb), 0.35);
+    background: var(--color-blanc);
+    color: var(--color-noir);
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+.ti-btn-outline:hover:not(:disabled) {
+    border-color: var(--color-bleu);
+    color: var(--color-bleu);
+}
+
+.ti-btn-primary {
+    padding: 0.55rem 1rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-orange);
+    color: var(--color-blanc);
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.ti-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+}
+
+.ti-btn-sm {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.78rem;
+}
+
+.ti-modal-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0 1.25rem;
+    display: grid;
+    gap: 0.45rem;
+    max-height: 320px;
+}
+
+.ti-domain-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(var(--color-gris-rgb), 0.2);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.ti-domain-check:hover {
+    border-color: rgba(var(--color-bleu-rgb), 0.45);
+    background: rgba(var(--color-bleu-rgb), 0.04);
+}
+
+.ti-domain-check input {
+    margin-top: 0.2rem;
+    accent-color: var(--color-orange);
+}
+
+.ti-domain-check-body strong {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--color-noir);
+}
+
+.ti-modal-empty {
+    margin: 0;
+    padding: 1rem 0;
+    font-size: 0.85rem;
+    color: var(--color-gris);
+}
+
+.ti-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.85rem 1.25rem 1.15rem;
+    border-top: 1px solid rgba(var(--color-gris-rgb), 0.15);
+}
+
+.ti-modal-count {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--color-gris);
+}
+
+@media (min-width: 480px) {
+    .ti-modal-count {
+        flex: 1 1 auto;
+    }
+}
+
+/* ---------- Suivi batch multi-domaines ---------- */
+
+.ti-batch {
+    margin: 0.75rem 0 1rem;
+    padding: 1rem 1.15rem;
+    background: var(--color-blanc);
+    border: 1px solid rgba(var(--color-bleu-rgb), 0.2);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.ti-batch-title {
+    margin: 0 0 0.35rem;
+    font-size: 0.92rem;
+    color: var(--color-noir);
+}
+
+.ti-batch-summary {
+    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
+    color: var(--color-gris);
+}
+
+.ti-batch-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.ti-batch-item {
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    background: rgba(var(--color-bleu-rgb), 0.04);
+    border: 1px solid rgba(var(--color-gris-rgb), 0.15);
+}
+
+.ti-batch-item.is-done {
+    border-color: rgba(var(--color-bleu-rgb), 0.35);
+}
+
+.ti-batch-item.is-failed {
+    border-color: rgba(220, 53, 69, 0.35);
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.ti-batch-item.is-waiting {
+    opacity: 0.82;
+    background: rgba(var(--color-gris-rgb), 0.06);
+}
+
+.ti-batch-item.is-waiting .ti-batch-item-bar-fill {
+    width: 0 !important;
+}
+
+.ti-batch-item-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.ti-batch-item-name {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--color-noir);
+}
+
+.ti-batch-item-msg {
+    font-size: 0.75rem;
+    color: var(--color-gris);
+}
+
+.ti-batch-item-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(var(--color-gris-rgb), 0.15);
+    overflow: hidden;
+}
+
+.ti-batch-item-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-bleu), var(--color-orange));
+    transition: width 0.35s ease;
+}
+
+.ti-batch-view-btn {
+    margin-top: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--color-bleu);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-bleu);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.ti-batch-view-btn:hover {
+    background: rgba(var(--color-bleu-rgb), 0.08);
+}

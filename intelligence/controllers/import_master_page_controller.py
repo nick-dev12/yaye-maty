@@ -136,7 +136,7 @@ class ImportMasterPageController:
             messages.success(
                 self.request,
                 f'Analyse lancée — {len(selected)} domaine(s), '
-                'Top 5 des 2 dernières analyses TI + prix sourcing.',
+                'Top 5 de la dernière analyse TI + prix sourcing.',
             )
         except Exception as exc:
             logger.exception('Celery delay Import Master échoué — fallback thread')

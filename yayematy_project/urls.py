@@ -20,10 +20,36 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from . import views
+from .password_reset_views import (
+    YayematyPasswordResetCompleteView,
+    YayematyPasswordResetConfirmView,
+    YayematyPasswordResetDoneView,
+    YayematyPasswordResetView,
+)
 
 urlpatterns = [
     path('', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('inscription/', views.register_view, name='register'),
+    path(
+        'mot-de-passe/oublie/',
+        YayematyPasswordResetView.as_view(),
+        name='password_reset',
+    ),
+    path(
+        'mot-de-passe/oublie/envoye/',
+        YayematyPasswordResetDoneView.as_view(),
+        name='password_reset_done',
+    ),
+    path(
+        'mot-de-passe/reinitialiser/<uidb64>/<token>/',
+        YayematyPasswordResetConfirmView.as_view(),
+        name='password_reset_confirm',
+    ),
+    path(
+        'mot-de-passe/reinitialise/',
+        YayematyPasswordResetCompleteView.as_view(),
+        name='password_reset_complete',
+    ),
     path('tableau-de-bord/', views.dashboard_view, name='dashboard'),
     path('profil/', views.profile_view, name='profile'),
     path('parametres/', views.settings_view, name='settings'),

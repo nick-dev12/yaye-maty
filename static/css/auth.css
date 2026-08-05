@@ -701,3 +701,119 @@
         font-size: 0.625rem;
     }
 }
+
+/* Panneaux connexion / réinitialisation */
+.auth-card--switchable {
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-panel {
+    animation: fadeSlideIn 0.35s ease-out;
+}
+
+.auth-panel[hidden] {
+    display: none !important;
+}
+
+.auth-kicker {
+    margin: 0 0 0.35rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-bleu);
+}
+
+.form-group-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.auth-link-btn {
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-bleu);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.auth-link-btn:hover {
+    color: var(--color-orange);
+}
+
+.auth-reset-note {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-start;
+    margin: 1.25rem 0;
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+    background: rgba(var(--color-bleu-rgb), 0.08);
+    border: 1px solid rgba(var(--color-bleu-rgb), 0.15);
+}
+
+.auth-reset-note svg {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    color: var(--color-bleu);
+    margin-top: 0.1rem;
+}
+
+.auth-reset-note p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-gris);
+}
+
+.auth-back-login {
+    width: 100%;
+    margin-top: 0.75rem;
+}
+
+.auth-card--status {
+    text-align: center;
+}
+
+.auth-card--status .auth-card-header {
+    margin-bottom: 1.25rem;
+}
+
+.auth-status-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: 0 auto 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.auth-status-icon svg {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.auth-status-icon--success {
+    background: rgba(var(--color-bleu-rgb), 0.12);
+    color: var(--color-bleu);
+}
+
+.field-error {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    color: #c0392b;
+}
+
+.input-wrapper .errorlist {
+    display: none;
+}

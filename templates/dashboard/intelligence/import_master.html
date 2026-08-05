@@ -43,7 +43,7 @@
                 <div>
                     <p class="im-kicker">Sélection</p>
                     <h2 id="im-domain-modal-title">Domaines à analyser</h2>
-                    <p class="im-modal-sub">Top 5 produits des 2 dernières analyses TI par domaine sélectionné.</p>
+                    <p class="im-modal-sub">Top 5 produits de la dernière analyse TI par domaine sélectionné.</p>
                 </div>
                 <button type="button" class="im-modal-close" id="im-domain-modal-close" aria-label="Fermer">×</button>
             </header>
@@ -306,17 +306,6 @@
     </section>
     {% endif %}
 
-    {% if r.alertes %}
-    <section class="im-block im-block--alerts" aria-labelledby="im-alert-title">
-        <header class="im-block-head">
-            <h2 id="im-alert-title">Points de vigilance</h2>
-        </header>
-        <ul class="im-domain-alerts">
-            {% for a in r.alertes %}<li>{{ a }}</li>{% endfor %}
-        </ul>
-    </section>
-    {% endif %}
-
     {% endwith %}
     {% else %}
     <section class="im-empty-report">
@@ -325,7 +314,7 @@
         <p>
             {{ im_domains_available }} domaine{{ im_domains_available|pluralize }}
             · {{ im_sessions_available|default:im_domains_available }} analyse{{ im_sessions_available|default:im_domains_available|pluralize }} récente{{ im_sessions_available|default:im_domains_available|pluralize }}
-            · Top 5 par analyse). Sélectionnez les domaines puis lancez l’analyse
+            · Top 5 de la dernière analyse par domaine). Sélectionnez les domaines puis lancez l’analyse
             pour comparer tendances, opportunités et prix Alibaba / AliExpress / Amazon.
         </p>
         {% else %}

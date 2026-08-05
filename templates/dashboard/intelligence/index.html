@@ -6,7 +6,7 @@
 {% block body_class %}intel-layout{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=10">
+<link rel="stylesheet" href="{% static 'css/trade-intelligence.css' %}?v=11">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -34,18 +34,23 @@
 
     <section class="ti-toolbar" aria-label="Filtres de recherche">
         <div class="ti-toolbar-left">
-            <label class="ti-field">
-                <span class="ti-field-label">DOMAINE</span>
-                <select id="ti-domain" class="ti-select" aria-label="Domaine">
-                    <option value="">— Choisir —</option>
-                    {% for d in domains %}
-                    <option value="{{ d.slug }}" {% if selected_domain_slug == d.slug or session and session.domain_slug == d.slug %}selected{% endif %}>{{ d.label }}</option>
-                    {% endfor %}
-                </select>
+            <div class="ti-field ti-field--domains">
+                <span class="ti-field-label">DOMAINES</span>
+                <button type="button"
+                        class="ti-domain-picker"
+                        id="ti-domain-picker"
+                        {% if not domains %}disabled{% endif %}
+                        aria-haspopup="dialog"
+                        aria-controls="ti-domain-modal">
+                    <span id="ti-domain-picker-label">— Choisir —</span>
+                    <svg class="ti-domain-picker-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 7.5l5 5 5-5"/>
+                    </svg>
+                </button>
                 {% if not domains %}
                 <small class="ti-field-hint">Aucun domaine — <a href="{% url 'intelligence:domaines' %}#gestion">ajoutez-en ici</a></small>
                 {% endif %}
-            </label>
+            </div>
             <label class="ti-field">
                 <span class="ti-field-label">DURÉE</span>
                 <select id="ti-duration" class="ti-select" aria-label="Durée">
@@ -73,19 +78,56 @@
         </nav>
     </section>
 
+    <div class="ti-modal is-hidden" id="ti-domain-modal" role="dialog" aria-modal="true" aria-labelledby="ti-domain-modal-title" hidden>
+        <button type="button" class="ti-modal-backdrop" id="ti-domain-modal-backdrop" aria-label="Fermer"></button>
+        <div class="ti-modal-panel">
+            <header class="ti-modal-head">
+                <div>
+                    <p class="ti-modal-kicker">Sélection</p>
+                    <h2 id="ti-domain-modal-title">Domaines à analyser</h2>
+                    <p class="ti-modal-sub">Une session Trade Intelligence par domaine — lancées en parallèle.</p>
+                </div>
+                <button type="button" class="ti-modal-close" id="ti-domain-modal-close" aria-label="Fermer">×</button>
+            </header>
+            <div class="ti-modal-toolbar">
+                <label class="ti-modal-search">
+                    <span class="visually-hidden">Rechercher un domaine</span>
+                    <input type="search" id="ti-domain-search" placeholder="Filtrer les domaines…" autocomplete="off">
+                </label>
+                <button type="button" class="ti-btn-outline ti-btn-sm" id="ti-domain-select-all">Tout sélectionner</button>
+            </div>
+            <div class="ti-modal-list" id="ti-domain-list">
+                {% for d in domains %}
+                <label class="ti-domain-check" data-domain-label="{{ d.label|lower }}">
+                    <input type="checkbox" name="domain_slugs" value="{{ d.slug }}"
+                           {% if selected_domain_slug == d.slug %}checked{% endif %}>
+                    <span class="ti-domain-check-body">
+                        <strong>{{ d.label }}</strong>
+                    </span>
+                </label>
+                {% empty %}
+                <p class="ti-modal-empty">Aucun domaine — configurez-les dans Domaines.</p>
+                {% endfor %}
+            </div>
+            <footer class="ti-modal-actions">
+                <p class="ti-modal-count" id="ti-domain-count"></p>
+                <button type="button" class="ti-btn-outline" id="ti-domain-modal-cancel">Annuler</button>
+                <button type="button" class="ti-btn-primary" id="ti-domain-modal-confirm">Valider la sélection</button>
+            </footer>
+        </div>
+    </div>
+
     <div class="ti-progress" id="ti-progress" hidden>
         <div class="ti-progress-bar" id="ti-progress-bar" style="width: 0%"></div>
         <p class="ti-progress-msg" id="ti-progress-msg">Initialisation…</p>
         <p class="ti-timer" id="ti-timer"></p>
     </div>
 
-    <p class="ti-web-meta" id="ti-web-meta"{% if not analysis.web_watch %} hidden{% endif %}>
-        Veille web :
-        <strong id="ti-web-rounds">{{ analysis.web_watch.research_rounds|default:"—" }}</strong> tour(s)
-        × <strong id="ti-web-uses">{{ analysis.web_watch.max_uses|default:"—" }}</strong> recherches/tour
-        · sites :
-        <span id="ti-web-sites">{% if analysis.web_watch.allowed_domains %}{{ analysis.web_watch.allowed_domains|join:", " }}{% else %}web ouvert{% endif %}</span>
-    </p>
+    <div class="ti-batch" id="ti-batch" hidden>
+        <h3 class="ti-batch-title">Analyses en cours</h3>
+        <p class="ti-batch-summary" id="ti-batch-summary"></p>
+        <ul class="ti-batch-list" id="ti-batch-list"></ul>
+    </div>
 
     <section class="ti-highlights" id="ti-highlights" {% if not has_results %}hidden{% endif %}>
         <article class="ti-highlight-card">
@@ -172,7 +214,7 @@
                     {% else %}
                         <tr id="ti-empty-row">
                             <td colspan="5" class="ti-empty">
-                                Sélectionnez un domaine et une durée, puis lancez « Analyser le marché ».
+                                Sélectionnez un ou plusieurs domaines et une durée, puis lancez « Analyser le marché ».
                                 <br><small>Collecte + analyse IA jusqu’à la fin du temps, puis Top 15.</small>
                             </td>
                         </tr>
@@ -189,5 +231,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/trade-intelligence.js' %}?v=9"></script>
+<script src="{% static 'js/trade-intelligence.js' %}?v=11"></script>
 {% endblock %}

@@ -72,6 +72,47 @@ class TradeIntelligenceController:
         }
 
     @staticmethod
+    def _launch_sessions(
+        domain_slugs: list[str],
+        *,
+        keyword: str = '',
+        duration_minutes=20,
+        sources=None,
+    ) -> tuple[list[dict], str | None]:
+        """Crée une session + tâche Celery par domaine. Retourne (sessions, erreur)."""
+        from intelligence.services.market_research_orchestrator import MarketResearchOrchestrator
+
+        launched: list[dict] = []
+        for slug in domain_slugs:
+            try:
+                session = MarketResearchOrchestrator.create_session(
+                    slug,
+                    keyword,
+                    duration_minutes=duration_minutes,
+                    sources=sources,
+                )
+            except ValueError as exc:
+                if not launched:
+                    return [], str(exc)
+                continue
+
+            task = run_market_research_session.delay(session.pk)
+            session.celery_task_id = task.id
+            session.status = MarketResearchSession.Status.PENDING
+            session.save(update_fields=['celery_task_id', 'status'])
+            launched.append({
+                'task_id': task.id,
+                'session_id': session.pk,
+                'domain_slug': session.domain_slug,
+                'domain_label': session.domain_label,
+                'duration_minutes': session.duration_minutes,
+                'search_query': session.search_query,
+            })
+        if not launched:
+            return [], 'Aucun domaine valide sélectionné.'
+        return launched, None
+
+    @staticmethod
     @require_POST
     def api_lancer(request):
         try:
@@ -79,41 +120,53 @@ class TradeIntelligenceController:
         except json.JSONDecodeError:
             payload = {}
 
-        domain_slug = (payload.get('domain_slug') or '').strip()
         keyword = (payload.get('keyword') or '').strip()
         duration_minutes = payload.get('duration_minutes', 20)
         sources = payload.get('sources')  # None = toutes
 
-        if not domain_slug:
+        raw_slugs = payload.get('domain_slugs')
+        if isinstance(raw_slugs, list):
+            domain_slugs = list(dict.fromkeys(
+                str(s).strip() for s in raw_slugs if str(s).strip()
+            ))
+        else:
+            single = (payload.get('domain_slug') or '').strip()
+            domain_slugs = [single] if single else []
+
+        if not domain_slugs:
             return JsonResponse(
-                {'success': False, 'error': 'Sélectionnez un domaine.'},
+                {'success': False, 'error': 'Sélectionnez au moins un domaine.'},
                 status=400,
             )
-        # Mot-clé optionnel : affine le Top 10 (ex. « iphone » → modèles iPhone SN)
 
-        from intelligence.services.market_research_orchestrator import MarketResearchOrchestrator
+        launched, error = TradeIntelligenceController._launch_sessions(
+            domain_slugs,
+            keyword=keyword,
+            duration_minutes=duration_minutes,
+            sources=sources,
+        )
+        if error:
+            return JsonResponse({'success': False, 'error': error}, status=400)
 
-        try:
-            session = MarketResearchOrchestrator.create_session(
-                domain_slug,
-                keyword,
-                duration_minutes=duration_minutes,
-                sources=sources,
-            )
-        except ValueError as exc:
-            return JsonResponse({'success': False, 'error': str(exc)}, status=400)
-
-        task = run_market_research_session.delay(session.pk)
-        session.celery_task_id = task.id
-        session.status = MarketResearchSession.Status.PENDING
-        session.save(update_fields=['celery_task_id', 'status'])
+        if len(launched) == 1:
+            one = launched[0]
+            return JsonResponse({
+                'success': True,
+                'batch': False,
+                'task_id': one['task_id'],
+                'session_id': one['session_id'],
+                'domain_slug': one['domain_slug'],
+                'domain_label': one['domain_label'],
+                'duration_minutes': one['duration_minutes'],
+                'search_query': one['search_query'],
+            })
 
         return JsonResponse({
             'success': True,
-            'task_id': task.id,
-            'session_id': session.pk,
-            'duration_minutes': session.duration_minutes,
-            'search_query': session.search_query,
+            'batch': True,
+            'count': len(launched),
+            'sessions': launched,
+            'duration_minutes': launched[0]['duration_minutes'],
         })
 
     @staticmethod

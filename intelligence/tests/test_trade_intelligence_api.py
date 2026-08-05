@@ -32,7 +32,8 @@ class TradeIntelligenceApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SENEGAL TRADE INTELLIGENCE')
         self.assertContains(response, 'TOP 15 PRODUITS')
-        self.assertNotContains(response, 'MOT-CLÉ')
+        self.assertContains(response, 'DOMAINES')
+        self.assertContains(response, 'ti-domain-modal')
         self.assertContains(response, 'DURÉE')
         self.assertNotContains(response, 'CATÉGORIE')
 
@@ -54,6 +55,34 @@ class TradeIntelligenceApiTests(TestCase):
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 400)
+
+    @patch('intelligence.controllers.trade_intelligence_controller.run_market_research_session')
+    def test_api_lancer_batch_domains(self, mock_task):
+        MarketDomain.objects.create(
+            slug='mode',
+            label='Mode',
+            cat_id=14,
+            is_active=True,
+        )
+        mock_task.delay.side_effect = [
+            type('T', (), {'id': 'task-1'})(),
+            type('T', (), {'id': 'task-2'})(),
+        ]
+        response = self.client.post(
+            reverse('intelligence:trade_api_lancer'),
+            data=json.dumps({
+                'domain_slugs': ['telephonie', 'mode'],
+                'duration_minutes': 10,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['batch'])
+        self.assertEqual(data['count'], 2)
+        self.assertEqual(len(data['sessions']), 2)
+        self.assertEqual(mock_task.delay.call_count, 2)
 
     def test_create_session(self):
         session = MarketResearchOrchestrator.create_session(

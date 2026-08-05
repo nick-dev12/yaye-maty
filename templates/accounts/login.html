@@ -1,39 +1,11 @@
 {% extends "accounts/base_auth.html" %}
+{% load static %}
 
 {% block title %}Connexion — YAYEMATY MARKET{% endblock %}
 
 {% block content %}
 <div class="auth-page">
-    <aside class="auth-brand-panel">
-        <div class="auth-brand-content">
-            <div class="auth-logo">
-                {% include "includes/brand_logo.html" with logo_class="brand-logo--auth" %}
-            </div>
-
-            <div class="auth-brand-text">
-                <h2>Anticipez la demande,<br>optimisez vos stocks.</h2>
-                <p>Plateforme dédiée à l'équipement agricole au Sénégal. Analysez les tendances, pilotez votre activité.</p>
-            </div>
-
-            <ul class="auth-features">
-                <li>
-                    <span class="feature-icon feature-icon--orange" aria-hidden="true">&#9670;</span>
-                    Tableau de bord data-driven
-                </li>
-                <li>
-                    <span class="feature-icon feature-icon--bleu" aria-hidden="true">&#9670;</span>
-                    Suivi des tendances de marché
-                </li>
-                <li>
-                    <span class="feature-icon feature-icon--jaune" aria-hidden="true">&#9670;</span>
-                    Gestion e-commerce intégrée
-                </li>
-            </ul>
-        </div>
-        <div class="auth-brand-footer">
-            <p>&copy; {% now "Y" %} YAYEMATY MARKET — Sénégal</p>
-        </div>
-    </aside>
+    {% include "accounts/includes/auth_brand_panel.html" %}
 
     <main class="auth-form-panel">
         <div class="auth-form-wrapper">
@@ -45,62 +17,108 @@
             </div>
             {% endif %}
 
-            <div class="auth-card">
-                <div class="auth-card-header">
-                    <h2>Bienvenue</h2>
-                    <p class="auth-subtitle">Connectez-vous à votre espace administrateur</p>
-                </div>
-
-                {% if form.errors %}
-                <div class="alert alert-error">
-                    <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/>
-                    </svg>
-                    Identifiants incorrects. Veuillez réessayer.
-                </div>
-                {% endif %}
-
-                <form method="post" class="auth-form">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="id_username">Nom d'utilisateur</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon-slot" aria-hidden="true">
-                                <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 17v-1a4 4 0 014-4h0a4 4 0 014 4v1H6z"/>
-                                </svg>
-                            </span>
-                            <input type="text" name="username" id="id_username" required autofocus
-                                   placeholder="Entrez votre identifiant" autocomplete="username">
-                        </div>
+            <div class="auth-card auth-card--switchable">
+                <div class="auth-panel auth-panel--login is-active" id="auth-panel-login" data-auth-panel="login">
+                    <div class="auth-card-header">
+                        <h2>Bienvenue</h2>
+                        <p class="auth-subtitle">Connectez-vous à votre espace administrateur</p>
                     </div>
-                    <div class="form-group">
-                        <label for="id_password">Mot de passe</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon-slot" aria-hidden="true">
-                                <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
-                                </svg>
-                            </span>
-                            <input type="password" name="password" id="id_password" required
-                                   placeholder="Entrez votre mot de passe" autocomplete="current-password">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <span>Se connecter</span>
-                        <svg class="btn-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
+
+                    {% if form.errors %}
+                    <div class="alert alert-error">
+                        <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/>
                         </svg>
-                    </button>
-                </form>
+                        Identifiants incorrects. Veuillez réessayer.
+                    </div>
+                    {% endif %}
 
-                <div class="auth-divider">
-                    <span>ou</span>
+                    <form method="post" class="auth-form" action="{% url 'login' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="id_username">Nom d'utilisateur</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon-slot" aria-hidden="true">
+                                    <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 17v-1a4 4 0 014-4h0a4 4 0 014 4v1H6z"/>
+                                    </svg>
+                                </span>
+                                <input type="text" name="username" id="id_username" required autofocus
+                                       placeholder="Entrez votre identifiant" autocomplete="username">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-group-row">
+                                <label for="id_password">Mot de passe</label>
+                                <button type="button" class="auth-link-btn" id="auth-show-reset" data-auth-show="reset">
+                                    Mot de passe oublié ?
+                                </button>
+                            </div>
+                            <div class="input-wrapper">
+                                <span class="input-icon-slot" aria-hidden="true">
+                                    <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                <input type="password" name="password" id="id_password" required
+                                       placeholder="Entrez votre mot de passe" autocomplete="current-password">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span>Se connecter</span>
+                            <svg class="btn-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </form>
+
+                    <div class="auth-divider"><span>ou</span></div>
+
+                    <div class="auth-footer">
+                        <p>Pas encore de compte ?</p>
+                        <a href="{% url 'register' %}" class="btn btn-secondary">Créer un compte</a>
+                    </div>
                 </div>
 
-                <div class="auth-footer">
-                    <p>Pas encore de compte ?</p>
-                    <a href="{% url 'register' %}" class="btn btn-secondary">Créer un compte</a>
+                <div class="auth-panel auth-panel--reset" id="auth-panel-reset" data-auth-panel="reset" hidden>
+                    <div class="auth-card-header">
+                        <p class="auth-kicker">Sécurité du compte</p>
+                        <h2>Mot de passe oublié</h2>
+                        <p class="auth-subtitle">
+                            Saisissez l'e-mail associé à votre compte. Nous vous enverrons un lien sécurisé de réinitialisation.
+                        </p>
+                    </div>
+
+                    <form method="post" class="auth-form" action="{% url 'password_reset' %}" id="auth-reset-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="id_reset_email">Adresse e-mail</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon-slot" aria-hidden="true">
+                                    <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M2.94 6.94A2 2 0 014.06 6h11.88a2 2 0 011.12.94l-6.06 4.04a2 2 0 01-2.2 0L2.94 6.94z"/>
+                                        <path d="M2 8.38V14a2 2 0 002 2h12a2 2 0 002-2V8.38l-5.74 3.83a3 3 0 01-3.32 0L2 8.38z"/>
+                                    </svg>
+                                </span>
+                                <input type="email" name="email" id="id_reset_email" required
+                                       placeholder="exemple@email.com" autocomplete="email">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="auth-reset-submit">
+                            <span>Envoyer le lien de réinitialisation</span>
+                        </button>
+                    </form>
+
+                    <div class="auth-reset-note">
+                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <p>Si l'adresse existe dans notre système, vous recevrez un e-mail en quelques minutes. Pensez à vérifier vos spams.</p>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary auth-back-login" id="auth-show-login" data-auth-show="login">
+                        Retour à la connexion
+                    </button>
                 </div>
             </div>
 
@@ -110,4 +128,8 @@
         </div>
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/auth-login.js' %}?v=1"></script>
 {% endblock %}
